@@ -5,6 +5,7 @@ import { signIn, signOut } from '@/auth'
 import { registerUser } from '@/auth'
 import { registerSchema, loginSchema } from '@/lib/schemas'
 import { checkRateLimit, clearRateLimit } from '@/lib/auth/rate-limit'
+import { isGoogleEnabled } from '@/lib/auth/google-enabled'
 
 export type AuthFormState = { error: string } | null
 
@@ -90,6 +91,12 @@ export async function registerAction(
     }
     throw e
   }
+}
+
+/** Start the Google OAuth flow. Only valid when `isGoogleEnabled()`. */
+export async function googleSignInAction() {
+  if (!isGoogleEnabled()) return
+  await signIn('google', { redirectTo: '/' })
 }
 
 export async function logoutAction() {
