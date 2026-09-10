@@ -1,0 +1,23 @@
+docs: rewrite DATABASE-SPEC for TiDB Cloud / MySQL
+
+v1.0 described Supabase PostgreSQL, which no longer matches the running
+database (TiDB Cloud v8.5.3). Left as-is it would cause PostgreSQL SQL to
+be written against a MySQL database.
+
+Changes:
+- Money: numeric(15,2) -> BIGINT (whole rupiah; IDR has no minor unit)
+- PK: uuid -> CHAR(36)
+- Timestamps: timestamptz -> DATETIME(3)
+- Booleans: -> TINYINT
+- Remove all RLS/SECURITY DEFINER/plpgsql content; MySQL has no RLS, so
+  authorization is now an app-layer rule (every query filters by user_id)
+- Atomicity: RPC -> Drizzle db.transaction() with explicit rollback
+- Replace auth.uid() with app-layer requireUserId()
+- Account deletion is now explicit ordered DELETEs (no FK cascades)
+- Add TiDB-specific notes: eventual index consistency, pool sizing, TLS
+- Add "Authorization Test" section replacing the old RLS test - without
+  RLS these tests are the only barrier between users' financial data
+
+Also sync the Safe Daily Spend formula across PRD.md, DATABASE-SPEC.md and
+QA-STRATEGY.md: it now subtracts upcoming debts and clamps days_remaining
+to >= 1 so month-end cannot divide by zero.
