@@ -1,29 +1,25 @@
-fix: extend archived-wallet guard to vault deposits and withdrawals
+fix: make registration atomic (user + starter seed in one transaction)
 
-The guard from the previous commit covered only createTransaction. Auditing
-every path that mutates a wallet balance found two more:
+registerUser inserted the user row, then called seedNewUser (starter wallet +
+9 system categories) as two separate, untransacted inserts. A failure between
+them created an account that could log in but had no wallet and no categories
+— permanently broken, because nothing in the app ever re-runs the seed.
 
-  - depositToVault    — money leaves a wallet
-  - withdrawFromVault — money arrives at a wallet
+Fixed by running both inside one db.transaction(). seedNewUser now accepts an
+optional tx handle; password hashing deliberately stays OUTSIDE the
+transaction, since bcrypt is slow and would hold a connection open ~100ms
+under load.
 
-An archived DESTINATION is just as lossy as an archived source: the balance
-rises while Total Saldo stays flat, so the money still disappears from view.
-Both now select isArchived and throw WALLET_ARCHIVED, translated to a clear
-Indonesian message.
+test:register:atomic proves atomicity rather than assuming it, in two steps:
+  1. Replicate the OLD behaviour with a forced mid-way failure -> a user row
+     IS left behind (so the failure mode is real, not theoretical).
+  2. Replicate the NEW behaviour with the same failure -> no row survives.
+If step 1 ever stops leaving a row, the test says so instead of passing
+vacuously.
 
-deleteTransaction is deliberately EXEMPT, and this is the interesting part.
-It also moves money, but it REVERSES an existing transaction. Blocking it
-would strand money: a user who archived a wallet could never delete its old
-transactions, leaving the balance permanently frozen. Reversal must always
-be possible, so the guard is intentionally absent there.
+test:newuser-seed adds a scan for any EXISTING user missing a wallet or
+categories. It currently reports 7 leftover test fixtures, which are inserted
+straight through SQL and legitimately unseeded — so the check distinguishes
+fixtures from real signups rather than failing on its own debris.
 
-That exemption is easy to mistake for an oversight, so test-archived-coverage
-asserts it by name: deleteTransaction must NOT call the guard, and the source
-must document why. A future refactor "fixing the inconsistency" has to update
-the test and confront the consequence.
-
-Also adds a coverage test (20 checks) that parses lib/actions.ts to confirm
-every balance-mutating path selects the flag, calls the guard, and translates
-the error — so a new money path added later cannot quietly skip it.
-
-206 checks green across 20 suites.
+211 checks green across 22 suites.
