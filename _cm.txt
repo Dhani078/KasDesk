@@ -1,0 +1,7 @@
+feat: vaults allocation — create target, deposit, withdraw
+
+The vaults module was read-only: `getVaults` existed but there was no
+way to create a savings target or move money into one. Meanwhile PRD
+§6.7 defines:
+
+  spendable = ***REMOVED***
