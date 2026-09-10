@@ -11,7 +11,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-xl bg-accent px-4 py-3 font-semibold text-white transition disabled:opacity-60"
+      className="w-full rounded-xl bg-accent-solid px-4 py-3 font-semibold text-white transition disabled:opacity-60"
     >
       {pending ? 'Masuk…' : 'Masuk'}
     </button>

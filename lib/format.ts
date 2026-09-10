@@ -23,9 +23,12 @@ export function formatAmount(value: number): string {
   return idr.format(Math.round(value))
 }
 
-/** 14250000 -> "Rp 14.250.000" */
+/** 14250000 -> "Rp 14.250.000"; -50000 -> "−Rp 50.000". */
 export function formatIDR(value: number): string {
-  return `Rp ${formatAmount(value)}`
+  const n = Math.round(value)
+  // Put the sign BEFORE the currency symbol. `Rp ${...}` on a negative
+  // produced "Rp -50.000", which reads as if "-50.000" were the amount.
+  return n < 0 ? `−Rp ${idr.format(Math.abs(n))}` : `Rp ${idr.format(n)}`
 }
 
 /** For transaction rows: "+Rp 50.000" / "−Rp 35.000". */

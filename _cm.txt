@@ -1,0 +1,41 @@
+audit: contrast, error boundaries, currency sign, rate limiting
+
+Deep audit pass. Four real defects, all found by measuring rather
+than by reading.
+
+1. WCAG contrast failures (2)
+   text-secondary #7E7E87 was 4.49:1 on surface — just under the 4.5
+   AA threshold. Now #909099 (5.71 on surface, 6.13 on canvas).
+   White-on-accent buttons were 3.80:1. Fixed with a separate
+   --color-accent-solid (#3D68C9, 5.22:1) for FILLED buttons; the
+   lighter --color-accent stays for text/icons because darkening the
+   single token would have dropped that use to 3.46:1. Two tokens is
+   the only way both uses pass.
+   All 8 foreground/background pairs now pass AA.
+
+2. No error.tsx or not-found.tsx anywhere
+   A DB timeout or thrown Server Component rendered a blank screen or
+   a raw stack trace. Added both, with a db-specific message when the
+   error looks like a connection failure and a digest ref for support.
+
+3. Negative currency rendered as "Rp -50.000"
+   The sign belonged before the symbol: "−Rp 50.000".
+
+4. No rate limiting at all (threat T-01)
+   The login endpoint could be brute-forced indefinitely. Added
+   lib/auth/rate-limit.ts: 8 attempts / 15 min, keyed by ACCOUNT not
+   IP (IP-keying lets an attacker lock out a victim by guessing their
+   email). Bucket clears on successful login.
+
+Also: globals.css had --color-surface and --color-border defined
+twice; deduped and added prefers-reduced-motion support.
+
+Bug found in my own rate limiter by its test (13/13 now): the memory
+cap ran probabilistically, so a 12.000-key flood ended with 10.100
+entries — the cap could be outrun. enforceCap() now runs on every
+insertion.
+
+Tests: scripts/test-ratelimit.js (13 checks, incl. the flood cap).
+
+Results: 81 checks green — smoke 19/19, isolation 10/10, debts 15/15,
+balance 14/14, balance-e2e 8/8, concurrency 2/2, ratelimit 13/13.

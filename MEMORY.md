@@ -6,7 +6,7 @@
 > **Authoritative documents:**
 > - `PRD.md` — what & why (product requirements)
 > - `ARCHITECTURE.md` — how (ADRs)
-> - `DATABASE-SPEC.md` — schema, RLS, RPC
+> - `DATABASE-SPEC.md` — schema, transactions, migrations (TiDB/MySQL)
 > - `DESIGN-SYSTEM.md` — visual & interaction
 > - `SECURITY-SPEC.md` — threat model & controls
 > - `AI-OCR-SPEC.md` — Gemini receipt scanning

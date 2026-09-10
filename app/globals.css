@@ -5,18 +5,35 @@
   --color-surface: #161619;
   --color-border-outer: rgba(255, 255, 255, 0.07);
   --color-border-inner: rgba(255, 255, 255, 0.04);
+  --color-border: rgba(255, 255, 255, 0.07);
+
+  /*
+   * Text colours are contrast-checked against BOTH canvas and surface.
+   * text-secondary was #7E7E87 = 4.49:1 on surface, just under the WCAG
+   * 2.2 AA threshold of 4.5:1. #909099 gives 5.71:1 on surface and
+   * 6.13:1 on canvas, so it passes everywhere it is used.
+   */
   --color-text-primary: #F0F0F3;
-  --color-text-secondary: #7E7E87;
+  --color-text-secondary: #909099;
+
   --color-accent-income: #5EBA7D;
   --color-accent-expense: #E05A47;
   --color-accent-transfer: #8A92A0;
 
-  /* Used by the auth screens (login / register) */
+  /*
+   * Two accent values on purpose:
+   *   --color-accent        for text/icons ON the dark background
+   *   --color-accent-solid  for filled buttons carrying WHITE text
+   * They cannot be the same value: #4F7FE8 reads 4.76:1 as text on
+   * surface (fine), but white-on-#4F7FE8 is only 3.80:1 — below AA for
+   * the button labels. Darkening the single token to fix the button
+   * would drop the text use to 3.46:1. So the button gets its own token.
+   */
   --color-accent: #4F7FE8;
+  --color-accent-solid: #3D68C9;
+
   --color-danger: #E05A47;
-  --color-surface: #161619;
-  --color-border: rgba(255, 255, 255, 0.07);
-  
+
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -41,4 +58,16 @@ body {
  */
 @utility pb-safe {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
