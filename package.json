@@ -14,6 +14,7 @@
     "test:balance": "node scripts/test-balance.js",
     "test:balance:e2e": "node scripts/test-balance-e2e.js",
     "test:concurrency": "node scripts/test-concurrency.js",
+    "test:debts": "node scripts/test-debts.js",
     "test:isolation": "node scripts/test-isolation.js",
     "test:cleanup": "node scripts/cleanup-test-user.js"
   },

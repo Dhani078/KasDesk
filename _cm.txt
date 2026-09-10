@@ -1,0 +1,33 @@
+feat: debts module (utang/piutang) with ownership-scoped actions
+
+The debts table and DebtSchema existed but had no UI and no write
+actions — the module was unreachable.
+
+Actions (lib/actions.ts)
+- createDebt: validates with DebtSchema, inserts scoped to userId
+- settleDebt: sets isPaid + settledAt; UPDATE is scoped by
+  (id, userId) and reports NOT_FOUND when 0 rows match
+- deleteDebt: same scoping
+Ownership is enforced in the WHERE clause, not by a prior SELECT —
+MySQL has no RLS so the filter IS the boundary.
+
+UI
+- app/debts/page.tsx + components/DebtsClient.tsx: utang/piutang
+  tabs, unpaid/settled sections, running total, overdue due dates
+  flagged in danger colour, add sheet, settle + delete per row
+- components/BottomNav.tsx: added /debts; labels localized to
+  Indonesian (Home/Dompet/Tabungan/Utang); active state via usePathname
+- Rewritten after a bad patch duplicated the LINKS array
+
+Tests
+- scripts/test-debts.js (15 checks): page renders, B cannot see A's
+  debtor, settle/delete with the wrong userId affect 0 rows while the
+  correct owner's affect 1 — proving the scoping works
+- scripts/smoke-ui.js: nav assertion updated for the Indonesian labels
+  (it still expected "Wallets" and gave a false failure)
+
+PRD: 11.16 marked FIXED; new 11.19 documents the balance race found
+during 11.4 work, which was not previously in the defect list.
+
+Results: tsc clean, build green, 10 routes, debts 15/15, smoke 19/19,
+isolation 10/10, balance 14/14.

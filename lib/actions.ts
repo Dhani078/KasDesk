@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { eq, and, desc, gte, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { wallets, transactions, categories, vaults, debts } from '@/lib/db/schema'
-import { TransactionSchema, WalletSchema } from '@/lib/schemas'
+import { TransactionSchema, WalletSchema, DebtSchema } from '@/lib/schemas'
 import { requireUserId } from '@/lib/auth/session'
 import { daysLeftInMonth } from '@/lib/format'
 import type { ActionResponse } from '@/lib/types'
@@ -245,6 +245,81 @@ export async function getDebts() {
     .from(debts)
     .where(eq(debts.userId, userId))
     .orderBy(desc(debts.createdAt))
+}
+
+/** Create a debt (utang = I owe, piutang = they owe me). */
+export async function createDebt(raw: unknown): Promise<ActionResponse<{ id: string }>> {
+  const userId = await requireUserId()
+  if (!userId) {
+    return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
+  }
+
+  const parsed = DebtSchema.safeParse(raw)
+  if (!parsed.success) {
+    const first = parsed.error.issues[0]
+    return {
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: first?.message ?? 'Data tidak valid', field: first?.path.join('.') },
+    }
+  }
+
+  const id = crypto.randomUUID()
+  await db.insert(debts).values({
+    id,
+    userId,
+    direction: parsed.data.direction,
+    personName: parsed.data.person_name,
+    amount: parsed.data.amount,
+    paidAmount: 0,
+    isPaid: 0,
+    note: parsed.data.note ?? null,
+    dueDate: parsed.data.due_date ? new Date(parsed.data.due_date) : null,
+  })
+
+  revalidatePath('/debts')
+  revalidatePath('/')
+  return { success: true, data: { id } }
+}
+
+/** Mark a debt fully settled. Scoped to the owner. */
+export async function settleDebt(id: string): Promise<ActionResponse<null>> {
+  const userId = await requireUserId()
+  if (!userId) {
+    return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
+  }
+
+  const res = await db
+    .update(debts)
+    .set({ isPaid: 1, paidAmount: sql`${debts.amount}`, settledAt: new Date() })
+    .where(and(eq(debts.id, id), eq(debts.userId, userId)))
+
+  if (!res[0].affectedRows) {
+    return { success: false, error: { code: 'NOT_FOUND', message: 'Utang tidak ditemukan.' } }
+  }
+
+  revalidatePath('/debts')
+  revalidatePath('/')
+  return { success: true, data: null }
+}
+
+/** Delete a debt. Scoped to the owner. */
+export async function deleteDebt(id: string): Promise<ActionResponse<null>> {
+  const userId = await requireUserId()
+  if (!userId) {
+    return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
+  }
+
+  const res = await db
+    .delete(debts)
+    .where(and(eq(debts.id, id), eq(debts.userId, userId)))
+
+  if (!res[0].affectedRows) {
+    return { success: false, error: { code: 'NOT_FOUND', message: 'Utang tidak ditemukan.' } }
+  }
+
+  revalidatePath('/debts')
+  revalidatePath('/')
+  return { success: true, data: null }
 }
 
 /** Create a wallet owned by the current user. */
