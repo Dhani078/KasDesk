@@ -1,25 +1,34 @@
-fix: send the Gemini key as a header, not in the URL query string
+feat: security headers for all routes
 
-The route built its upstream URL as `${ENDPOINT}?key=${apiKey}`. A query
-string is a leak vector the application's own logs never reveal:
+Responses carried NO security headers at all. For a finance app the sharpest
+gap is framing: a look-alike site could iframe the app for clickjacking.
 
-  - proxy and CDN access logs record full URLs
-  - any fetch error that echoes the request URL carries the key with it
+Added to next.config.ts for every route:
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: microphone=(), geolocation=()
+  Content-Security-Policy-Report-Only (see below)
 
-Now sent as the x-goog-api-key header.
+Two deliberate choices:
 
-Verified against the LIVE endpoint rather than assumed, using a control:
-  - valid key via header  -> 429 (quota exhausted, i.e. the key was accepted)
-  - invalid key via header -> 400 "API key not valid"
-Different answers prove the header is actually read. A test without that
-control would pass against an endpoint that ignored the key entirely.
+1. CSP is REPORT-ONLY, not enforcing. A strict policy has to account for
+   Next's inline bootstrap scripts, the PWA service worker and Tailwind's
+   runtime; a wrong enforcing CSP either breaks the app or gets disabled by
+   the first person it blocks. Report-only surfaces violations in the console
+   with zero risk, and can be promoted once those reports are clean. The test
+   asserts an enforcing CSP has NOT appeared, so this cannot be flipped by
+   accident.
 
-The test asserts both halves: structural (no `?key=` in the route, key not
-logged) and behavioural (the live control above). It skips loudly, rather than
-passing, when GEMINI_API_KEY is absent.
+2. Camera is not in Permissions-Policy. The receipt scanner uses a <input
+   type=file capture>, not getUserMedia, so no camera permission is needed and
+   adding camera=() would have been a wrong claim (and could break the native
+   "take photo" flow).
 
-Note: the 429 also confirms the key itself is still valid — the free-tier
-quota for gemini-2.5-flash is simply exhausted right now, which is why the
-real-OCR suite reports SKIPPED.
+The test checks both presence AND that the app still functions — a bad header
+can satisfy the first while breaking the second. It also asserts signed-out
+/ still redirects, so headers cannot silently bypass auth. That last check
+caught a bug in the test itself: an early version called / without the session
+cookie and wrongly reported a failure.
 
-256 -> 263 checks green across 26 suites.
+263 -> 279 checks green across 27 suites.
