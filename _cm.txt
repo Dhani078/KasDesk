@@ -1,25 +1,29 @@
-fix: make registration atomic (user + starter seed in one transaction)
+test: verify real signup seeds a complete account; add fixture cleanup
 
-registerUser inserted the user row, then called seedNewUser (starter wallet +
-9 system categories) as two separate, untransacted inserts. A failure between
-them created an account that could log in but had no wallet and no categories
-— permanently broken, because nothing in the app ever re-runs the seed.
+Two problems found while auditing test hygiene.
 
-Fixed by running both inside one db.transaction(). seedNewUser now accepts an
-optional tx handle; password hashing deliberately stays OUTSIDE the
-transaction, since bcrypt is slow and would hold a connection open ~100ms
-under load.
+1. test:newuser-seed was silently vacuous. It tried to sign up through
+   /api/auth/callback/register, a route that does not exist (registration is a
+   server action), so it always skipped and only a passive scan ran — the real
+   signup path was never verified. Rewritten to call registerUser() directly
+   through tsx, which is the same function the action calls. Now 4 checks:
+   user created, has a wallet, has the 9 system categories, and no real user
+   is missing seed data.
 
-test:register:atomic proves atomicity rather than assuming it, in two steps:
-  1. Replicate the OLD behaviour with a forced mid-way failure -> a user row
-     IS left behind (so the failure mode is real, not theoretical).
-  2. Replicate the NEW behaviour with the same failure -> no row survives.
-If step 1 ever stops leaving a row, the test says so instead of passing
-vacuously.
+   Note: tsx needs --env-file=.env.local here. Without it process.env.DATABASE_*
+   is empty and the DB pool fails with an opaque AggregateError — the test now
+   reports that rather than passing.
 
-test:newuser-seed adds a scan for any EXISTING user missing a wallet or
-categories. It currently reports 7 leftover test fixtures, which are inserted
-straight through SQL and legitimately unseeded — so the check distinguishes
-fixtures from real signups rather than failing on its own debris.
+2. Test debris was piling up in the database: 7 of 8 users were leftover
+   fixtures, because most scripts insert users straight through SQL and
+   sometimes fail before cleanup. That made the integrity scan look like real
+   corruption. Added scripts/cleanup-fixtures.js — report-only by default,
+   --apply to delete — matching only <prefix>-<ms-timestamp>@example.com, so
+   it cannot touch a real account. Ran it: 8 users -> 1 (the demo user).
+
+Also scanned all 115 tracked project files for secrets: the only matches are
+process.env references and deliberately-wrong test passwords. No credentials
+in the repo. (The 62 hits in .agents/skills are example code in that
+documentation, not project code.)
 
 211 checks green across 22 suites.
