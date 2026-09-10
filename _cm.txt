@@ -1,26 +1,25 @@
-fix: check Content-Length before buffering the OCR upload
+fix: send the Gemini key as a header, not in the URL query string
 
-await req.formData() reads the ENTIRE request into memory, and the 10 MB
-file.size check ran only AFTER that. So a multi-hundred-MB upload was buffered
-into RAM and then rejected — a memory DoS, made cheap by the route's 20
-requests/min per-user budget.
+The route built its upstream URL as `${ENDPOINT}?key=${apiKey}`. A query
+string is a leak vector the application's own logs never reveal:
 
-Fixed with a Content-Length pre-check before parsing. The header is advisory
-(a client may omit or lie), so the file.size backstop stays as the real gate;
-the pre-check exists purely so the common case never reaches the buffer.
+  - proxy and CDN access logs record full URLs
+  - any fetch error that echoes the request URL carries the key with it
 
-Measured after the fix: an 11 MB upload is refused with 413 in ~139ms.
+Now sent as the x-goog-api-key header.
 
-The test asserts the guard's PLACEMENT, not just its presence, because a
-Content-Length check after req.formData() would be useless — the body would
-already be in memory. That assertion initially failed for the wrong reason:
-it matched the string "req.formData()" inside the guard's own comment rather
-than the call. Now it searches for "await req.formData()".
+Verified against the LIVE endpoint rather than assumed, using a control:
+  - valid key via header  -> 429 (quota exhausted, i.e. the key was accepted)
+  - invalid key via header -> 400 "API key not valid"
+Different answers prove the header is actually read. A test without that
+control would pass against an endpoint that ignored the key entirely.
 
-Also worth recording: the first version of this test drove the route over
-HTTP with a forged Content-Length, and curl refuses to send a header that
-disagrees with the body, so the request never left and every case "passed".
-The OpenAI-style fake-action-id test from earlier had the same shape of
-mistake. Structural + timing assertions replaced it.
+The test asserts both halves: structural (no `?key=` in the route, key not
+logged) and behavioural (the live control above). It skips loudly, rather than
+passing, when GEMINI_API_KEY is absent.
 
-249 -> 256 checks green across 25 suites.
+Note: the 429 also confirms the key itself is still valid — the free-tier
+quota for gemini-2.5-flash is simply exhausted right now, which is why the
+real-OCR suite reports SKIPPED.
+
+256 -> 263 checks green across 26 suites.

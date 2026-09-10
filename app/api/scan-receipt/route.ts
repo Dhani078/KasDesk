@@ -96,9 +96,16 @@ export async function POST(req: Request) {
   // 5. Call Gemini (server-side key).
   let modelJson: unknown
   try {
-    const upstream = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+    const upstream = await fetch(GEMINI_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // The key travels in a header, not the query string. A query string
+        // ends up in proxy logs, CDN logs and — worst — any error message that
+        // echoes the request URL, which is exactly how an API key leaks from a
+        // server-side call the user never sees.
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents: [
