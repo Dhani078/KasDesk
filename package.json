@@ -17,6 +17,7 @@
     "test:debts": "node scripts/test-debts.js",
     "test:ratelimit": "node scripts/test-ratelimit.js",
     "test:vaults": "node scripts/test-vaults.js",
+    "test:delete": "node scripts/test-delete.js",
     "test:isolation": "node scripts/test-isolation.js",
     "test:cleanup": "node scripts/cleanup-test-user.js"
   },
