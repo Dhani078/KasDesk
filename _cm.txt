@@ -1,9 +1,25 @@
-test: add OCR receipt fixture, verify no secrets in git history
+audit: close stale PRD defects, add registration abuse tests
 
-- Commit test_receipt.png so test:ocr-real is reproducible for anyone
-- Verify .env.local is gitignored (Gemini key never committed)
-- Scan full git history + tracked files for leaked API keys: 0 matches
-- Remove debug-ocr-raw.js scratch script
+PRD defect table was stale — four entries were already fixed but still
+marked open (or marked blocking):
 
-All 142 checks green across 13 suites. OCR verified end-to-end
-with real Gemini API (confidence 0.95, total matches exactly).
+- 11.8  PWA icons: 5 icons exist and all return HTTP 200. The entry looked
+        open because manifest uses icon-192.png, not icon-192x192.png.
+        Now marked Done with the real filenames recorded.
+- 11.11 OCR schema conflict: CONTEXT/AGENT/MEMORY all carry SUPERSEDED
+        banners and define no OCR shape; lib/ocr/contract.ts is the single
+        source. Marked Done.
+- 11.17 29 commits on main, fully pushed, 0 ahead, tree clean. Marked Done.
+- 11.18 XAMPP note is informational, not a defect. Clarified how to run.
+
+New tests (registration abuse, 6+3 = 9 checks):
+- Duplicate email cannot hijack an account: password hash and name of the
+  victim are unchanged after a takeover attempt.
+- Weak password (1 char) and malformed email are rejected.
+- DB has a UNIQUE constraint on email, so even an application-level bug
+  could not allow takeover (defence in depth).
+
+Also: scanned all 42 TS/TSX query sites for unscoped DB access — the only
+hit is auth.ts user insert during registration, which is correct.
+
+154 checks green across 15 suites.
