@@ -1,27 +1,26 @@
-feat: wallet archiving — the isArchived column could never be set
+test: exercise the real Zod schemas with hostile input (29 checks)
 
-Same class of defect as the Google OAuth button: a feature that existed in the
-backend but had no way to be reached from the UI.
+The schemas look strict — integer, positive, max 100 billion — but a schema
+only protects the paths that actually run it. This drives the REAL
+TransactionSchema / WalletSchema / DebtSchema directly.
 
-The isArchived column was:
-  - defined in the schema
-  - filtered on by getWallets()
-  - guarded in every money-moving path (11.26, 11.27)
+Why schema-level rather than over HTTP: calling the server action needs its
+build-generated action id, which changes every build. I tried the HTTP version
+first and it "passed" 9/9 for the wrong reason — Next rejected every request
+before validation ran, so the balance never moved because nothing executed.
+That is a false sense of security, not a test. Deleted it.
 
-...but no action and no UI could ever SET it. An unused wallet was stuck in
-Total Saldo forever with no way to retire it.
+The cases worth naming are the ones that would CORRECT money if they slipped
+through:
+  - negative expense  -> would silently ADD funds
+  - zero amount       -> junk row in the history
+  - fractional amount -> breaks the integer-money invariant
+  - NaN / Infinity / string amounts, over-max, missing wallet, transfer to self
 
-Added archiveWallet(id, archived), owner-scoped, plus an archive button with a
-confirm step (archiving a funded wallet removes that money from Total Saldo —
-correct, but surprising on a mis-tap) and a restore button.
+Also asserts the schemas do NOT over-block: exactly-at-max amount, 120-char
+title, valid transfer, category tag, note — all still accepted. A validator
+that rejects legitimate input is its own bug.
 
-The important design point: /wallets now uses getWalletsIncludingArchived and
-lists archived wallets in a separate section. Archiving on top of the existing
-getWallets() filter would have been a ONE-WAY DOOR — the wallet disappears
-from every list with no way back, which is worse than having no feature. The
-test asserts the archived wallet is still listed and restorable.
+Result: all 29 pass. No schema defects found.
 
-Also verified cross-user isolation: archiving is scoped by (id AND userId), so
-one user cannot archive another's wallet.
-
-221 checks green across 23 suites. Database left clean: 1 demo user, 0 fixtures.
+249 checks green across 24 suites. Database clean: 1 demo user, 0 fixtures.

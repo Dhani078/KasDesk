@@ -34,7 +34,8 @@
     "test:newuser-seed": "npx tsx --env-file=.env.local scripts/test-newuser-seed.ts",
     "test:register:atomic": "node scripts/test-register-atomic.js",
     "test:cleanup:fixtures": "node scripts/cleanup-fixtures.js",
-    "test:wallet-archive": "node scripts/test-wallet-archive.js"
+    "test:wallet-archive": "node scripts/test-wallet-archive.js",
+    "test:input-bounds": "npx tsx scripts/test-input-bounds.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
