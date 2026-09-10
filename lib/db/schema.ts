@@ -1,17 +1,27 @@
 import {
-  mysqlTable, char, varchar, bigint, decimal, tinyint,
+  mysqlTable, char, varchar, bigint, tinyint,
   timestamp, index, uniqueIndex,
 } from 'drizzle-orm/mysql-core';
+
+/**
+ * Column naming: camelCase, matching the live TiDB tables exactly.
+ *
+ * IMPORTANT: these string arguments are the REAL column names in MySQL.
+ * Drizzle maps the TypeScript key (left) to this string (right). They were
+ * once snake_case while the migration SQL created camelCase tables, which
+ * made every query fail with "Unknown column 'user_id'". Always keep these
+ * in sync with `drizzle/0000_init.sql`.
+ */
 
 /** 36-char UUID (generated in app layer) */
 const pk = (name = 'id') =>
   char(name, { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID());
 
 const createdAt = () =>
-  timestamp('created_at', { fsp: 3 }).notNull().defaultNow();
+  timestamp('createdAt', { fsp: 3 }).notNull().defaultNow();
 
 const updatedAt = () =>
-  timestamp('updated_at', { fsp: 3 }).notNull().defaultNow().onUpdateNow();
+  timestamp('updatedAt', { fsp: 3 }).notNull().defaultNow().onUpdateNow();
 
 // ───────────────────────────────────────────────────────── users
 export const users = mysqlTable('users', {
@@ -19,8 +29,8 @@ export const users = mysqlTable('users', {
   email: varchar('email', { length: 255 }).notNull(),
   name: varchar('name', { length: 120 }),
   image: varchar('image', { length: 500 }),
-  emailVerified: timestamp('email_verified', { fsp: 3 }),
-  passwordHash: varchar('password_hash', { length: 255 }),
+  emailVerified: timestamp('emailVerified', { fsp: 3 }),
+  passwordHash: varchar('passwordHash', { length: 255 }),
   locale: varchar('locale', { length: 8 }).notNull().default('id-ID'),
   currency: char('currency', { length: 3 }).notNull().default('IDR'),
   createdAt: createdAt(),
@@ -32,12 +42,12 @@ export const users = mysqlTable('users', {
 // ──────────────────────────────────────────────────────── accounts
 export const accounts = mysqlTable('accounts', {
   id: pk(),
-  userId: char('user_id', { length: 36 }).notNull(),
+  userId: char('userId', { length: 36 }).notNull(),
   provider: varchar('provider', { length: 32 }).notNull(),
-  providerAccountId: varchar('provider_account_id', { length: 255 }).notNull(),
-  accessToken: varchar('access_token', { length: 1000 }),
-  refreshToken: varchar('refresh_token', { length: 1000 }),
-  expiresAt: bigint('expires_at', { mode: 'number' }),
+  providerAccountId: varchar('providerAccountId', { length: 255 }).notNull(),
+  accessToken: varchar('accessToken', { length: 1000 }),
+  refreshToken: varchar('refreshToken', { length: 1000 }),
+  expiresAt: bigint('expiresAt', { mode: 'number' }),
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex('accounts_provider_uq').on(t.provider, t.providerAccountId),
@@ -47,8 +57,8 @@ export const accounts = mysqlTable('accounts', {
 // ─────────────────────────────────────────────────────── sessions
 export const sessions = mysqlTable('sessions', {
   id: pk(),
-  userId: char('user_id', { length: 36 }).notNull(),
-  sessionToken: varchar('session_token', { length: 255 }).notNull(),
+  userId: char('userId', { length: 36 }).notNull(),
+  sessionToken: varchar('sessionToken', { length: 255 }).notNull(),
   expires: timestamp('expires', { fsp: 3 }).notNull(),
   createdAt: createdAt(),
 }, (t) => [
@@ -59,11 +69,11 @@ export const sessions = mysqlTable('sessions', {
 // ────────────────────────────────────────────────────── categories
 export const categories = mysqlTable('categories', {
   id: pk(),
-  userId: char('user_id', { length: 36 }).notNull(),
+  userId: char('userId', { length: 36 }).notNull(),
   name: varchar('name', { length: 32 }).notNull(),
   kind: varchar('kind', { length: 8 }).notNull(),
-  sortOrder: tinyint('sort_order').notNull().default(0),
-  isSystem: tinyint('is_system').notNull().default(0),
+  sortOrder: tinyint('sortOrder').notNull().default(0),
+  isSystem: tinyint('isSystem').notNull().default(0),
   createdAt: createdAt(),
 }, (t) => [
   uniqueIndex('categories_user_name_uq').on(t.userId, t.name),
@@ -73,11 +83,11 @@ export const categories = mysqlTable('categories', {
 // ───────────────────────────────────────────────────────── wallets
 export const wallets = mysqlTable('wallets', {
   id: pk(),
-  userId: char('user_id', { length: 36 }).notNull(),
+  userId: char('userId', { length: 36 }).notNull(),
   name: varchar('name', { length: 60 }).notNull(),
   type: varchar('type', { length: 12 }).notNull(),
   balance: bigint('balance', { mode: 'number' }).notNull().default(0),
-  isArchived: tinyint('is_archived').notNull().default(0),
+  isArchived: tinyint('isArchived').notNull().default(0),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [
@@ -88,15 +98,15 @@ export const wallets = mysqlTable('wallets', {
 // ──────────────────────────────────────────────────── transactions
 export const transactions = mysqlTable('transactions', {
   id: pk(),
-  userId: char('user_id', { length: 36 }).notNull(),
-  walletId: char('wallet_id', { length: 36 }).notNull(),
-  toWalletId: char('to_wallet_id', { length: 36 }),
+  userId: char('userId', { length: 36 }).notNull(),
+  walletId: char('walletId', { length: 36 }).notNull(),
+  toWalletId: char('toWalletId', { length: 36 }),
   type: varchar('type', { length: 8 }).notNull(),
   amount: bigint('amount', { mode: 'number' }).notNull(),
   title: varchar('title', { length: 120 }).notNull(),
-  categoryTag: varchar('category_tag', { length: 32 }),
+  categoryTag: varchar('categoryTag', { length: 32 }),
   note: varchar('note', { length: 500 }),
-  occurredAt: timestamp('occurred_at', { fsp: 3 }).notNull().defaultNow(),
+  occurredAt: timestamp('occurredAt', { fsp: 3 }).notNull().defaultNow(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [
@@ -108,12 +118,12 @@ export const transactions = mysqlTable('transactions', {
 // ────────────────────────────────────────────────────────── vaults
 export const vaults = mysqlTable('vaults', {
   id: pk(),
-  userId: char('user_id', { length: 36 }).notNull(),
+  userId: char('userId', { length: 36 }).notNull(),
   name: varchar('name', { length: 80 }).notNull(),
-  targetAmount: bigint('target_amount', { mode: 'number' }).notNull(),
-  currentAmount: bigint('current_amount', { mode: 'number' }).notNull().default(0),
-  targetDate: timestamp('target_date', { fsp: 3 }),
-  isCompleted: tinyint('is_completed').notNull().default(0),
+  targetAmount: bigint('targetAmount', { mode: 'number' }).notNull(),
+  currentAmount: bigint('currentAmount', { mode: 'number' }).notNull().default(0),
+  targetDate: timestamp('targetDate', { fsp: 3 }),
+  isCompleted: tinyint('isCompleted').notNull().default(0),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [
@@ -123,15 +133,15 @@ export const vaults = mysqlTable('vaults', {
 // ─────────────────────────────────────────────────────────── debts
 export const debts = mysqlTable('debts', {
   id: pk(),
-  userId: char('user_id', { length: 36 }).notNull(),
+  userId: char('userId', { length: 36 }).notNull(),
   direction: varchar('direction', { length: 8 }).notNull(),
-  personName: varchar('person_name', { length: 80 }).notNull(),
+  personName: varchar('personName', { length: 80 }).notNull(),
   amount: bigint('amount', { mode: 'number' }).notNull(),
-  paidAmount: bigint('paid_amount', { mode: 'number' }).notNull().default(0),
-  isPaid: tinyint('is_paid').notNull().default(0),
+  paidAmount: bigint('paidAmount', { mode: 'number' }).notNull().default(0),
+  isPaid: tinyint('isPaid').notNull().default(0),
   note: varchar('note', { length: 500 }),
-  dueDate: timestamp('due_date', { fsp: 3 }),
-  settledAt: timestamp('settled_at', { fsp: 3 }),
+  dueDate: timestamp('dueDate', { fsp: 3 }),
+  settledAt: timestamp('settledAt', { fsp: 3 }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [

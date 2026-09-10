@@ -1,0 +1,26 @@
+feat: implement Auth.js v5 authentication (replaces placeholder session)
+
+The previous `lib/auth/session.ts` read a raw `kd_uid` cookie, so any user
+could impersonate another by setting that cookie. This replaces it with
+real Auth.js v5 JWT sessions backed by bcrypt password hashing.
+
+Added:
+- auth.config.ts    edge-safe config (providers, pages, JWT/session callbacks)
+- auth.ts           Node runtime: Credentials provider, register, seeding
+- auth.edge.ts      separate Edge instance for middleware
+- middleware.ts     protects all routes, redirects unauth to /login
+- app/login, app/register, app/api/auth/[...nextauth]
+- lib/auth/password.ts (bcrypt, cost 12, timing-safe dummy compare)
+- lib/auth/actions.ts  (login/register/logout server actions)
+
+Edge split: bcryptjs and mysql2 are Node-only, so middleware imports
+auth.edge.ts (built from authConfig only) rather than auth.ts. Both
+instances share AUTH_SECRET so a cookie from one validates in the other.
+
+fix: Drizzle schema columns were snake_case while the live TiDB tables are
+camelCase - every query failed with "Unknown column 'userId'". Schema now
+matches the actual tables (and drizzle/0000_init.sql).
+
+Verified: 23/23 auth tests pass against live TiDB (hashing, registration,
+per-user seeding, login, cross-user isolation, duplicate email rejection).
+Seeding gives each new user a "Tunai" wallet and 9 system categories.
