@@ -26,6 +26,7 @@
     "test:register:unit": "node scripts/test-register-unit.js",
     "test:google-flag": "node scripts/test-google-flag.js",
     "test:dashboard": "node scripts/test-dashboard-math.js",
+    "test:insights": "node scripts/test-insights.js",
     "test:cleanup": "node scripts/cleanup-test-user.js"
   },
   "dependencies": {

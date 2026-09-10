@@ -1,31 +1,21 @@
-test: verify dashboard math against PRD 6.7, add server preflight
+fix: insights "7 Hari Terakhir" showed month-to-date, not 7 days
 
-New test (7 checks) recomputes every headline number straight from the
-database and asserts the rendered page agrees, rather than trusting that
-a plausible-looking number is correct:
+Real defect found by auditing the insights page, not from the PRD list.
 
-  - Total Saldo == sum of non-archived wallet balances
-  - Aman Harian == max(0, floor((liquid - vaults - debts) / daysLeft))
-  - Month-to-date Masuk/Keluar with transfers EXCLUDED
-  - A 999000 transfer provably does not inflate Keluar
+The section is labelled "7 Hari Terakhir" but rendered dash.monthlyExpense —
+month-to-date. Any spending earlier in the month inflated the figure, so the
+page overstated how fast money was leaving.
 
-The daysLeft term is recomputed per run, so the test stays correct as the
-calendar rolls over (it moved from 21 to 20 days mid-session and still passed).
+Proven with a fixture that separates the two windows:
+  - expense on day 1 of this month  = 700000  (in month, outside 7 days)
+  - expenses within last 7 days     = 300000
+  - page showed 1000000, should show 300000
 
-Two things worth recording about getting here:
+Fixed by summing getSpendingFlow(), which is already filtered to the last 7
+days and to expenses only — no new query needed. The now-unused getDashboard()
+call was removed rather than left as a wasted round-trip.
 
-1. A confusing "flaky" failure was self-inflicted: the runner loop invoked
-   scripts/test-dashboard.js while the file is test-dashboard-math.js, so
-   Node reported MODULE_NOT_FOUND. It only ever failed inside the loop,
-   which made it look like shared state or connection exhaustion. It was a
-   filename mismatch in my own command.
+The test guards its own fixture: if run in the first week of the month the two
+windows overlap, so it reports SKIPPED instead of passing vacuously.
 
-2. The currency parser initially read every digit in a region and produced
-   garbage (1250000 -> -141250000112624). Now it matches a single "Rp ..."
-   token.
-
-Also adds a server preflight: a dead server used to surface as a curl/JSON
-error deep in the run, looking like a test bug. Now it fails fast naming
-the real cause.
-
-163 checks green across 16 suites.
+168 checks green across 17 suites.
