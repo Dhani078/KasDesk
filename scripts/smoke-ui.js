@@ -81,7 +81,8 @@ try {
   check('shows debts section', itxt.includes('Utang') && itxt.includes('Budi'))
 
   console.log('\n=== NAV ==')
-  check('bottom nav present on home', home.includes('Home') && home.includes('Wallets'))
+  check('bottom nav present on home',
+    home.includes('>Home<') && home.includes('>Dompet<') && home.includes('>Utang<'))
   check('bottom nav hidden on /login',
     !body(`${BASE}/login`).includes('>Home<'))
 

@@ -898,7 +898,7 @@ before the corresponding release ships. Full remediation detail lives in the der
 | 11.1 | ~~Product name is "Vaultify" everywhere~~ **FIXED** | Renamed to KASDESK in `package.json`, `layout.tsx`, docs | Done | NR-NAME |
 | 11.2 | ~~No `middleware.ts` — sessions won't persist~~ **FIXED** | `middleware.ts` + `auth.edge.ts` now present; session via Auth.js JWT | Done | FR-AUTH-5 |
 | 11.3 | ~~`amount: z.number()` lacks `.positive()`~~ **FIXED** — now `.int().positive().max(100_000_000_000)` | `lib/schemas.ts` | Done | FR-LOG-4 |
-| 11.4 | ~~Wallet balance never updates~~ **FIXED** — atomic `balance = balance ± amount`; verified 14/14 (income/expense/transfer/delete/overdraw/rollback/int64). **Also fixed a lost-update race** (see below) | `test:balance`, `test:concurrency` | Done | FR-WLT-5 |
+| 11.4 | ~~Wallet balance never updates~~ **FIXED** — atomic `balance = balance ± amount`; verified 14/14 (income/expense/transfer/delete/overdraw/rollback/int64). **Also fixed a lost-update race** (see §11.16) | `test:balance`, `test:concurrency` | Done | FR-WLT-5 |
 | 11.5 | Gemini SDK absent; `/api/scan-receipt` missing | `package.json`, `app/` tree | R4 | FR-OCR-2 |
 | 11.6 | ~~`pb-safe` class is dead~~ **FIXED** — registered as `@utility` in `globals.css` (Tailwind v4) | CSS now emits `env(safe-area-inset-bottom)` | Done | FR-PWA-4 |
 | 11.7 | ~~`userScalable: false`, `maximumScale: 1`~~ **FIXED** — removed; zoom enabled | `app/layout.tsx` | Done | NR-A11Y-6 |
@@ -910,7 +910,8 @@ before the corresponding release ships. Full remediation detail lives in the der
 | 11.13 | Two conflicting schemas (`CONTEXT.md` vs `DATABASE.md`) | both files | R0 | §12 |
 | 11.14 | `CONTEXT.md`/`MEMORY.md` claim Next.js 14; actual is 16.3.0 | `package.json` | R0 | §12 |
 | 11.15 | `AGENT.md` describes `src/app/`; actual is root `app/` | `AGENT.md` | R0 | §12 |
-| 11.16 | Home screen data is hardcoded, not from DB | `app/page.tsx` | R1 | §5.1 R1 |
+| 11.16 | ~~Home screen data is hardcoded, not from DB~~ **FIXED** — `app/page.tsx` reads `getDashboard`/`getRecentTransactions`/`getWallets` | `test:balance:e2e` (8/8) | Done | §5.1 R1 |
+| 11.19 | **Lost-update race in balance mutation** (found during 11.4 work, not previously documented): read-modify-write let concurrent expenses overwrite each other — 10×Rp 1.000 from Rp 10.000 left Rp 8.000 | `scripts/test-concurrency.js` | Done | FR-WLT-5 |
 | 11.17 | Repo has 1 commit; all project work uncommitted | `git status` | R0 | §13 |
 | 11.18 | XAMPP/Apache cannot run this app (Node.js, not PHP) | Project location | — | §13 |
 

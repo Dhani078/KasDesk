@@ -2,44 +2,42 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Wallet, Goal, PieChart } from 'lucide-react'
+import { Home, Wallet, Target, PieChart } from 'lucide-react'
 
 const LINKS = [
   { href: '/', label: 'Home', Icon: Home },
-  { href: '/wallets', label: 'Wallets', Icon: Wallet },
-  { href: '/vaults', label: 'Vaults', Icon: Goal },
-  { href: '/insights', label: 'Insights', Icon: PieChart },
+  { href: '/wallets', label: 'Dompet', Icon: Wallet },
+  { href: '/vaults', label: 'Tabungan', Icon: Target },
+  { href: '/debts', label: 'Utang', Icon: PieChart },
 ]
 
-/**
- * Fixed bottom navigation.
- *
- * `pb-safe` applies safe-area padding so the bar clears the home indicator
- * on notched devices (registered via @utility in globals.css).
- */
 export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border-outer bg-surface/90 pb-safe backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-md items-center justify-around px-4">
+    <nav
+      aria-label="Navigasi utama"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border-outer bg-surface/95 pb-safe backdrop-blur"
+    >
+      <ul className="mx-auto flex max-w-md items-stretch justify-around">
         {LINKS.map(({ href, label, Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
           return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? 'page' : undefined}
-              className={`flex h-full w-full flex-col items-center justify-center transition-colors ${
-                active ? 'text-text-primary' : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              <Icon className="mb-1 h-5 w-5" />
-              <span className="text-[9px] font-bold uppercase tracking-[0.05em]">{label}</span>
-            </Link>
+            <li key={href} className="flex-1">
+              <Link
+                href={href}
+                aria-current={active ? 'page' : undefined}
+                className={`flex flex-col items-center gap-1 py-2.5 text-[10px] transition-colors ${
+                  active ? 'text-accent' : 'text-text-secondary'
+                }`}
+              >
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
+                <span>{label}</span>
+              </Link>
+            </li>
           )
         })}
-      </div>
+      </ul>
     </nav>
   )
 }
