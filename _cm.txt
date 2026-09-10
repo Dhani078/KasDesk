@@ -1,29 +1,27 @@
-test: verify real signup seeds a complete account; add fixture cleanup
+feat: wallet archiving — the isArchived column could never be set
 
-Two problems found while auditing test hygiene.
+Same class of defect as the Google OAuth button: a feature that existed in the
+backend but had no way to be reached from the UI.
 
-1. test:newuser-seed was silently vacuous. It tried to sign up through
-   /api/auth/callback/register, a route that does not exist (registration is a
-   server action), so it always skipped and only a passive scan ran — the real
-   signup path was never verified. Rewritten to call registerUser() directly
-   through tsx, which is the same function the action calls. Now 4 checks:
-   user created, has a wallet, has the 9 system categories, and no real user
-   is missing seed data.
+The isArchived column was:
+  - defined in the schema
+  - filtered on by getWallets()
+  - guarded in every money-moving path (11.26, 11.27)
 
-   Note: tsx needs --env-file=.env.local here. Without it process.env.DATABASE_*
-   is empty and the DB pool fails with an opaque AggregateError — the test now
-   reports that rather than passing.
+...but no action and no UI could ever SET it. An unused wallet was stuck in
+Total Saldo forever with no way to retire it.
 
-2. Test debris was piling up in the database: 7 of 8 users were leftover
-   fixtures, because most scripts insert users straight through SQL and
-   sometimes fail before cleanup. That made the integrity scan look like real
-   corruption. Added scripts/cleanup-fixtures.js — report-only by default,
-   --apply to delete — matching only <prefix>-<ms-timestamp>@example.com, so
-   it cannot touch a real account. Ran it: 8 users -> 1 (the demo user).
+Added archiveWallet(id, archived), owner-scoped, plus an archive button with a
+confirm step (archiving a funded wallet removes that money from Total Saldo —
+correct, but surprising on a mis-tap) and a restore button.
 
-Also scanned all 115 tracked project files for secrets: the only matches are
-process.env references and deliberately-wrong test passwords. No credentials
-in the repo. (The 62 hits in .agents/skills are example code in that
-documentation, not project code.)
+The important design point: /wallets now uses getWalletsIncludingArchived and
+lists archived wallets in a separate section. Archiving on top of the existing
+getWallets() filter would have been a ONE-WAY DOOR — the wallet disappears
+from every list with no way back, which is worse than having no feature. The
+test asserts the archived wallet is still listed and restorable.
 
-211 checks green across 22 suites.
+Also verified cross-user isolation: archiving is scoped by (id AND userId), so
+one user cannot archive another's wallet.
+
+221 checks green across 23 suites. Database left clean: 1 demo user, 0 fixtures.
