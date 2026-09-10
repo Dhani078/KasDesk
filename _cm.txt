@@ -1,8 +1,0 @@
-feat: receipt OCR scaffold — fail-closed until GEMINI_API_KEY is set
-
-Implements AI-OCR-SPEC end to end except the upstream call, which is
-gated on a key only the repo owner can supply.
-
-Route: POST /api/scan-receipt
-  1. requireUserId() -> 401 before anything else
- ***REMOVED***
