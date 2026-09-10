@@ -1,26 +1,18 @@
-feat: implement Auth.js v5 authentication (replaces placeholder session)
+feat: verify auth end-to-end over HTTP; fix pb-safe, zoom, branding
 
-The previous `lib/auth/session.ts` read a raw `kd_uid` cookie, so any user
-could impersonate another by setting that cookie. This replaces it with
-real Auth.js v5 JWT sessions backed by bcrypt password hashing.
+Adds a repeatable HTTP test suite (npm run test:auth) that drives the real
+Auth.js credentials flow with curl: CSRF issuance, login, session
+resolution, protected-route access, and rejection of a wrong password.
+12/12 pass against the production server. The earlier "failures" were bugs
+in a Node fetch-based harness that did not forward the CSRF cookie, not
+defects in the auth code.
 
-Added:
-- auth.config.ts    edge-safe config (providers, pages, JWT/session callbacks)
-- auth.ts           Node runtime: Credentials provider, register, seeding
-- auth.edge.ts      separate Edge instance for middleware
-- middleware.ts     protects all routes, redirects unauth to /login
-- app/login, app/register, app/api/auth/[...nextauth]
-- lib/auth/password.ts (bcrypt, cost 12, timing-safe dummy compare)
-- lib/auth/actions.ts  (login/register/logout server actions)
+fix: pb-safe was a dead class - Tailwind v4 needs @utility to register a
+custom utility, so the bottom nav had no safe-area padding on notched
+devices. Now compiled into the built CSS (verified: 1 occurrence, was 0).
 
-Edge split: bcryptjs and mysql2 are Node-only, so middleware imports
-auth.edge.ts (built from authConfig only) rather than auth.ts. Both
-instances share AUTH_SECRET so a cookie from one validates in the other.
+fix: removed maximumScale/userScalable from the viewport. Disabling
+pinch-zoom fails WCAG 2.2 SC 1.4.4 (Resize Text).
 
-fix: Drizzle schema columns were snake_case while the live TiDB tables are
-camelCase - every query failed with "Unknown column 'userId'". Schema now
-matches the actual tables (and drizzle/0000_init.sql).
-
-Verified: 23/23 auth tests pass against live TiDB (hashing, registration,
-per-user seeding, login, cross-user isolation, duplicate email rejection).
-Seeding gives each new user a "Tunai" wallet and 9 system categories.
+chore: rename package vaultify -> kasdesk, app title Vaultify -> KASDESK,
+and add the accent/danger/surface/border tokens the auth screens use.

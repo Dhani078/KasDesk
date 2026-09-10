@@ -1,5 +1,5 @@
 {
-  "name": "vaultify",
+  "name": "kasdesk",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,9 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
-    "db:push": "node scripts/migrate.js"
+    "db:push": "node scripts/migrate.js",
+    "test:auth": "node scripts/test-auth-http.js",
+    "test:cleanup": "node scripts/cleanup-test-user.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
