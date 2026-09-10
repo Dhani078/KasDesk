@@ -12,6 +12,21 @@ export const CATEGORY_ENUM = [
   'LAINNYA',
 ] as const
 
+/** Registration: email + password (Auth.js credentials). */
+export const registerSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email tidak valid').max(255),
+  password: z
+    .string()
+    .min(8, 'Password minimal 8 karakter')
+    .max(72, 'Password maksimal 72 karakter'), // bcrypt truncates past 72 bytes
+  name: z.string().trim().min(1).max(120).optional(),
+})
+
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Email tidak valid'),
+  password: z.string().min(1, 'Password wajib diisi'),
+})
+
 export const TransactionSchema = z
   .object({
     wallet_id: z.string().min(1, 'Dompet wajib dipilih'),
