@@ -27,9 +27,9 @@
                     └───┬───────────┬──────────┬─────┘
                         │           │          │
            ┌────────────▼──┐  ┌─────▼──────┐  ┌▼──────────────┐
-           │   Supabase     │  │  Google    │  │   WhatsApp    │
-           │ Postgres+Auth  │  │  Gemini    │  │ (share target)│
-           │ RLS + RPC      │  │  (OCR v1)  │  │               │
+           │  TiDB Cloud    │  │  Google    │  │   WhatsApp    │
+           │ MySQL+Drizzle  │  │  Gemini    │  │ (share target)│
+           │ user_id filters│  │  (OCR v1)  │  │               │
            └────────────────┘  └────────────┘  └───────────────┘
 ```
 
@@ -70,10 +70,11 @@
 └─────────────────────────────┼───────────────────────────────────┘
                               │
 ┌─────────────────────────────▼───────────────────────────────────┐
-│                          SUPABASE                                │
+│                    TIDB CLOUD (MySQL)                            │
 │  ┌────────────┐  ┌──────────────┐  ┌──────────────────────────┐ │
-│  │ Postgres   │  │ Auth (JWT)   │  │ RLS + SECURITY DEFINER   │ │
-│  │ tables+idx │  │ email+Google │  │ RPC (atomic balance)     │ │
+│  │ MySQL 8    │  │ Auth.js v5   │  │ Drizzle ORM              │ │
+│  │ tables+idx │  │ (credential+ │  │ typed queries, tx scope  │ │
+│  │            │  │  Google)     │  │ (atomic balance)         │ │
 │  └────────────┘  └──────────────┘  └──────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────┘
                               │
@@ -89,7 +90,7 @@
 | :--- | :--- | :--- |
 | B1: Device ↔ Internet | All traffic | HTTPS only, secure cookies |
 | B2: Client ↔ Next server | Server Action args | Zod validation, auth check |
-| B3: Next server ↔ Supabase | DB queries | RLS + RPC ownership guards |
+| B3: Next server ↔ TiDB | DB queries | Drizzle queries scoped by user_id |
 | B4: Next server ↔ Gemini | Image upload | API key server-side only, no persistence |
 
 ---
@@ -140,22 +141,21 @@ components/
     └── AppHeader.tsx
 
 lib/
-├── actions/
-│   ├── transactions.ts            # create/update/delete via RPC
-│   ├── wallets.ts
-│   ├── vaults.ts
-│   └── debts.ts
+├── actions.ts                     # create/update/delete via db.transaction()
+├── auth/
+│   ├── session.ts                 # requireUserId() / assertUserId()
+│   ├── password.ts                # hash/verify
+│   └── actions.ts                 # signIn / signOut / register wrappers
+├── db/
+│   ├── schema.ts                  # Drizzle table defs (source of truth)
+│   └── index.ts                   # mysql2 pool + drizzle() client
 ├── schemas.ts                     # Zod (per DATABASE-SPEC §5.2)
 ├── store.ts                       # Zustand
 ├── utils/
 │   ├── currency.ts                # formatIDR, parseIDRInput
 │   └── date.ts                    # grouping, cycle math
 ├── offline/queue.ts               # IndexedDB pending writes
-└── supabase/
-    ├── client.ts
-    ├── server.ts
-    ├── middleware.ts
-    └── database.types.ts          # generated
+└── types.ts                       # ActionResponse<T>
 
 middleware.ts                      # ← MISSING TODAY (PRD §11.2)
 ```
@@ -175,80 +175,171 @@ middleware.ts                      # ← MISSING TODAY (PRD §11.2)
 
 ### 3.1 The Discriminated Union
 
-Every Server Action returns `ActionResponse<T>` (already defined in `lib/schemas.ts`):
+Every Server Action returns `ActionResponse<T>` (defined in `lib/types.ts`):
 
 ```ts
 export type ActionResponse<T> =
-  | { success: true; data: T; error: null }
-  | { success: false; data: null; error: string }
+  | { success: true; data: T }
+  | { success: false; error: { code: string; message: string; field?: string } }
 ```
 
 This is mandated by PRD NR-MAIN-1 (no `any`) and the `error-handling-patterns` skill's
-Result-type guidance. **Never throw a raw `Error` to the client.**
+Result-type guidance. **Never throw a raw `Error` to the client** — translate every
+failure into an `error.code` + Indonesian `error.message`. The `code` is what the client
+branches on (`INSUFFICIENT_BALANCE`, `NOT_FOUND`, `UNAUTHENTICATED`,
+`VALIDATION_ERROR`, `UNKNOWN`); `message` is shown verbatim in the toast.
 
 ### 3.2 Canonical Pattern
 
 ```ts
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { CreateTransactionSchema, type ActionResponse, type Transaction } from '@/lib/schemas'
 import { revalidatePath } from 'next/cache'
+import { eq, and } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { wallets, transactions } from '@/lib/db/schema'
+import { auth } from '@/auth'                      // Auth.js v5 session accessor
+import { requireUserId } from '@/lib/auth/session' // = auth() → session.user.id
+import { TransactionSchema } from '@/lib/schemas'
+import type { ActionResponse } from '@/lib/types'
 
 export async function createTransaction(
-  input: unknown
-): Promise<ActionResponse<Transaction>> {
+  raw: unknown
+): Promise<ActionResponse<{ id: string }>> {
+  // 1 ── Auth: resolve user_id from the session, NEVER from input
+  const userId = await requireUserId()
+  if (!userId) {
+    return {
+      success: false,
+      error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' },
+    }
+  }
+
+  // 2 ── Validate with Zod (NEVER skip; PRD NR-SEC-2)
+  const parsed = TransactionSchema.safeParse(raw)
+  if (!parsed.success) {
+    const first = parsed.error.issues[0]
+    return {
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: first?.message ?? 'Data tidak valid',
+        field: first?.path.join('.'),
+      },
+    }
+  }
+
+  const data = parsed.data
+
   try {
-    // 1 ── Validate with Zod (NEVER skip; PRD NR-SEC-2)
-    const parsed = CreateTransactionSchema.safeParse(input)
-    if (!parsed.success) {
-      return {
-        success: false,
-        data: null,
-        error: parsed.error.issues.map((i) => i.message).join(', '),
+    // 3 ── Atomic mutation: BEGIN … COMMIT (PRD NR-REL-3, fixes §11.4)
+    const id = await db.transaction(async (tx) => {
+      // 3a. Ownership guard — MySQL has no RLS, so every read/write must be
+      //     scoped with `eq(table.userId, userId)`.
+      const [wallet] = await tx
+        .select({ id: wallets.id, balance: wallets.balance })
+        .from(wallets)
+        .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId)))
+        .limit(1)
+
+      if (!wallet) throw new Error('WALLET_NOT_FOUND')
+
+      // 3b. Guard against overdrawing
+      if (data.type !== 'income' && wallet.balance < data.amount) {
+        throw new Error('INSUFFICIENT_BALANCE')
       }
-    }
 
-    // 2 ── Server client (cookie-aware)
-    const supabase = await createClient()
+      // 3c. For transfers, verify the destination wallet belongs to the user too
+      if (data.type === 'transfer') {
+        const [to] = await tx
+          .select({ id: wallets.id })
+          .from(wallets)
+          .where(and(eq(wallets.id, data.to_wallet_id!), eq(wallets.userId, userId)))
+          .limit(1)
 
-    // 3 ── Auth check: never trust the client's user_id
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return { success: false, data: null, error: 'Unauthorized. Silakan login.' }
-    }
+        if (!to) throw new Error('WALLET_NOT_FOUND')
+      }
 
-    // 4 ── Atomic mutation via RPC (PRD NR-REL-3, fixes §11.4)
-    const { data, error } = await supabase.rpc('create_transaction', {
-      p_wallet_id:    parsed.data.wallet_id,
-      p_amount:       parsed.data.amount,
-      p_type:         parsed.data.type,
-      p_title:        parsed.data.title,
-      p_category_tag: parsed.data.category_tag,
-      p_note:         parsed.data.note ?? null,
-      p_occurred_at:  parsed.data.occurred_at ?? new Date().toISOString(),
-      p_to_wallet_id: parsed.data.to_wallet_id ?? null,
-      p_category_id:  parsed.data.category_id ?? null,
+      // 3d. Insert the ledger row
+      const [row] = await tx.insert(transactions).values({
+        userId,
+        walletId: data.wallet_id,
+        toWalletId: data.to_wallet_id ?? null,
+        type: data.type,
+        amount: data.amount,
+        title: data.title,
+        categoryTag: data.category_tag ?? null,
+        note: data.note ?? null,
+        occurredAt: data.occurred_at ? new Date(data.occurred_at) : new Date(),
+      })
+
+      // 3e. Update the balance in the SAME transaction
+      if (data.type === 'income') {
+        await tx.update(wallets)
+          .set({ balance: wallet.balance + data.amount })
+          .where(eq(wallets.id, data.wallet_id))
+      } else if (data.type === 'expense') {
+        await tx.update(wallets)
+          .set({ balance: wallet.balance - data.amount })
+          .where(eq(wallets.id, data.wallet_id))
+      } else {
+        // transfer: deduct source, credit destination
+        await tx.update(wallets)
+          .set({ balance: wallet.balance - data.amount })
+          .where(eq(wallets.id, data.wallet_id))
+        const [toWallet] = await tx
+          .select({ balance: wallets.balance })
+          .from(wallets)
+          .where(eq(wallets.id, data.to_wallet_id!))
+          .limit(1)
+        await tx.update(wallets)
+          .set({ balance: (toWallet?.balance ?? 0) + data.amount })
+          .where(eq(wallets.id, data.to_wallet_id!))
+      }
+
+      return row.insertId ? String(row.insertId) : crypto.randomUUID()
     })
 
-    if (error) {
-      // Log server-side WITHOUT amounts (PRD NR-SEC-6)
-      console.error('[createTransaction] rpc failed', error.code)
-      return { success: false, data: null, error: 'Gagal menyimpan transaksi.' }
-    }
-
-    // 5 ── Revalidate affected routes
+    // 4 ── Revalidate affected routes
     revalidatePath('/')
     revalidatePath('/wallets')
     revalidatePath('/insights')
 
-    return { success: true, data: data as Transaction, error: null }
-  } catch (err) {
-    console.error('[createTransaction] unexpected', err instanceof Error ? err.name : 'unknown')
-    return { success: false, data: null, error: 'Terjadi kesalahan tak terduga.' }
+    return { success: true, data: { id } }
+  } catch (e) {
+    // Log server-side WITHOUT amounts (PRD NR-SEC-6)
+    const msg = e instanceof Error ? e.message : 'UNKNOWN'
+    if (msg === 'INSUFFICIENT_BALANCE') {
+      return { success: false, error: { code: 'INSUFFICIENT_BALANCE', message: 'Saldo tidak cukup.' } }
+    }
+    if (msg === 'WALLET_NOT_FOUND') {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Dompet tidak ditemukan.' } }
+    }
+    console.error('[createTransaction]', msg)
+    return { success: false, error: { code: 'UNKNOWN', message: 'Terjadi kesalahan. Coba lagi.' } }
   }
 }
 ```
+
+> `requireUserId()` is the single authorization primitive (`lib/auth/session.ts`);
+> `auth` comes from `@/auth`, where the Auth.js v5 config lives
+> (exported alongside the handler in `app/api/auth/[...nextauth]/route.ts`).
+>
+> ```ts
+> // lib/auth/session.ts
+> import { auth } from '@/auth'
+>
+> /**
+>  * Resolve the signed-in user id, or null when unauthenticated.
+>  * MySQL has no Row Level Security, so every query MUST be scoped with
+>  * `eq(table.userId, userId)` — this check is the only thing preventing
+>  * cross-user data access.
+>  */
+> export async function requireUserId(): Promise<string | null> {
+>   const session = await auth()
+>   return session?.user?.id ?? null
+> }
+> ```
 
 **Non-negotiables:**
 - Validate **before** touching the DB.
@@ -263,7 +354,7 @@ export async function createTransaction(
 This is the most important sequence in the system. Optimistic-first, per PRD FR-LOG-6.
 
 ```
- USER              CLIENT                    SERVER                 SUPABASE
+ USER              CLIENT                    SERVER                  TIDB
   │                  │                         │                       │
   │ tap FAB          │                         │                       │
   ├─────────────────►│                         │                       │
@@ -282,11 +373,11 @@ This is the most important sequence in the system. Optimistic-first, per PRD FR-
   │  row visible     │                         │                       │
   │                  │ ② createTransaction()   │                       │
   │                  ├────────────────────────►│                       │
-  │                  │                         │ ③ Zod + auth          │
-  │                  │                         │ ④ rpc create_txn      │
+  │                  │                         │ ③ Zod + auth()        │
+  │                  │                         │ ④ BEGIN / insert      │
   │                  │                         ├──────────────────────►│
   │                  │                         │                       │ insert + balance
-  │                  │                         │◄──────────────────────┤ (ATOMIC)
+  │                  │                         │◄──────────────────────┤ COMMIT (ATOMIC)
   │                  │◄────────────────────────┤                       │
   │                  │ ⑤ success: reconcile id │                       │
   │                  │                         │                       │
@@ -565,13 +656,20 @@ Alternatives: Pages Router, or a pure SPA (Vite + React Router).
   (per `AGENTS.md` Next.js agent rules).
 
 ### Related
-- ADR-0002 (Supabase), ADR-0004 (Server Actions), ADR-0012 (middleware auth)
+- ADR-0002 (Supabase — superseded by ADR-0016), ADR-0004 (Server Actions),
+  ADR-0012 (middleware auth)
 
 ---
 
 ## ADR-0002: Use Supabase as Backend (Postgres + Auth + RLS)
 
-**Status:** Accepted
+**Status:** ~~Accepted~~ → **Superseded by ADR-0016** (2026-09-09).
+The stack has moved to **TiDB Cloud (MySQL) + Drizzle ORM + Auth.js v5**. Row-level
+security is no longer available, so per-user isolation is now enforced in the
+application layer: every query is scoped with `eq(table.userId, userId)` using the id
+returned by `requireUserId()`, and atomicity comes from Drizzle's `db.transaction()`
+instead of `SECURITY DEFINER` RPCs. **This ADR is kept verbatim below as a historical
+record** — see ADR-0016 for the current decision.
 
 ### Context
 We need auth, a relational store with strict per-user isolation, and atomic multi-table
@@ -1181,11 +1279,105 @@ destroy the very signal we need, and billing code would be rework.
 
 ---
 
+## ADR-0016: Use TiDB Cloud (MySQL) with Drizzle ORM and Auth.js v5
+
+**Status:** Accepted
+**Supersedes:** ADR-0002 (Supabase Postgres + Auth + RLS)
+
+### Context
+ADR-0002 chose Supabase for its Postgres + Auth + RLS bundle, with `SECURITY DEFINER`
+RPCs providing atomic balance updates (ADR-0008). The project now runs on **TiDB Cloud**
+(MySQL-compatible, distributed) instead. Two properties of that platform force the
+supporting decisions:
+
+1. **TiDB has no Row Level Security.** NR-SEC-1 (per-user isolation) can no longer be
+   enforced by the database. It must be enforced by application code.
+2. **No `SECURITY DEFINER` RPC layer is in use.** Atomicity for multi-table mutations
+   (ledger row + wallet balance) must come from a real `BEGIN` / `COMMIT` issued by the
+   app, not a stored procedure.
+
+Auth also moved from Supabase Auth to **Auth.js v5 (NextAuth)**, which supplies both the
+credential (email + password) and Google OAuth providers required by FR-AUTH-1/2 and is
+exported as `auth()` from `@/auth`.
+
+### Decision Drivers
+- **Must** provide row-level per-user isolation (NR-SEC-1) — now without RLS
+- **Must** support atomic transactions + balance updates (NR-REL-3, fixes PRD §11.4)
+- **Must** support auth: email/password + Google OAuth (FR-AUTH-1/2)
+- **Should** keep queries type-safe end to end (PRD NR-MAIN-1: no `any`)
+- **Should** survive serverless/edge connection churn without exhausting connections
+
+### Considered Options
+**Option 1: TiDB Cloud + Drizzle ORM + Auth.js v5 (chosen)**
+- Pros: Drizzle's `db.transaction()` issues genuine `BEGIN`/`COMMIT`/`ROLLBACK`; schema
+  is TypeScript, so types are derived rather than generated and drift is a compile error;
+  `mysql2` pooling is explicit and tunable; Auth.js v5 is framework-native to App Router.
+- Cons: No RLS — isolation is a code discipline, not a database guarantee; must write and
+  review `user_id` filters by hand.
+
+**Option 2: Keep Supabase (status quo)**
+- Pros: RLS and RPC already specified; nothing to rewrite.
+- Cons: Contradicts the platform already provisioned; would require migrating data back.
+
+**Option 3: Raw SQL with `mysql2` / a query builder like Knex**
+- Pros: No ORM abstraction; full control of statements.
+- Cons: Hand-written SQL strings lose type safety; `NR-MAIN-1` gets harder to honour;
+  more room for an unscoped `WHERE`.
+
+### Decision
+**TiDB Cloud (MySQL) as the datastore, accessed through Drizzle ORM
+(`drizzle-orm/mysql2`), with Auth.js v5 for authentication.**
+
+Per-user isolation is enforced in the application layer:
+
+- Every Server Action begins with `const userId = await requireUserId()` and returns
+  `UNAUTHENTICATED` when it is null.
+- Every `SELECT`, `UPDATE`, and `DELETE` is scoped with `eq(table.userId, userId)`.
+- Every balance-affecting mutation runs inside a single `db.transaction(async (tx) => …)`.
+
+### Rationale
+1. `db.transaction()` gives the same all-or-nothing guarantee the RPC layer provided,
+   and it is visible in the same file as the business logic — easier to review than a
+   stored procedure in a separate migration.
+2. Drizzle's TypeScript schema (`lib/db/schema.ts`) is the single source of truth, so a
+   renamed column is a type error instead of a runtime 500 (NR-MAIN-1).
+3. Auth.js v5 covers both required providers and integrates with the App Router and
+   `middleware.ts` route guards (ADR-0012) without a third-party cookie bridge.
+4. The `mysql2` pool is cached on `globalThis` in dev, which prevents the connection
+   exhaustion that hot reloads otherwise cause.
+
+### Consequences
+**Positive:** Real transactions; compile-time-checked queries; one fewer vendor in the
+auth path; schema and code live in the same repo and review pass.
+
+**Negative:** Per-user isolation is no longer a database guarantee — it is a convention
+every query must follow. A forgotten `eq(table.userId, userId)` is a cross-user data leak
+with no safety net.
+
+**Risks:** An unscoped query exposes another user's financial data.
+- *Mitigation:* `requireUserId()` is the only supported way to obtain a user id, and its
+  doc comment states the MySQL-has-no-RLS rule; the canonical pattern in §3.2 scopes
+  every statement; automated tests attempt a cross-user read/write on each resource and
+  expect failure (DATABASE-SPEC §12).
+- *Mitigation:* Prefer `assertUserId()` where a missing session is a programming error,
+  so the failure is loud in tests and CI.
+
+**Risks:** Balance and ledger diverge if a new mutation is written outside a transaction.
+- *Mitigation:* All mutations live in `lib/actions.ts` and go through `db.transaction()`;
+  no direct `db.insert`/`db.update` on `wallets` outside that file.
+
+### Related
+- Supersedes ADR-0002; replaces the RPC mechanism of ADR-0008 and the RLS policies of
+  ADR-0013 with app-layer equivalents.
+- ADR-0004 (Server Actions), ADR-0012 (middleware auth), DATABASE-SPEC.md
+
+---
+
 ## 11. ADR → Defect Map
 
 | ADR | Defect addressed (PRD §11) |
 | :--- | :--- |
-| ADR-0002 | 11.13 (schema conflict), 11.12 (unused data layer) |
+| ADR-0002 | 11.13 (schema conflict), 11.12 (unused data layer) — **superseded by ADR-0016** |
 | ADR-0003 | 11.12 (Zustand unused) |
 | ADR-0005 | 11.3 (`amount` lacks `.positive()`) |
 | ADR-0007 | 11.6 (dead `pb-safe`) — via `@utility` |
@@ -1196,6 +1388,7 @@ destroy the very signal we need, and billing code would be rework.
 | ADR-0013 | 11.13 (RLS `WITH CHECK`) |
 | ADR-0014 | 11.7-adjacent (theme scope) |
 | ADR-0015 | §10 monetization decision |
+| ADR-0016 | 11.13 (schema conflict), 11.4 (balance atomicity without RPC), 11.12 (unused data layer) — current backend |
 
 ---
 
@@ -1204,9 +1397,9 @@ destroy the very signal we need, and billing code would be rework.
 | Phase | Work | ADRs involved |
 | :--- | :--- | :--- |
 | R0 | Rename to KASDESK, add `middleware.ts`, routing skeleton, env setup | 0001, 0012 |
-| R1 | Zod fix, RPC migration, Quick Log + optimistic, wallet CRUD, fix 404s | 0003, 0005, 0008, 0010 |
+| R1 | Zod fix, `db.transaction()` migration, Quick Log + optimistic, wallet CRUD, fix 404s | 0003, 0005, 0008, 0010 |
 | R2 | Vaults, debts, split-bill, WhatsApp share | 0004, 0013 |
-| R3 | Insights, safe daily spend, 7-day chart | 0002 |
+| R3 | Insights, safe daily spend, 7-day chart | 0016 |
 | R4 | Gemini OCR proxy | 0011 |
 | R5 | PWA icons, offline queue, a11y pass, perf | 0006, 0007, 0009, 0014 |
 

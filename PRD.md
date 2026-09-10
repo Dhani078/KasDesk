@@ -29,7 +29,7 @@ useful as historical design intent, but **this PRD is the tie-breaker**.
 | `PRD.md` (this file) | **Authoritative** | What & why |
 | `ARCHITECTURE.md` | Derived | How the system is built (ADR set) |
 | `DESIGN-SYSTEM.md` | Derived | Visual & interaction specification |
-| `DATABASE-SPEC.md` | Derived | Schema, RLS, triggers, migrations |
+| `DATABASE-SPEC.md` | Derived | Schema, transactions, migrations (TiDB/MySQL) |
 | `SECURITY-SPEC.md` | Derived | Threat model, controls, compliance |
 | `AI-OCR-SPEC.md` | Derived | Gemini receipt scanning feature |
 | `QA-STRATEGY.md` | Derived | Test strategy, CI/CD, SLOs |
@@ -250,7 +250,7 @@ to 20–50 real users before building anything else.
 These are explicitly separated (per `before-you-build` guidance):
 
 - **Product risk is HIGH** (will users build a habit?).
-- **Engineering difficulty is LOW-to-MEDIUM.** The stack is mainstream (Next.js + Supabase),
+- **Engineering difficulty is LOW-to-MEDIUM.** The stack is mainstream (Next.js + TiDB Cloud (MySQL)),
   the four-pillar data model already exists in code, and the UI is a small number of screens.
 - **Implication:** engineering speed is *not* the bottleneck. Do not spend engineering
   effort on features that do not de-risk retention. Ship the logging loop, measure, then decide.
@@ -372,7 +372,7 @@ money — so he cannot accidentally spend his laptop fund. Progress bar moves vi
 
 | Release | Theme | Contents | Gate to Exit |
 | :--- | :--- | :--- | :--- |
-| **R0** | Foundation | Design tokens, routing skeleton, Supabase wiring, auth | Build + typecheck green |
+| **R0** | Foundation | Design tokens, routing skeleton, Drizzle/TiDB wiring, Auth.js | Build + typecheck green |
 | **R1** | **The Loop** | Quick log, wallet CRUD, transaction list, safe daily spend | p50 `t_log` ≤ 3s measured |
 | **R2** | Money Map | Vaults, debts, split-bill, WhatsApp share | 20 users complete journeys |
 | **R3** | Intelligence | Insights, 7-day flow, leakage alerts | G2 metric met |
@@ -442,18 +442,20 @@ Each requirement carries a **priority**: `P0` (blocker), `P1` (high), `P2` (medi
 | ID | Requirement | Priority |
 | :-- | :--- | :--- |
 | FR-AUTH-1 | User can sign up with **email + password** (min 8 chars) | P0 |
-| FR-AUTH-2 | User can sign in with **Google OAuth** via Supabase Auth | P0 |
+| FR-AUTH-2 | User can sign in with **Google OAuth** via Auth.js v5 | P0 |
 | FR-AUTH-3 | Session persists across reloads and browser restarts | P0 |
 | FR-AUTH-4 | Unauthenticated users are redirected to `/login` | P0 |
-| FR-AUTH-5 | Session refresh via **Next.js middleware** (per Supabase SSR) | P0 |
+| FR-AUTH-5 | Session refresh via **Next.js middleware** (Auth.js v5 JWT) | P0 |
 | FR-AUTH-6 | User can sign out, clearing all local state | P0 |
 | FR-AUTH-7 | New user gets seeded default data: 1 wallet ("Tunai") + default expense categories | P1 |
 | FR-AUTH-8 | Password reset flow via email | P1 |
 | FR-AUTH-9 | All routes except `/login`, `/auth/*` require auth | P0 |
 
-> **⚠️ Known defect addressed by FR-AUTH-5:** the current `lib/supabase/server.ts` silently
-> swallows cookie-set errors with a comment assuming middleware exists. No `middleware.ts`
-> exists in the repo. Without it, sessions will not persist. See §11.2.
+> **⚠️ Known defect addressed by FR-AUTH-5:** `lib/supabase/server.ts` has been deleted along
+> with the Supabase client; the session helper now lives in `lib/auth/session.ts`, which reads
+> the session via Auth.js v5 (`auth()`) and resolves the internal `user_id` from the JWT
+> subject. No `middleware.ts` exists in the repo. Without it, sessions will not persist across
+> navigation and every protected route reads as unauthenticated. See §11.2.
 
 ---
 
@@ -664,16 +666,16 @@ Format: `NR-<AREA>-<n>`
 | NR-REL-1 | Zero data loss on sync failure (queue is durable) |
 | NR-REL-2 | Wallet balances are always transaction-derived (no drift) |
 | NR-REL-3 | All mutations atomic (transaction + balance update in one RPC) |
-| NR-REL-4 | Graceful degradation if Supabase or Gemini is unavailable |
+| NR-REL-4 | Graceful degradation if TiDB or Gemini is unavailable |
 | NR-REL-5 | Uptime SLO 99.5% monthly (see `QA-STRATEGY.md`) |
 
 ### 7.4 Security & Privacy (NR-SEC)
 
 | ID | Requirement |
 | :-- | :--- |
-| NR-SEC-1 | RLS enabled on every table; `auth.uid() = user_id` enforced |
+| NR-SEC-1 | Every query filtered by user_id in the app layer (MySQL has no RLS) |
 | NR-SEC-2 | All Server Action inputs validated with **Zod** before DB access |
-| NR-SEC-3 | No raw SQL interpolation — Supabase ORM or parameterized RPC only |
+| NR-SEC-3 | No raw SQL interpolation — Drizzle ORM parameterized queries only |
 | NR-SEC-4 | Secrets only via env vars; **never** committed |
 | NR-SEC-5 | Receipt images never persisted (FR-OCR-7) |
 | NR-SEC-6 | No financial data in logs or analytics payloads |
@@ -698,7 +700,7 @@ Format: `NR-<AREA>-<n>`
 | ID | Requirement |
 | :-- | :--- |
 | NR-MAIN-1 | TypeScript `strict: true`; **`any` is forbidden** |
-| NR-MAIN-2 | All DB types generated from Supabase schema |
+| NR-MAIN-2 | All DB types derived from the Drizzle schema |
 | NR-MAIN-3 | Every architectural decision recorded as an ADR |
 | NR-MAIN-4 | Components composed, not prop-proliferated (per `vercel-composition-patterns`) |
 | NR-MAIN-5 | ESLint clean; no unused exports or dead code |

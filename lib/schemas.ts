@@ -56,7 +56,8 @@ export type TransactionInput = z.infer<typeof TransactionSchema>
 
 export const WalletSchema = z.object({
   name: z.string().trim().min(1, 'Nama wajib diisi').max(60),
-  type: z.enum(['cash', 'bank', 'e-wallet']),
+  // Matches the values actually stored by seeding + the DB column.
+  type: z.enum(['cash', 'bank', 'e_wallet', 'investment']),
   balance: z.number().int().min(0, 'Saldo tidak boleh negatif').max(100_000_000_000),
 })
 

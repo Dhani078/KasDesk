@@ -4,7 +4,7 @@
 **Last Updated:** 2026-09-09
 **Authoritative for:** test strategy, CI/CD pipeline, SLOs, incident response
 **Derived from:** `PRD.md` §8.4 (guardrail metrics), §11 (known defects)
-**Stack:** Next.js 16.3 · React 19 · TypeScript strict · Supabase · Zustand · Zod 4 · Tailwind v4
+**Stack:** Next.js 16.3 · React 19 · TypeScript strict · TiDB Cloud (MySQL) + Drizzle · Zustand · Zod 4 · Tailwind v4
 **⚠️ No test framework installed yet.**
 **Method skills:** `e2e-testing-patterns`, `javascript-testing-patterns`, `code-review-excellence`, `multi-reviewer-patterns`, `error-handling-patterns`, `deployment-pipeline-design`, `github-actions-templates`, `slo-implementation`, `incident-runbook-templates`, `dependency-upgrade`
 
@@ -34,7 +34,7 @@
             /\
            /E2E\           ~10%  Playwright — critical journeys only
           /─────\
-         / Integr\         ~30%  Testing Library + Supabase local
+         / Integr\         ~30%  Testing Library + TiDB branch DB
         /────────\
        /Unit Tests\        ~60%  Vitest — fast, isolated, many
       /────────────\
@@ -47,7 +47,7 @@
 | Level | Scope | Examples |
 | :--- | :--- | :--- |
 | **Unit** | Pure functions, no I/O | Zod schemas, currency format/parse, Safe Daily Spend, category logic |
-| **Integration** | Components + DB | Quick Log sheet rendering, Server Action + Supabase local, RLS policies |
+| **Integration** | Components + DB | Quick Log sheet rendering, Server Action + TiDB test DB, user_id scoping |
 | **E2E** | Full journeys | Login → log transaction → see it in feed; offline queue; scan receipt |
 
 ### 1.3 Tooling Decision (justified)
@@ -57,8 +57,8 @@
 | **Vitest** | Unit + component | Native ESM/TS, fast, Jest-compatible API, Vite-powered (matches Next's bundler era) |
 | **@testing-library/react** | Component tests | Encourages accessibility-first queries (`getByRole`) |
 | **Playwright** | E2E | Real browsers, mobile emulation, network offline simulation, trace viewer |
-| **Supabase CLI (local)** | DB integration | Real Postgres + RLS without touching prod |
-| **pgTAP** (optional) | RLS policy tests | Assert policies in-database |
+| **TiDB Cloud branching** (or a dedicated test schema) | DB integration | Real MySQL-compatible DB without touching prod (see §5.1) |
+| **Node test scripts (node:test)** | `user_id` scoping tests | Plain `mysql2` queries — no Supabase CLI, no pgTAP (MySQL has no RLS) |
 
 **Not chosen:** Jest (slower ESM setup), Cypress (heavier; Playwright's offline + mobile
 emulation is better for a PWA).
@@ -425,36 +425,108 @@ test('user can zoom (fixes §11.7)', async ({ page }) => {
 
 ---
 
-## 5. Database & RLS Testing
+## 5. Database & Authorization Testing
 
-### 5.1 Local Supabase
+> **TiDB/MySQL has no Row Level Security.** There is no database safety net:
+> authorization is enforced **only** by the `WHERE userId = ?` filter in the
+> application layer. Every query that touches user data MUST carry that filter.
+> These tests exist to prove the filter is present — and to show what leaks when
+> it is not.
+
+### 5.1 Test Database (TiDB branch)
 
 ```bash
-supabase start          # local Postgres + Auth + Studio
-supabase db reset       # apply migrations + seed
-supabase test db        # run pgTAP tests
-supabase db advisors    # security + performance lint
+# Preferred: create a branch database on TiDB Cloud and point the test env at it.
+# Fallback: a dedicated test schema (DATABASE_NAME=kasdesk_test) on any MySQL 8.
+
+npm run db:push                     # apply drizzle/ schema to the test DB
+npm run test:auth                   # existing smoke script pattern (scripts/*.js)
+node --test scripts/db-scoping.test.js   # §5.2 scoping tests
 ```
 
-### 5.2 RLS Policy Tests (SR-01, SR-02)
+Connection comes from the same `DATABASE_*` env vars the app uses
+(`DATABASE_HOST/PORT/USER/PASSWORD/NAME`, see `lib/db/index.ts`) — override
+`DATABASE_NAME` for the test run so prod data is never touched.
 
-```ts
-// tests/integration/rls.test.ts
-describe('RLS', () => {
-  it('user A cannot read user B transactions', async () => {
-    const { data } = await asUserA.from('transactions').select().eq('user_id', userB.id)
-    expect(data).toEqual([])
-  })
+### 5.2 `user_id` Scoping Tests (SR-01, SR-02)
 
-  it('user A cannot insert a row owned by user B (WITH CHECK)', async () => {
-    const { error } = await asUserA.from('transactions')
-      .insert({ user_id: userB.id, amount: 1000, ... })
-    expect(error).toBeTruthy()
-  })
+The database will happily return another user's row. These tests assert that the
+**query**, not the engine, is what stops it: seed a row owned by user B, then
+query as user A **with** the `userId` filter (must be empty) and **without** it
+(must be found — proving the filter is mandatory, not decorative).
 
-  it('every table has RLS enabled', async () => { /* query pg_tables */ })
+```js
+// scripts/db-scoping.test.js
+const { test, before } = require('node:test')
+const assert = require('node:assert/strict')
+const mysql = require('mysql2/promise')
+
+const pool = mysql.createPool({
+  host: process.env.DATABASE_HOST,
+  port: Number(process.env.DATABASE_PORT ?? 4000),
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+  database: process.env.DATABASE_NAME ?? 'kasdesk_test',
+  ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+})
+
+const USER_A = 'aaaaaaaa-0000-0000-0000-000000000001'
+const USER_B = 'bbbbbbbb-0000-0000-0000-000000000002'
+const ROW_ID = 'cccccccc-0000-0000-0000-000000000001'
+const WALLET_ID = 'dddddddd-0000-0000-0000-000000000001'
+
+/** A row that belongs to user B (seeded by the fixture below). */
+const rowOwnedByB = ROW_ID
+
+before(async () => {
+  await pool.execute(
+    `INSERT INTO transactions (id, userId, walletId, type, amount, title)
+     VALUES (?, ?, ?, 'expense', 1000, 'seed-B')
+     ON DUPLICATE KEY UPDATE userId = VALUES(userId)`,
+    [ROW_ID, USER_B, WALLET_ID],
+  )
+  // A wallet owned by B, so user A's scoped lookups must come back empty.
+  await pool.execute(
+    `INSERT INTO wallets (id, userId, name, type, balance)
+     VALUES (?, ?, 'wallet-B', 'cash', 0)
+     ON DUPLICATE KEY UPDATE userId = VALUES(userId)`,
+    [WALLET_ID, USER_B],
+  )
+})
+
+test('scoping: user A CANNOT read user B row — query carries the userId filter', async () => {
+  const [rows] = await pool.execute(
+    'SELECT id, userId FROM transactions WHERE id = ? AND userId = ?',
+    [rowOwnedByB, USER_A],
+  )
+  assert.deepEqual(rows, [], 'scoped query must not leak user B data to user A')
+})
+
+test('scoping: the SAME row IS returned WITHOUT the filter — filter is mandatory', async () => {
+  const [rows] = await pool.execute(
+    'SELECT id, userId FROM transactions WHERE id = ?', [rowOwnedByB],
+  )
+  assert.equal(rows.length, 1, 'unfiltered query must find the row')
+  assert.equal(rows[0].userId, USER_B,
+    'the DB has no RLS: only the WHERE clause stopped the leak')
+})
+
+test('scoping: every user-owned table is covered by a userId filter', async () => {
+  for (const t of ['wallets', 'transactions', 'categories', 'vaults', 'debts']) {
+    const [scoped] = await pool.execute(
+      `SELECT COUNT(*) AS n FROM ${t} WHERE userId = ?`, [USER_A],
+    )
+    const [all] = await pool.execute(`SELECT COUNT(*) AS n FROM ${t}`)
+    assert.ok(
+      scoped[0].n <= all[0].n,
+      `${t}: unfiltered count must be >= user-scoped count`,
+    )
+  }
 })
 ```
+
+**Rule proven by §5.2:** any Server Action or query missing its `userId` filter is
+a cross-user data leak. Reviewers must reject it (§7 dimension 2).
 
 ### 5.3 Atomic RPC Tests (P5)
 
@@ -486,7 +558,7 @@ export type ActionResponse<T> =
 | `VALIDATION_ERROR` | Field-level message | Highlight the field |
 | `UNAUTHENTICATED` | "Sesi berakhir. Silakan masuk lagi." | Redirect to `/login` |
 | `INSUFFICIENT_BALANCE` | "Saldo tidak cukup." | Block, offer adjust |
-| `RLS_DENIED` | "Tidak dapat mengakses data ini." | Log + toast |
+| `FORBIDDEN` | "Tidak dapat mengakses data ini." | Log + toast (not-owner / missing `userId` scope) |
 | `OCR_INVALID_RESPONSE` | "Struk tidak terbaca. Catat manual?" | Offer manual |
 | `OCR_RATE_LIMITED` | "Terlalu banyak scan. Coba lagi nanti." | Retry later |
 | `NETWORK_OFFLINE` | "Mode offline — tersimpan lokal." | Queue |
@@ -508,7 +580,7 @@ Every PR is reviewed across these dimensions:
 | # | Dimension | Check |
 | :-- | :--- | :--- |
 | 1 | **Correctness** | Does it do what the requirement says? Edge cases handled? |
-| 2 | **Security** | Zod validated? `user_id` server-derived? RLS respected? No secrets? |
+| 2 | **Security** | Zod validated? `userId` server-derived from session? Every query `userId`-scoped (no RLS safety net)? No secrets? |
 | 3 | **Data integrity** | Balance mutations via RPC only? Atomic? |
 | 4 | **Type safety** | No `any`; strict mode clean |
 | 5 | **Tests** | New logic has tests; critical paths covered |
@@ -534,8 +606,8 @@ Every PR is reviewed across these dimensions:
         ┌───────────────┬───────────────┬──────────────────┤
         ▼               ▼               ▼                  ▼
    ┌──────────┐   ┌──────────┐   ┌───────────┐   ┌──────────────┐
-   │   E2E    │   │  DB/RLS  │   │ SECURITY  │   │  LIGHTHOUSE  │
-   │(Playwright)│ │ (advisors)│  │(secrets,  │   │  (perf/a11y) │
+   │   E2E    │   │ DB/SCOPE │   │ SECURITY  │   │  LIGHTHOUSE  │
+   │(Playwright)│ │ (scoping) │  │(secrets,  │   │  (perf/a11y) │
    └──────────┘   └──────────┘   │ npm audit)│   └──────────────┘
                                   └───────────┘
                                         │
@@ -554,7 +626,7 @@ Every PR is reviewed across these dimensions:
 | Unit | `vitest run` | Any failure / coverage drop |
 | Build | `npm run build` | Build failure |
 | E2E | `playwright test` | Critical path failure |
-| DB/RLS | `supabase db advisors` + policy tests | RLS gap, unindexed FK |
+| DB/Scoping | `node --test scripts/db-scoping.test.js` | `userId` filter missing, unindexed FK |
 | Security | gitleaks + `npm audit` | Secret or high vuln |
 | Lighthouse | LHCI | Perf < 90 or A11y < 95 |
 
@@ -597,8 +669,12 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+          DATABASE_USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
 
   security:
     name: Security
@@ -626,13 +702,15 @@ jobs:
         with: { node-version: ${{ env.NODE_VERSION }}, cache: 'npm' }
       - run: npm ci
       - run: npx playwright install --with-deps
-      - name: Start Supabase local
-        run: npx supabase start
       - name: Run E2E
         run: npx playwright test
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+          DATABASE_USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -641,17 +719,21 @@ jobs:
           retention-days: 7
 
   db:
-    name: DB & RLS
+    name: DB & Scoping
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-      - run: supabase start
-      - run: supabase db reset
-      - name: Advisors
-        run: supabase db advisors --level error
-      - name: RLS policy tests
-        run: npx vitest run tests/integration/rls.test.ts
+      - uses: actions/setup-node@v4
+        with: { node-version: ${{ env.NODE_VERSION }}, cache: 'npm' }
+      - run: npm ci
+      - name: user_id scoping tests
+        run: node --test scripts/db-scoping.test.js
+        env:
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+          DATABASE_USER: ${{ secrets.DATABASE_USER }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME_TEST }}
 ```
 
 ### 8.3 Branch Strategy
@@ -666,7 +748,7 @@ jobs:
 
 ## 9. SLOs, SLIs & Error Budgets
 
-Per `slo-implementation`, adapted to Vercel/Supabase.
+Per `slo-implementation`, adapted to Vercel/TiDB Cloud.
 
 ### 9.1 SLIs & SLOs
 
@@ -679,7 +761,7 @@ Per `slo-implementation`, adapted to Vercel/Supabase.
 | **Action success rate** | successful Server Actions / total | **≥ 99%** |
 | **OCR success rate** | valid parse / attempts | ≥ 90% |
 | **Sync success rate** | queued items synced / queued | ≥ 99% |
-| **RLS correctness** | policy tests passing | **100%** (no budget) |
+| **Scoping correctness** | `user_id` scoping tests passing (§5.2) | **100%** (no budget) |
 
 ### 9.2 Error Budget
 
@@ -700,7 +782,7 @@ priority until the budget recovers.
 | OCR failure spike | success < 80% over 30 min | **P2** |
 | OCR cost | > 80% of monthly cap | **P2** |
 | Auth failures | login failure rate > 30% | **P1** |
-| DB advisors | any error-level finding | **P2** |
+| Scoping test failure | any `user_id` scoping test fails | **P2** |
 | Balance mismatch | reconciliation job detects drift | **P0** |
 
 ### 9.4 Reconciliation Job (P0 safeguard)
@@ -717,7 +799,7 @@ This is the safety net for the atomic-RPC requirement (§11.4).
 
 | Sev | Definition | Response | Examples |
 | :-- | :--- | :--- | :--- |
-| **P0** | Data loss/corruption, security breach, total outage | Immediate, all hands | Balance corruption, RLS leak |
+| **P0** | Data loss/corruption, security breach, total outage | Immediate, all hands | Balance corruption, cross-user data leak (missing `userId` scope) |
 | **P1** | Core feature down, many users | < 30 min | Cannot log transactions, auth down |
 | **P2** | Degraded / few users | < 4 h | OCR failing, slow load |
 | **P3** | Minor / cosmetic | Next business day | UI glitch |
@@ -761,9 +843,9 @@ This is the safety net for the atomic-RPC requirement (§11.4).
 ### 10.3 Common Runbooks Needed
 
 1. **Balance corruption** — stop writes, run reconciliation, restore from backup, patch.
-2. **Auth outage** — check Supabase status, verify middleware, communicate.
+2. **Auth outage** — check TiDB Cloud status, verify middleware, communicate.
 3. **OCR cost runaway** — disable endpoint via feature flag, rotate key, investigate.
-4. **RLS leak** — **P0**, revoke keys, patch policy, audit access logs, UU PDP notify.
+4. **Cross-user data leak** — **P0**, patch the missing `userId` filter, audit access logs, UU PDP notify.
 
 ### 10.4 Feature Flags
 
@@ -823,7 +905,7 @@ A story is Done when:
 
 | Defect | Verification |
 | :--- | :--- |
-| **§11.1** `.env.local` missing | App boots with real Supabase creds; login works |
+| **§11.1** `.env.local` missing | App boots with real TiDB `DATABASE_*` creds; login works |
 | **§11.2** no `middleware.ts` | E2E: session survives 30 min idle (§4.3) |
 | **§11.3** `amount` no `.positive()` | Unit: 0 and −5000 rejected (§2.1) |
 | **§11.4** balance never updates | E2E: balance changes after transaction; delete reverses (§4.4) |
@@ -834,7 +916,7 @@ A story is Done when:
 | **§11.9** 3 routes 404 | E2E: `/wallets`, `/vaults`, `/insights` return 200 |
 | **§11.10** FAB no handler | Component test: clicking FAB opens Quick Log (§3.2) |
 | **§11.11** name mismatch | `package.json` = `kasdesk`; metadata title = `KASDESK` |
-| **§11.12** no atomic RPC | RLS/RPC test: only `log_transaction()` mutates balance |
+| **§11.12** no atomic RPC | Scoping/balance test: only the transaction path mutates balance |
 
 ### 12.2 Test Coverage Targets
 
