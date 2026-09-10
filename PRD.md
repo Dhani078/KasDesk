@@ -914,6 +914,7 @@ before the corresponding release ships. Full remediation detail lives in the der
 | 11.19 | **Lost-update race in balance mutation** (found during 11.4 work, not previously documented): read-modify-write let concurrent expenses overwrite each other — 10×Rp 1.000 from Rp 10.000 left Rp 8.000 | `scripts/test-concurrency.js` | Done | FR-WLT-5 |
 | 11.20 | **Vaults were read-only** — `getVaults` existed but there was no way to create a target or allocate funds, while PRD §6.7 subtracts vault allocations from spendable money. Fixed: `createVault`/`depositToVault`/`withdrawFromVault` move real wallet balance so money is never counted twice | `test:vaults` (13/13) | Done | FR-VLT-2 |
 | 11.21 | **No way to correct a mistyped transaction** — `deleteTransaction` existed but no UI called it, so a wrong amount corrupted the balance permanently. Fixed: delete button + confirm dialog on wallet detail | `test:delete` (12/12) | Done | FR-LOG-6 |
+| 11.22 | **Self-transfer accepted + stale wallet detail** — transferring a wallet to itself silently succeeded (no money moved, but a row was written); `createTransaction`/`deleteTransaction` also never revalidated `/wallets/[id]`, so the detail page showed stale balances | `test:transfer` (10/10) | Done | FR-TRF-1 |
 | 11.17 | Repo has 1 commit; all project work uncommitted | `git status` | R0 | §13 |
 | 11.18 | XAMPP/Apache cannot run this app (Node.js, not PHP) | Project location | — | §13 |
 
