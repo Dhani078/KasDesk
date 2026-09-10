@@ -9,6 +9,15 @@ import { verifyPassword } from '@/lib/auth/password'
 import { registerSchema } from '@/lib/schemas'
 
 /**
+ * The handle drizzle passes into `db.transaction(async (tx) => ...)`.
+ *
+ * Typed from the real callback parameter so it stays correct if the schema or
+ * drizzle version changes. `seedNewUser` accepts one so the caller can run it
+ * inside the same transaction as the user insert.
+ */
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
  * Node-runtime Auth.js instance. Used by Server Components, Server
  * Actions and the route handler  never by middleware (see `auth.edge.ts`).
  *
@@ -51,11 +60,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 })
 
 /**
- * Seed a brand-new user with a default wallet and the system categories.
- * Called by `registerUser` and the `signIn` safety net below.
+ * Give a brand-new user a starter wallet and the system categories.
+ *
+ * `tx` lets the caller run this inside the same transaction as the user
+ * insert — see registerUser(). When omitted it runs on its own connection.
  */
-export async function seedNewUser(userId: string, name?: string | null) {
-  await db.insert(wallets).values({
+export async function seedNewUser(
+  userId: string,
+  name?: string | null,
+  tx?: Tx,
+) {
+  const exec = (tx ?? db) as typeof db
+  await exec.insert(wallets).values({
     userId,
     name: 'Tunai',
     type: 'cash',
@@ -74,7 +90,7 @@ export async function seedNewUser(userId: string, name?: string | null) {
     { name: 'GAJI', kind: 'income', sortOrder: 9 },
   ]
 
-  await db.insert(categories).values(
+  await exec.insert(categories).values(
     system.map((c) => ({
       userId,
       name: c.name,
@@ -105,17 +121,29 @@ export async function registerUser(input: {
     .limit(1)
   if (existing) return null
 
+  // Password hashing happens outside the transaction: bcrypt is slow, and
+  // holding a DB transaction open across it would keep a connection busy for
+  // ~100ms under load.
+  const passwordHash = await hashPasswordSafe(parsed.data.password)
   const id = crypto.randomUUID()
-  await db.insert(users).values({
-    id,
-    email,
-    name: parsed.data.name ?? null,
-    passwordHash: await hashPasswordSafe(parsed.data.password),
-    locale: 'id-ID',
-    currency: 'IDR',
+
+  // The user row and its seed data (starter wallet + system categories) must
+  // land together. Previously these were two separate inserts: a failure in
+  // between created a user who could log in but had no wallet and no
+  // categories — permanently broken, because nothing ever re-runs the seed.
+  await db.transaction(async (tx) => {
+    await tx.insert(users).values({
+      id,
+      email,
+      name: parsed.data.name ?? null,
+      passwordHash,
+      locale: 'id-ID',
+      currency: 'IDR',
+    })
+
+    await seedNewUser(id, parsed.data.name, tx)
   })
 
-  await seedNewUser(id, parsed.data.name)
   return { id }
 }
 
