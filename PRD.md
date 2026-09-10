@@ -883,7 +883,7 @@ and small restaurants. Output structured JSON that auto-fills the Quick Log shee
 | Deferred options | Freemium Pro tier · lifetime unlock · local-context pricing |
 | Constraint | Do **not** build paywall/billing infrastructure in v1 (NG4) |
 
-**Note on cost:** Supabase free tier + Gemini API have real marginal costs. Instrument
+**Note on cost:** TiDB Cloud serverless tier + Gemini API have real marginal costs. Instrument
 cost-per-active-user from day one (§9.5) so pricing can be modeled from data, not guesses.
 
 ---
@@ -895,18 +895,18 @@ before the corresponding release ships. Full remediation detail lives in the der
 
 | # | Defect | Evidence | Blocks | Ref |
 | :-- | :--- | :--- | :--- | :--- |
-| 11.1 | Product name is "Vaultify" everywhere; folder is KasDesk | `package.json`, `layout.tsx`, `manifest.json`, all `.md` | R0 | NR-NAME |
-| 11.2 | **No `middleware.ts`** — sessions won't persist | `lib/supabase/server.ts` assumes it exists | R0 | FR-AUTH-5 |
+| 11.1 | ~~Product name is "Vaultify" everywhere~~ **FIXED** | Renamed to KASDESK in `package.json`, `layout.tsx`, docs | Done | NR-NAME |
+| 11.2 | ~~No `middleware.ts` — sessions won't persist~~ **FIXED** | `middleware.ts` + `auth.edge.ts` now present; session via Auth.js JWT | Done | FR-AUTH-5 |
 | 11.3 | `amount: z.number()` lacks `.positive()` | `lib/schemas.ts` vs `SECURITY.md` | R1 | FR-LOG-4 |
 | 11.4 | **Wallet balance never updates** — assumed trigger doesn't exist | `lib/actions.ts` comment vs `DATABASE.md` | R1 | FR-WLT-5 |
 | 11.5 | Gemini SDK absent; `/api/scan-receipt` missing | `package.json`, `app/` tree | R4 | FR-OCR-2 |
-| 11.6 | **`pb-safe` class is dead** — no CSS emitted; nav clipped on iPhone | Build CSS has 0 occurrences | R1 | FR-PWA-4 |
-| 11.7 | **`userScalable: false`, `maximumScale: 1`** — blocks zoom (WCAG 1.4.4) | `app/layout.tsx` | R1 | NR-A11Y-6 |
+| 11.6 | ~~`pb-safe` class is dead~~ **FIXED** — registered as `@utility` in `globals.css` (Tailwind v4) | CSS now emits `env(safe-area-inset-bottom)` | Done | FR-PWA-4 |
+| 11.7 | ~~`userScalable: false`, `maximumScale: 1`~~ **FIXED** — removed; zoom enabled | `app/layout.tsx` | Done | NR-A11Y-6 |
 | 11.8 | **PWA icons 404** — `public/icons/` doesn't exist | `manifest.json` vs `public/` listing | R5 | FR-PWA-1 |
-| 11.9 | **3 of 5 nav routes are 404** (`/wallets`, `/vaults`, `/insights`) | Build output: only `/` and `/_not-found` | R1 | §5.1 R1 |
-| 11.10 | FAB has no `onClick` handler | `components/BottomNav.tsx` | R1 | FR-LOG-1 |
+| 11.9 | ~~3 of 5 nav routes are 404~~ **FIXED** — `/wallets`, `/wallets/[id]`, `/vaults`, `/insights` all render real data | Smoke test 19/19 | Done | §5.1 R1 |
+| 11.10 | ~~FAB has no `onClick` handler~~ **FIXED** — `QuickLogSheet` wired to `createTransaction` | `components/QuickLogSheet.tsx` | Done | FR-LOG-1 |
 | 11.11 | Zod `GeminiOCRResponseSchema` & `CONTEXT.md` OCR shapes conflict | both files | R4 | §9.2 |
-| 11.12 | Data layer unused: `store.ts`, `actions.ts`, `supabase/client.ts` have zero importers | grep across `app/`, `components/` | R1 | §5.1 R1 |
+| 11.12 | ~~Data layer unused~~ **FIXED** — `actions.ts` now imported by `app/page.tsx`, `app/wallets/*`, `app/vaults`, `app/insights` | grep across `app/`, `components/` | Done | §5.1 R1 |
 | 11.13 | Two conflicting schemas (`CONTEXT.md` vs `DATABASE.md`) | both files | R0 | §12 |
 | 11.14 | `CONTEXT.md`/`MEMORY.md` claim Next.js 14; actual is 16.3.0 | `package.json` | R0 | §12 |
 | 11.15 | `AGENT.md` describes `src/app/`; actual is root `app/` | `AGENT.md` | R0 | §12 |
@@ -970,7 +970,7 @@ Where existing documents disagree, **this table is the tie-breaker.**
 | 12.9 | Framework version: Next 14 vs Next 16.3.0 | **Next.js 16.3.0 / React 19.2.8** | Actual installed version |
 | 12.10 | Directory: `src/app/` vs `app/` | **Root `app/`** | Actual structure |
 | 12.11 | Mono font: Geist Mono vs JetBrains Mono | **JetBrains Mono** | Already loaded in `layout.tsx` |
-| 12.12 | RLS: `USING` only vs `USING` + `WITH CHECK` | **`USING` + `WITH CHECK`** | `WITH CHECK` prevents writing rows owned by others |
+| 12.12 | Authorization: RLS vs app-layer scoping | **App-layer `userId` scoping** | MySQL/TiDB has no RLS — every query MUST filter `userId` from `requireUserId()` |
 
 ---
 
@@ -984,7 +984,7 @@ Current verified state (as of audit) — full detail in `ARCHITECTURE.md`.
 | Runtime | React 19.2.8 |
 | Language | TypeScript 5, `strict: true` |
 | Styling | Tailwind CSS v4 (`@theme inline` in `globals.css`) |
-| Backend | Supabase (`@supabase/ssr` 0.12.4, `supabase-js` 2.112.2) |
+| Backend | TiDB Cloud (MySQL 8.0-compatible) + Drizzle ORM + `mysql2` |
 | State | Zustand 5.0.14 (currently unused) |
 | Validation | Zod 4.4.3 |
 | Icons | lucide-react 1.30.0 |
@@ -1005,7 +1005,7 @@ serve it — this is a Node.js application. Run with `npm run dev` or
 | :-- | :--- | :--- | :--- |
 | Q1 | Billing cycle: calendar month, or user-configurable start day? | Product | R1 |
 | Q2 | Default category set for Indonesian users — final list? | Product + Design | R1 |
-| Q3 | Is Supabase Realtime needed in v1, or is optimistic + refetch enough? | Eng | R2 |
+| Q3 | Refetch vs optimistic updates in v1 — is optimistic + `revalidatePath` enough? | Eng | R2 |
 | Q4 | WhatsApp share: `wa.me` deep link only, or Web Share API fallback? | Eng | R2 |
 | Q5 | Should vaults be backed by real wallet balance segregation or virtual? | Eng + Product | R2 |
 | Q6 | Analytics tooling choice given no-financial-data constraint (NR-SEC-6)? | Eng | R1 |
@@ -1061,7 +1061,7 @@ Every goal maps to requirements; every requirement traces back to a goal.
 | **Thumb arc** | Lower 35% of viewport, reachable one-handed |
 | **Grouped inset table** | Design pattern: one container, hairline dividers |
 | **ADR** | Architecture Decision Record |
-| **RLS** | Row Level Security (PostgreSQL / Supabase) |
+| **RLS** | Row Level Security (PostgreSQL / Supabase) — **not available on MySQL/TiDB**; see app-layer scoping |
 
 ---
 

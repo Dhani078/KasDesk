@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'KASDESK',
-  description: "High-density, mobile-first PWA for personal finance tracking.",
+  description: "PWA keuangan pribadi mobile-first: catat pengeluaran harian, kelola dompet, tabungan, dan utang.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="id"
       className={`${inter.variable} ${jetbrainsMono.variable} dark antialiased`}
     >
       <body className="min-h-full flex flex-col bg-canvas text-text-primary">
