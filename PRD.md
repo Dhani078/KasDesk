@@ -553,7 +553,7 @@ Each requirement carries a **priority**: `P0` (blocker), `P1` (high), `P2` (medi
 
 | ID | Requirement | Priority |
 | :-- | :--- | :--- |
-| FR-INS-1 | **Safe Daily Spend** = (spendable cash − vault allocations) ÷ days left in cycle | P0 |
+| FR-INS-1 | **Safe Daily Spend** = (spendable cash − vault allocations − upcoming debts) ÷ days left in cycle | P0 |
 | FR-INS-2 | Displayed prominently on home as the hero secondary metric | P0 |
 | FR-INS-3 | **Runway:** days remaining at average daily burn rate | P1 |
 | FR-INS-4 | **7-day spending flow** — compact vertical bar chart (no pie charts) | P1 |
@@ -563,13 +563,23 @@ Each requirement carries a **priority**: `P0` (blocker), `P1` (high), `P2` (medi
 **Safe Daily Spend formula (authoritative):**
 
 ```
-spendable        = Σ(balance of active wallets) − Σ(vault.current_amount)
+spendable        = Σ(balance of active wallets)
+                 − Σ(vault.current_amount)
+                 − Σ(unpaid debts due this cycle)
 days_left        = days remaining in the current billing cycle (default: calendar month)
-safe_daily_spend = max(0, spendable / days_left)
+safe_daily_spend = max(0, floor(spendable / max(1, days_left)))
 ```
+
+**Guards:**
+- `days_left` is clamped to a minimum of 1 (prevents divide-by-zero at month end)
+- Result is clamped to a minimum of 0 (never shows a negative "safe" amount)
+- Result is floored to whole rupiah
 
 If `days_left ≤ 0`, fall back to next month's cycle.
 If a user has set a cycle start day (v2), use it; v1 uses calendar month.
+
+> This definition is authoritative and matches `DATABASE-SPEC.md` §9.1
+> and the unit tests in `QA-STRATEGY.md` §2.3.
 
 ---
 

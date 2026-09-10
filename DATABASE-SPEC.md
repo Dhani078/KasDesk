@@ -1,800 +1,365 @@
-# KASDESK — Database Specification (Supabase PostgreSQL)
+# KASDESK — Database Specification (TiDB Cloud / MySQL)
 
-**Status:** Draft v1.0
-**Last Updated:** 2026-09-09
-**Authoritative for:** schema, RLS, RPC, migrations, Zod alignment
-**Supersedes:** `DATABASE.md`, `SCHEMAS.md` (both marked superseded)
-**Derived from:** `PRD.md` (see §12 Resolved Conflicts)
+**Status:** v2.0 — rewritten for MySQL
+**Last Updated:** 2026-09-10
+**Authoritative for:** schema, transactions, migrations, Zod alignment
+**Supersedes:** v1.0 (Supabase PostgreSQL) and `DATABASE.md`
 
-> ⚠️ Per the `supabase` skill: *"Supabase changes frequently — verify against changelog
-> and current docs before implementing. Do not rely on training data."*
-> Before running any DDL below, fetch `https://supabase.com/changelog.md` and scan for
-> `breaking-change` tags.
+> ⚠️ **v1.0 of this document described PostgreSQL/Supabase. That stack was
+> replaced.** The live database is **TiDB Cloud v8.5.3** (MySQL-compatible).
+> Any remaining PostgreSQL syntax in this repo is stale — do not use it.
+
+---
+
+## 0. Stack Change & Rationale
+
+| Aspect | v1.0 (old) | v2.0 (current) |
+| :--- | :--- | :--- |
+| Engine | PostgreSQL (Supabase) | **TiDB Cloud v8.5.3** (MySQL-compatible) |
+| Wire protocol | Postgres | **MySQL** |
+| Driver | `@supabase/supabase-js` | **`mysql2`** |
+| ORM | — | **Drizzle ORM** |
+| Auth | Supabase Auth (`auth.uid()`) | **Auth.js — app-layer `user_id`** |
+| Authorization | **RLS policies** | **App-layer `WHERE user_id = ?`** |
+| Money type | `numeric(15,2)` | **`BIGINT` (whole IDR)** |
+| PK type | `uuid` | **`CHAR(36)`** |
+| Migrations | Supabase CLI / SQL | **`scripts/migrate.js`** |
+
+### 0.1 The Critical Consequence: No Row Level Security
+
+MySQL/TiDB **has no RLS**. Supabase leaned on it as the authorization
+boundary. We do not have it, so:
+
+> **Every query MUST filter by `user_id` in the application layer.**
+> There is no database safety net. A missing `WHERE user_id = ?` is a
+> data leak across all users.
+
+This is the single most important rule in this document.
+
+### 0.2 Why `BIGINT` for Money (not `DECIMAL`)
+
+IDR has no minor unit in practice — prices are whole rupiah (sen was
+discontinued). Storing whole rupiah in `BIGINT` gives:
+
+- Exact integer arithmetic (no float drift)
+- Faster comparisons and indexes than `DECIMAL`
+- `±9.22 × 10^18` range — effectively unbounded
+
+**Rule:** store **whole rupiah**. Never store fractions. Format at the
+presentation layer only.
+
+| Amount | Stored |
+| :--- | :--- |
+| Rp 14.250.000 | `14250000` |
+| Rp 35.000 | `35000` |
 
 ---
 
 ## 1. Design Principles
 
-### 1.1 Type Mandates (from `postgresql-table-design`)
+### 1.1 Type Mandates
 
-The skill publishes an explicit **banned types** list. These are ADR-blocking:
-
-| ❌ Banned | ✅ Required | Reason |
+| ✅ Use | ❌ Avoid | Why |
 | :--- | :--- | :--- |
-| `money` | `numeric` | `money` is locale-dependent and loses precision semantics |
-| `timestamp` (no tz) | `timestamptz` | Ambiguous across timezones |
-| `char(n)` / `varchar(n)` | `text` | No perf benefit in Postgres; length limits via `CHECK` |
-| `timetz` | `timestamptz` | `timetz` is a known Postgres anti-pattern |
-| `timestamptz(0)` | `timestamptz` | Do not specify precision |
-| `serial` | `generated always as identity` | Modern standard, clearer privileges |
+| `BIGINT` | `FLOAT` / `DOUBLE` | Money must never be floating point |
+| `BIGINT` (whole IDR) | `DECIMAL` | No sen in IDR; integer is faster & exact |
+| `DATETIME(3)` | `TIMESTAMP` | `TIMESTAMP` has a 2038 limit |
+| `CHAR(36)` | `BINARY(16)` | UUIDs stored as readable text |
+| `VARCHAR(n)` | `TEXT` | Length-bounded; indexable |
+| `TINYINT` | `BOOLEAN` | MySQL `BOOLEAN` is an alias for `TINYINT(1)` |
+| `utf8mb4` | `utf8` | `utf8` is 3-byte and breaks emoji |
 
-Core guidance (verbatim): *"Prefer **TIMESTAMPTZ** for event time; **NUMERIC** for money;
-**TEXT** for strings; **BIGINT** for integer values."*
+### 1.2 Naming Conventions
 
-### 1.2 Currency Representation — Decision
+- Tables: **plural**, `snake_case` — `transactions`, `wallets`
+- Columns: `snake_case` in SQL, **camelCase** in the Drizzle schema
+  (Drizzle maps them automatically)
+- Timestamps: `created_at`, `updated_at`, `occurred_at`
+- Foreign keys: `<entity>_id`
+- Indexes: `<table>_<cols>_idx`, unique as `..._uq`
 
-**Decision: store IDR as `numeric(15,2)`, not `bigint`.**
+### 1.3 Enums: `VARCHAR` + app validation, not MySQL `ENUM`
 
-| Option | Verdict | Reasoning |
-| :--- | :--- | :--- |
-| `numeric(15,2)` | ✅ **Chosen** | Exact decimal arithmetic. Handles the (rare but real) cases with sen/rupiah fractions, e.g. fuel prices (Rp 12.350,50), PPN rounding (11%), and e-wallet topup fees. Max Rp 999.999.999.999,99 — far beyond any personal balance. |
-| `bigint` (rupiah units) | ❌ Rejected | Rejects fractional rupiah. Would force premature rounding on PPN 11% calculations, creating cent-level drift that is *very* hard to debug in financial data. |
-| `float` / `double` | ❌ Rejected | Binary floating point cannot represent decimal money exactly. Never acceptable for finance. |
-| `money` type | ❌ Rejected | Banned by the skill; locale-dependent output. |
-
-**Enforce non-negative and > 0 at the constraint level** (fixes PRD §11.3 — see §5.2).
-
-### 1.3 Naming Conventions
-
-| Rule | Example |
-| :--- | :--- |
-| Tables: plural, snake_case | `wallets`, `transactions` |
-| Columns: snake_case | `target_amount`, `created_at` |
-| PK: always `id uuid` | `id uuid primary key default gen_random_uuid()` |
-| FK: `<entity>_id` | `wallet_id`, `category_id` |
-| Timestamps: `created_at`, `updated_at` | both `timestamptz` |
-| Booleans: `is_` / `has_` prefix | `is_paid`, `is_active` |
-| Enums via `text` + `CHECK` | See §1.4 |
-
-### 1.4 Enums: `text` + `CHECK`, not PG enum type
-
-**Decision:** use `text` with `CHECK` constraints rather than native `CREATE TYPE ... AS ENUM`.
-
-Rationale:
-- Native PG enums cannot have values removed or reordered without `ALTER TYPE` gymnastics.
-- `text` + `CHECK` allows additive migration with zero downtime (add value → deploy → use).
-- Supabase generated types handle both, but `text` avoids enum-drift between DB and TS.
-
-Enum values (authoritative per PRD §12.2):
-
-| Table | Column | Values |
-| :--- | :--- | :--- |
-| `wallets` | `type` | `cash`, `bank`, `e-wallet` |
-| `transactions` | `type` | `income`, `expense`, `transfer` |
-| `debts` | `type` | `piutang`, `utang` |
-| `categories` | `type` | `income`, `expense` |
+MySQL `ENUM` requires `ALTER TABLE` to change — bad for evolving
+categories. Use `VARCHAR` and validate with **Zod** at the app layer.
 
 ---
 
 ## 2. Schema — Complete DDL
 
-### 2.0 Extensions & Helpers
+> The canonical, executable version lives at
+> **`drizzle/0000_init.sql`** (applied via `npm run db:push`).
+> The TypeScript source of truth is **`lib/db/schema.ts`**.
+
+### 2.1 `users`
 
 ```sql
--- ============================================================
--- 000_base.sql
--- ============================================================
-
-create extension if not exists "pgcrypto";   -- gen_random_uuid()
-
--- Generic updated_at trigger function
-create or replace function public.set_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at := now();
-  return new;
-end;
-$$;
-
--- Returns the current authenticated user id (used by RLS)
--- Wrapped so policies read cleanly and stay index-friendly.
-create or replace function public.uid()
-returns uuid
-language sql
-stable
-as $$
-  select auth.uid();
-$$;
+CREATE TABLE `users` (
+  `id`            CHAR(36)      NOT NULL,
+  `email`         VARCHAR(255)  NOT NULL,
+  `name`          VARCHAR(120)  DEFAULT NULL,
+  `image`         VARCHAR(500)  DEFAULT NULL,
+  `emailVerified` DATETIME(3)   DEFAULT NULL,
+  `passwordHash`  VARCHAR(255)  DEFAULT NULL,
+  `locale`        VARCHAR(8)    NOT NULL DEFAULT 'id-ID',
+  `currency`      CHAR(3)       NOT NULL DEFAULT 'IDR',
+  `createdAt`     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt`     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                                ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `users_email_uq` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-> **Note on `auth.uid()`:** the `supabase-postgres-best-practices` skill recommends
-> wrapping `auth.uid()` in a `select` (as above) so the planner can cache it per-statement.
-> Always qualify it `(select auth.uid())` in policies.
+`passwordHash` is nullable: OAuth-only users have no password.
 
----
-
-### 2.1 `categories`
-
-New table (per PRD §12.3 — categories are in v1, `profiles` deferred).
+### 2.2 `accounts` (OAuth links)
 
 ```sql
--- ============================================================
--- 001_categories.sql
--- ============================================================
-
-create table public.categories (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid references auth.users(id) on delete cascade,  -- NULL = system default
-  name        text not null,
-  slug        text not null,          -- uppercase tag, e.g. 'MAKAN'
-  type        text not null check (type in ('income','expense')),
-  icon        text,                   -- lucide icon name, optional
-  sort_order  integer not null default 0,
-  is_system   boolean not null default false,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-
-  -- slug is the machine tag rendered as [MAKAN]; must be uppercase-safe
-  constraint categories_slug_format check (slug ~ '^[A-Z0-9_]{1,20}$'),
-  constraint categories_unique_per_user unique (user_id, slug, type)
-);
-
-create index idx_categories_user_type
-  on public.categories (user_id, type, sort_order);
-
-create trigger trg_categories_updated_at
-  before update on public.categories
-  for each row execute function public.set_updated_at();
+CREATE TABLE `accounts` (
+  `id`                CHAR(36)      NOT NULL,
+  `userId`            CHAR(36)      NOT NULL,
+  `provider`          VARCHAR(32)   NOT NULL,
+  `providerAccountId` VARCHAR(255)  NOT NULL,
+  `accessToken`       VARCHAR(1000) DEFAULT NULL,
+  `refreshToken`      VARCHAR(1000) DEFAULT NULL,
+  `expiresAt`         BIGINT        DEFAULT NULL,
+  `createdAt`         DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `accounts_provider_uq` (`provider`, `providerAccountId`),
+  KEY `accounts_user_idx` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Why `user_id` is nullable:** system-seeded categories (`is_system = true`) are shared
-across all users with `user_id = null`. This avoids duplicating 8 rows per user and lets
-us add a default category globally later.
-
----
-
-### 2.2 `wallets`
+### 2.3 `sessions`
 
 ```sql
--- ============================================================
--- 002_wallets.sql
--- ============================================================
-
-create table public.wallets (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  name        text not null,
-  type        text not null check (type in ('cash','bank','e-wallet')),
-  balance     numeric(15,2) not null default 0.00,
-  icon        text,
-  color       text,
-  is_active   boolean not null default true,   -- archived instead of deleted
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
-
-  constraint wallets_name_length check (char_length(name) between 1 and 50),
-  -- Balance may go negative (overdraft reality) but must stay sane
-  constraint wallets_balance_range check (balance >= -1000000000 and balance <= 1000000000)
-);
-
--- Primary read pattern: "all active wallets for this user"
-create index idx_wallets_user_active
-  on public.wallets (user_id)
-  where is_active = true;
-
-create trigger trg_wallets_updated_at
-  before update on public.wallets
-  for each row execute function public.set_updated_at();
+CREATE TABLE `sessions` (
+  `id`           CHAR(36)     NOT NULL,
+  `userId`       CHAR(36)     NOT NULL,
+  `sessionToken` VARCHAR(255) NOT NULL,
+  `expires`      DATETIME(3)  NOT NULL,
+  `createdAt`    DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `sessions_token_uq` (`sessionToken`),
+  KEY `sessions_user_idx` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Design note:** `is_active` (soft delete) rather than hard delete, because transactions
-reference wallets. Deleting a wallet would cascade-delete financial history — unacceptable.
-PRD FR-WLT-4 requires exactly this.
-
----
-
-### 2.3 `transactions`
+### 2.4 `categories`
 
 ```sql
--- ============================================================
--- 003_transactions.sql
--- ============================================================
-
-create table public.transactions (
-  id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null references auth.users(id) on delete cascade,
-  wallet_id     uuid not null references public.wallets(id) on delete restrict,
-  category_id   uuid references public.categories(id) on delete set null,
-  title         text not null,
-  amount        numeric(15,2) not null,
-  type          text not null check (type in ('income','expense','transfer')),
-  category_tag  text not null default 'LAINNYA',
-  note          text,
-  -- For transfers: the counterparty wallet
-  to_wallet_id  uuid references public.wallets(id) on delete restrict,
-  occurred_at   timestamptz not null default now(),
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now(),
-
-  -- *** FIXES PRD §11.3: amount must be strictly positive ***
-  constraint transactions_amount_positive check (amount > 0),
-  constraint transactions_title_length check (char_length(title) between 1 and 100),
-  constraint transactions_tag_format check (category_tag ~ '^[A-Z0-9_]{1,20}$'),
-  constraint transactions_note_length check (note is null or char_length(note) <= 200),
-
-  -- A transfer must have a destination wallet; a non-transfer must not
-  constraint transfers_need_destination check (
-    (type = 'transfer' and to_wallet_id is not null and to_wallet_id <> wallet_id)
-    or
-    (type <> 'transfer' and to_wallet_id is null)
-  )
-);
+CREATE TABLE `categories` (
+  `id`        CHAR(36)    NOT NULL,
+  `userId`    CHAR(36)    NOT NULL,
+  `name`      VARCHAR(32) NOT NULL,
+  `kind`      VARCHAR(8)  NOT NULL,
+  `sortOrder` TINYINT     NOT NULL DEFAULT 0,
+  `isSystem`  TINYINT     NOT NULL DEFAULT 0,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `categories_user_name_uq` (`userId`, `name`),
+  KEY `categories_user_idx` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Indexes — the single most important performance decision here.**
-
-The dominant queries are:
-1. Home feed: `where user_id = ? order by occurred_at desc limit 50`
-2. Month summary: `where user_id = ? and occurred_at >= ? and occurred_at < ?`
-3. Wallet detail: `where wallet_id = ? order by occurred_at desc`
+### 2.5 `wallets`
 
 ```sql
--- (1) + (2): user + time, descending. Composite, matches ORDER BY exactly.
-create index idx_transactions_user_time
-  on public.transactions (user_id, occurred_at desc);
-
--- (3): wallet + time
-create index idx_transactions_wallet_time
-  on public.transactions (wallet_id, occurred_at desc);
-
--- (2) refined: user + time + type, for income/expense splits in a period
-create index idx_transactions_user_time_type
-  on public.transactions (user_id, occurred_at desc, type);
-
--- Transfers lookup by destination
-create index idx_transactions_to_wallet
-  on public.transactions (to_wallet_id)
-  where to_wallet_id is not null;
+CREATE TABLE `wallets` (
+  `id`         CHAR(36)    NOT NULL,
+  `userId`     CHAR(36)    NOT NULL,
+  `name`       VARCHAR(60) NOT NULL,
+  `type`       VARCHAR(12) NOT NULL,
+  `balance`    BIGINT      NOT NULL DEFAULT 0,
+  `isArchived` TINYINT     NOT NULL DEFAULT 0,
+  `createdAt`  DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt`  DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                           ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  KEY `wallets_user_idx` (`userId`),
+  KEY `wallets_user_archived_idx` (`userId`, `isArchived`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**EXPLAIN rationale:** `user_id` is highly selective (one user sees only their rows), so it
-leads the composite index. `occurred_at desc` follows so the index satisfies the `ORDER BY`
-without a sort node — this is what keeps the home feed fast as the table grows. Without
-the `desc` match, Postgres would need a `Sort` step over every matching row.
-
-`idx_transactions_user_time_type` is a covering-ish refinement: including `type` lets the
-monthly income/expense aggregation filter inside the index rather than re-checking the heap.
+### 2.6 `transactions`
 
 ```sql
-create trigger trg_transactions_updated_at
-  before update on public.transactions
-  for each row execute function public.set_updated_at();
+CREATE TABLE `transactions` (
+  `id`          CHAR(36)     NOT NULL,
+  `userId`      CHAR(36)     NOT NULL,
+  `walletId`    CHAR(36)     NOT NULL,
+  `toWalletId`  CHAR(36)     DEFAULT NULL,
+  `type`        VARCHAR(8)   NOT NULL,
+  `amount`      BIGINT       NOT NULL,
+  `title`       VARCHAR(120) NOT NULL,
+  `categoryTag` VARCHAR(32)  DEFAULT NULL,
+  `note`        VARCHAR(500) DEFAULT NULL,
+  `occurredAt`  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `createdAt`   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt`   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                             ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  KEY `tx_user_date_idx` (`userId`, `occurredAt`),
+  KEY `tx_wallet_date_idx` (`walletId`, `occurredAt`),
+  KEY `tx_user_wallet_idx` (`userId`, `walletId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Why `on delete restrict` for `wallet_id`:** deleting a wallet that has transactions
-should be *blocked*, not silently cascade. Users archive (`is_active = false`) instead.
+**Why these indexes:**
 
----
+| Query | Index | Rationale |
+| :--- | :--- | :--- |
+| Home feed: user + recent date | `tx_user_date_idx` | Leftmost `userId` equality, then `occurredAt` range — satisfies `ORDER BY occurredAt DESC` **without a sort** |
+| Wallet detail: wallet + date | `tx_wallet_date_idx` | Same shape, different leading column |
+| Filter by wallet | `tx_user_wallet_idx` | Covers `WHERE userId = ? AND walletId = ?` |
 
-### 2.4 `vaults`
+⚠️ **TiDB note:** indexes are **eventually consistent** while DDL runs.
+After adding an index, verify with `EXPLAIN` — do not assume it is live.
+
+### 2.7 `vaults`
 
 ```sql
--- ============================================================
--- 004_vaults.sql
--- ============================================================
-
-create table public.vaults (
-  id              uuid primary key default gen_random_uuid(),
-  user_id         uuid not null references auth.users(id) on delete cascade,
-  title           text not null,
-  target_amount   numeric(15,2) not null,
-  current_amount  numeric(15,2) not null default 0.00,
-  target_date     date,
-  icon            text,
-  is_completed    boolean not null default false,
-  completed_at    timestamptz,
-  created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now(),
-
-  constraint vaults_target_positive check (target_amount > 0),
-  constraint vaults_current_nonneg check (current_amount >= 0),
-  constraint vaults_title_length check (char_length(title) between 1 and 60),
-  constraint vaults_not_overfunded check (current_amount <= target_amount * 10)
-);
-
-create index idx_vaults_user on public.vaults (user_id, is_completed);
-
-create trigger trg_vaults_updated_at
-  before update on public.vaults
-  for each row execute function public.set_updated_at();
+CREATE TABLE `vaults` (
+  `id`            CHAR(36)    NOT NULL,
+  `userId`        CHAR(36)    NOT NULL,
+  `name`          VARCHAR(80) NOT NULL,
+  `targetAmount`  BIGINT      NOT NULL,
+  `currentAmount` BIGINT      NOT NULL DEFAULT 0,
+  `targetDate`    DATETIME(3) DEFAULT NULL,
+  `isCompleted`   TINYINT     NOT NULL DEFAULT 0,
+  `createdAt`     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt`     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                              ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  KEY `vaults_user_idx` (`userId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-**Critical for PRD FR-VLT-4 (Vault Allocation Lock):** total locked funds is
-`sum(current_amount)` across a user's incomplete vaults. This must be subtracted from
-available cash in the Safe Daily Spend calculation (PRD §6.7). Indexed via
-`idx_vaults_user` — but note the Safe Daily Spend query needs an aggregate, so a partial
-index on incomplete vaults is even better:
+### 2.8 `debts`
 
 ```sql
-create index idx_vaults_active_sum
-  on public.vaults (user_id)
-  include (current_amount)
-  where is_completed = false;
+CREATE TABLE `debts` (
+  `id`         CHAR(36)     NOT NULL,
+  `userId`     CHAR(36)     NOT NULL,
+  `direction`  VARCHAR(8)   NOT NULL,
+  `personName` VARCHAR(80)  NOT NULL,
+  `amount`     BIGINT       NOT NULL,
+  `paidAmount` BIGINT       NOT NULL DEFAULT 0,
+  `isPaid`     TINYINT      NOT NULL DEFAULT 0,
+  `note`       VARCHAR(500) DEFAULT NULL,
+  `dueDate`    DATETIME(3)  DEFAULT NULL,
+  `settledAt`  DATETIME(3)  DEFAULT NULL,
+  `createdAt`  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt`  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+                            ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  KEY `debts_user_idx` (`userId`),
+  KEY `debts_user_open_idx` (`userId`, `isPaid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
 ---
 
-### 2.5 `debts`
-
-```sql
--- ============================================================
--- 005_debts.sql
--- ============================================================
-
-create table public.debts (
-  id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null references auth.users(id) on delete cascade,
-  person_name   text not null,
-  phone_number  text,
-  amount        numeric(15,2) not null,
-  paid_amount   numeric(15,2) not null default 0.00,   -- enables PARTIAL
-  type          text not null check (type in ('piutang','utang')),
-  is_paid       boolean not null default false,        -- kept per PRD §12.4
-  due_date      date,
-  notes         text,
-  settled_at    timestamptz,
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now(),
-
-  constraint debts_amount_positive check (amount > 0),
-  constraint debts_paid_nonneg check (paid_amount >= 0),
-  constraint debts_paid_not_exceed check (paid_amount <= amount),
-  constraint debts_person_length check (char_length(person_name) between 1 and 50),
-  constraint debts_notes_length check (notes is null or char_length(notes) <= 200)
-);
-
-create index idx_debts_user_type on public.debts (user_id, type, is_paid);
-create index idx_debts_due on public.debts (user_id, due_date)
-  where is_paid = false;
-
-create trigger trg_debts_updated_at
-  before update on public.debts
-  for each row execute function public.set_updated_at();
-```
-
-**Reconciliation (PRD §12.4):** `CONTEXT.md` wanted `UNPAID|PARTIAL|SETTLED`; the code has
-`is_paid boolean`. We keep `is_paid` **and** add `paid_amount`, which lets us derive all
-three legacy states without a migration of the boolean:
-
-```sql
--- Derived status (expose as a view, don't store)
-create view public.debts_with_status as
-select
-  d.*,
-  case
-    when d.is_paid                     then 'SETTLED'
-    when d.paid_amount > 0             then 'PARTIAL'
-    else                                    'UNPAID'
-  end as status
-from public.debts d;
-```
-
----
-
-## 3. The Atomic Balance Problem — RPC (fixes PRD §11.4)
+## 3. The Atomic Balance Problem (fixes PRD §11.4)
 
 ### 3.1 The Defect
 
-`lib/actions.ts` contains:
+The original `lib/actions.ts` contained:
 
 ```ts
-// 4. Update Wallet Balance (This should ideally be a database function/trigger, ...)
+// 4. Update Wallet Balance (should be a DB function/trigger...)
 // For now, we will assume a trigger handles the wallet balance update.
 ```
 
-**No such trigger exists in `DATABASE.md`.** Result: transactions insert fine, but wallet
-balances never change. This is the single most severe correctness bug in the codebase.
+**No such trigger existed.** Transactions were inserted and balances silently
+stayed frozen.
 
-### 3.2 Why a trigger is the wrong fix
+### 3.2 Fix: application-level SQL transaction
 
-A naive `AFTER INSERT` trigger works for the happy path but fails these cases:
-- **Transfers** touch two wallets — needs symmetric handling.
-- **Updates** (user edits amount) must reverse the old effect then apply the new.
-- **Deletes** must reverse.
-- Race conditions: two concurrent writes to the same wallet.
+MySQL supports stored procedures, but we keep balance logic in the
+**application layer** as an explicit `db.transaction()` (Drizzle) — because:
 
-**Decision:** a single `SECURITY DEFINER` RPC that does everything atomically.
-This satisfies PRD NR-REL-3 ("All mutations atomic") and SECURITY.md §1
-("use atomic PostgreSQL Functions (RPC) defined with typed input parameters").
+1. It is testable with the same tooling as the rest of the app
+2. It avoids a split-brain between SQL and TypeScript logic
+3. Drizzle's `db.transaction()` issues real `BEGIN` / `COMMIT` / `ROLLBACK`
 
-### 3.3 `create_transaction` RPC
+**The guarantee:** either the transaction row *and* the balance change both
+commit, or neither does.
 
-```sql
--- ============================================================
--- 006_rpc_create_transaction.sql
--- ============================================================
+### 3.3 `createTransaction` (implemented)
 
-create or replace function public.create_transaction(
-  p_wallet_id    uuid,
-  p_amount       numeric,
-  p_type         text,
-  p_title        text,
-  p_category_tag text default 'LAINNYA',
-  p_note         text default null,
-  p_occurred_at  timestamptz default now(),
-  p_to_wallet_id uuid default null,
-  p_category_id  uuid default null
-)
-returns public.transactions
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid      uuid := auth.uid();
-  v_txn      public.transactions;
-  v_owns_src boolean;
-  v_owns_dst boolean;
-begin
-  -- ---- Guard: authenticated ----
-  if v_uid is null then
-    raise exception 'AUTH_REQUIRED: not authenticated';
-  end if;
+```ts
+await db.transaction(async (tx) => {
+  // 1. Verify ownership — authorization happens HERE (no RLS!)
+  const [wallet] = await tx.select({ id: wallets.id, balance: wallets.balance })
+    .from(wallets)
+    .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId)))
+    .limit(1)
+  if (!wallet) throw new Error('WALLET_NOT_FOUND')
 
-  -- ---- Guard: amount must be positive (PRD §11.3) ----
-  if p_amount is null or p_amount <= 0 then
-    raise exception 'INVALID_AMOUNT: amount must be greater than zero';
-  end if;
+  // 2. Prevent overdraw
+  if (data.type !== 'income' && wallet.balance < data.amount)
+    throw new Error('INSUFFICIENT_BALANCE')
 
-  -- ---- Guard: type is valid ----
-  if p_type not in ('income','expense','transfer') then
-    raise exception 'INVALID_TYPE: %', p_type;
-  end if;
+  // 3. Verify destination for transfers
+  if (data.type === 'transfer') { /* same shape check on to_wallet_id */ }
 
-  -- ---- Guard: user owns the source wallet ----
-  select exists(
-    select 1 from public.wallets w
-    where w.id = p_wallet_id and w.user_id = v_uid and w.is_active
-  ) into v_owns_src;
+  // 4. Insert row
+  await tx.insert(transactions).values({ ... })
 
-  if not v_owns_src then
-    raise exception 'FORBIDDEN_WALLET: source wallet not owned or inactive';
-  end if;
-
-  -- ---- Guard: user owns the destination wallet (transfers only) ----
-  if p_type = 'transfer' then
-    if p_to_wallet_id is null then
-      raise exception 'INVALID_TRANSFER: destination wallet required';
-    end if;
-
-    if p_to_wallet_id = p_wallet_id then
-      raise exception 'INVALID_TRANSFER: source and destination must differ';
-    end if;
-
-    select exists(
-      select 1 from public.wallets w
-      where w.id = p_to_wallet_id and w.user_id = v_uid and w.is_active
-    ) into v_owns_dst;
-
-    if not v_owns_dst then
-      raise exception 'FORBIDDEN_WALLET: destination wallet not owned or inactive';
-    end if;
-  end if;
-
-  -- ---- Insert the transaction row ----
-  insert into public.transactions (
-    user_id, wallet_id, category_id, title, amount, type,
-    category_tag, note, occurred_at, to_wallet_id
-  ) values (
-    v_uid, p_wallet_id, p_category_id, p_title, p_amount, p_type,
-    upper(coalesce(p_category_tag, 'LAINNYA')), p_note, p_occurred_at,
-    case when p_type = 'transfer' then p_to_wallet_id else null end
-  )
-  returning * into v_txn;
-
-  -- ---- Apply balance effect ATOMICALLY in the same transaction ----
-  if p_type = 'income' then
-    update public.wallets
-       set balance = balance + p_amount
-     where id = p_wallet_id;
-
-  elsif p_type = 'expense' then
-    update public.wallets
-       set balance = balance - p_amount
-     where id = p_wallet_id;
-
-  elsif p_type = 'transfer' then
-    -- double entry: debit source, credit destination
-    update public.wallets
-       set balance = balance - p_amount
-     where id = p_wallet_id;
-
-    update public.wallets
-       set balance = balance + p_amount
-     where id = p_to_wallet_id;
-  end if;
-
-  return v_txn;
-end;
-$$;
-
--- Only the authenticated role may execute (anon is blocked by RLS anyway,
--- but we revoke explicitly for defense in depth).
-revoke all on function public.create_transaction(
-  uuid, numeric, text, text, text, text, timestamptz, uuid, uuid
-) from public, anon;
-grant execute on function public.create_transaction(
-  uuid, numeric, text, text, text, text, timestamptz, uuid, uuid
-) to authenticated;
+  // 5. Update balance
+  if (data.type === 'income')  balance + amount
+  if (data.type === 'expense') balance - amount
+  if (data.type === 'transfer') source - amount, dest + amount
+})
 ```
 
-> **Why `security definer` + explicit ownership guards:** the function must write to
-> `wallets` for the balance update even though RLS on `wallets` is `FOR ALL USING (uid)`.
-> With `security definer` the function runs as owner, so **the guards above are the only
-> thing protecting cross-user access** — they are mandatory, not decorative.
-> `set search_path = public` prevents search-path hijacking.
+**Concurrency:** MySQL/InnoDB under `REPEATABLE READ` will not lose an
+update here because the balance write is `UPDATE ... WHERE id = ?`, which
+takes a row lock. Verified by test.
 
-### 3.4 `delete_transaction` RPC (reverses balance)
+### 3.4 `deleteTransaction` (reverses the balance)
 
-```sql
--- ============================================================
--- 007_rpc_delete_transaction.sql
--- ============================================================
+Applying the inverse operation inside the same transaction:
 
-create or replace function public.delete_transaction(p_transaction_id uuid)
-returns public.transactions
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid uuid := auth.uid();
-  v_txn public.transactions;
-begin
-  if v_uid is null then
-    raise exception 'AUTH_REQUIRED: not authenticated';
-  end if;
+| Type | Reverse |
+| :--- | :--- |
+| `income` | `balance − amount` |
+| `expense` | `balance + amount` |
+| `transfer` | source `+ amount`, destination `− amount` |
 
-  -- Lock the row and verify ownership
-  select * into v_txn
-    from public.transactions
-   where id = p_transaction_id and user_id = v_uid
-     for update;
-
-  if not found then
-    raise exception 'NOT_FOUND: transaction not found or not owned';
-  end if;
-
-  -- Reverse the balance effect
-  if v_txn.type = 'income' then
-    update public.wallets set balance = balance - v_txn.amount
-     where id = v_txn.wallet_id;
-
-  elsif v_txn.type = 'expense' then
-    update public.wallets set balance = balance + v_txn.amount
-     where id = v_txn.wallet_id;
-
-  elsif v_txn.type = 'transfer' then
-    update public.wallets set balance = balance + v_txn.amount
-     where id = v_txn.wallet_id;               -- return to source
-    update public.wallets set balance = balance - v_txn.amount
-     where id = v_txn.to_wallet_id;            -- remove from destination
-  end if;
-
-  delete from public.transactions where id = p_transaction_id;
-  return v_txn;
-end;
-$$;
-
-revoke all on function public.delete_transaction(uuid) from public, anon;
-grant execute on function public.delete_transaction(uuid) to authenticated;
-```
-
-### 3.5 `update_transaction` RPC
-
-Updates must reverse the old effect, then apply the new one:
-
-```sql
--- ============================================================
--- 008_rpc_update_transaction.sql
--- ============================================================
-
-create or replace function public.update_transaction(
-  p_transaction_id uuid,
-  p_amount         numeric default null,
-  p_title          text default null,
-  p_category_tag   text default null,
-  p_note           text default null,
-  p_occurred_at    timestamptz default null,
-  p_wallet_id      uuid default null
-)
-returns public.transactions
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid    uuid := auth.uid();
-  v_old    public.transactions;
-  v_new    public.transactions;
-  v_target uuid;
-  v_amount numeric;
-  v_title  text;
-  v_tag    text;
-begin
-  if v_uid is null then
-    raise exception 'AUTH_REQUIRED: not authenticated';
-  end if;
-
-  select * into v_old
-    from public.transactions
-   where id = p_transaction_id and user_id = v_uid
-     for update;
-
-  if not found then
-    raise exception 'NOT_FOUND: transaction not found or not owned';
-  end if;
-
-  v_target := coalesce(p_wallet_id, v_old.wallet_id);
-  v_amount := coalesce(p_amount, v_old.amount);
-  v_title  := coalesce(p_title, v_old.title);
-  v_tag    := upper(coalesce(p_category_tag, v_old.category_tag));
-
-  if v_amount <= 0 then
-    raise exception 'INVALID_AMOUNT: amount must be greater than zero';
-  end if;
-
-  -- Reject moving a transaction to a wallet the user doesn't own
-  if p_wallet_id is not null and p_wallet_id <> v_old.wallet_id then
-    if not exists(
-      select 1 from public.wallets w
-      where w.id = p_wallet_id and w.user_id = v_uid and w.is_active
-    ) then
-      raise exception 'FORBIDDEN_WALLET: target wallet not owned';
-    end if;
-  end if;
-
-  -- 1) reverse old effect on the OLD wallet
-  if v_old.type = 'income' then
-    update public.wallets set balance = balance - v_old.amount where id = v_old.wallet_id;
-  elsif v_old.type = 'expense' then
-    update public.wallets set balance = balance + v_old.amount where id = v_old.wallet_id;
-  elsif v_old.type = 'transfer' then
-    update public.wallets set balance = balance + v_old.amount where id = v_old.wallet_id;
-    update public.wallets set balance = balance - v_old.amount where id = v_old.to_wallet_id;
-  end if;
-
-  -- 2) apply new row values
-  update public.transactions
-     set amount       = v_amount,
-         title        = v_title,
-         category_tag = v_tag,
-         note         = coalesce(p_note, v_old.note),
-         occurred_at  = coalesce(p_occurred_at, v_old.occurred_at),
-         wallet_id    = v_target
-   where id = p_transaction_id
-  returning * into v_new;
-
-  -- 3) re-apply effect on the (possibly new) wallet
-  if v_new.type = 'income' then
-    update public.wallets set balance = balance + v_amount where id = v_target;
-  elsif v_new.type = 'expense' then
-    update public.wallets set balance = balance - v_amount where id = v_target;
-  elsif v_new.type = 'transfer' then
-    update public.wallets set balance = balance - v_amount where id = v_target;
-    update public.wallets set balance = balance + v_amount where id = v_new.to_wallet_id;
-  end if;
-
-  return v_new;
-end;
-$$;
-
-revoke all on function public.update_transaction(
-  uuid, numeric, text, text, text, timestamptz, uuid
-) from public, anon;
-grant execute on function public.update_transaction(
-  uuid, numeric, text, text, text, timestamptz, uuid
-) to authenticated;
-```
+⚠️ **Not yet implemented:** `updateTransaction` (editing an amount) must
+apply the **delta**, not the new value. See §11.
 
 ---
 
-## 4. Row Level Security
+## 4. Authorization (replaces RLS)
 
-### 4.1 Policy Pattern
-
-All policies use **`USING` + `WITH CHECK`** (PRD §12.12). `USING` filters what you can
-*see*; `WITH CHECK` blocks writing a row that would be owned by someone else. Without
-`WITH CHECK`, a user could insert a row with another user's `user_id`.
+### 4.1 The Rule
 
 ```sql
--- Template applied to every user-owned table
-alter table public.<table> enable row level security;
+-- ❌ NEVER: leaks every user's data
+SELECT * FROM transactions WHERE id = ?
 
-create policy "<table>_select_own" on public.<table>
-  for select using ((select auth.uid()) = user_id);
-
-create policy "<table>_insert_own" on public.<table>
-  for insert with check ((select auth.uid()) = user_id);
-
-create policy "<table>_update_own" on public.<table>
-  for update using ((select auth.uid()) = user_id)
-            with check ((select auth.uid()) = user_id);
-
-create policy "<table>_delete_own" on public.<table>
-  for delete using ((select auth.uid()) = user_id);
+-- ✅ ALWAYS: scoped to the authenticated user
+SELECT * FROM transactions WHERE id = ? AND user_id = ?
 ```
 
-### 4.2 Applied to all tables
+### 4.2 Mandatory Checks
 
-```sql
--- ============================================================
--- 009_rls.sql
--- ============================================================
+Every Server Action must:
 
--- ---- WALLETS ----
-alter table public.wallets enable row level security;
-create policy wallets_select_own on public.wallets for select using ((select auth.uid()) = user_id);
-create policy wallets_insert_own on public.wallets for insert with check ((select auth.uid()) = user_id);
-create policy wallets_update_own on public.wallets for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
-create policy wallets_delete_own on public.wallets for delete using ((select auth.uid()) = user_id);
+1. Call `requireUserId()` and bail if null
+2. Include `eq(table.userId, userId)` in **every** `WHERE`
+3. Verify ownership of referenced entities (e.g. `walletId`) —
+   not just the row being written
 
--- ---- TRANSACTIONS ----
-alter table public.transactions enable row level security;
-create policy txn_select_own on public.transactions for select using ((select auth.uid()) = user_id);
-create policy txn_insert_own on public.transactions for insert with check ((select auth.uid()) = user_id);
-create policy txn_update_own on public.transactions for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
-create policy txn_delete_own on public.transactions for delete using ((select auth.uid()) = user_id);
+### 4.3 Verification
 
--- ---- VAULTS ----
-alter table public.vaults enable row level security;
-create policy vaults_select_own on public.vaults for select using ((select auth.uid()) = user_id);
-create policy vaults_insert_own on public.vaults for insert with check ((select auth.uid()) = user_id);
-create policy vaults_update_own on public.vaults for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
-create policy vaults_delete_own on public.vaults for delete using ((select auth.uid()) = user_id);
-
--- ---- DEBTS ----
-alter table public.debts enable row level security;
-create policy debts_select_own on public.debts for select using ((select auth.uid()) = user_id);
-create policy debts_insert_own on public.debts for insert with check ((select auth.uid()) = user_id);
-create policy debts_update_own on public.debts for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
-create policy debts_delete_own on public.debts for delete using ((select auth.uid()) = user_id);
-
--- ---- CATEGORIES (special: system rows are readable by all) ----
-alter table public.categories enable row level security;
-
-create policy categories_read on public.categories
-  for select using (
-    is_system = true
-    or (select auth.uid()) = user_id
-  );
-
-create policy categories_insert_own on public.categories
-  for insert with check ((select auth.uid()) = user_id and is_system = false);
-
-create policy categories_update_own on public.categories
-  for update using ((select auth.uid()) = user_id and is_system = false)
-          with check ((select auth.uid()) = user_id and is_system = false);
-
-create policy categories_delete_own on public.categories
-  for delete using ((select auth.uid()) = user_id and is_system = false);
-```
-
-> ⚠️ **RLS performance note** (from `supabase-postgres-best-practices`): always wrap
-> `auth.uid()` as `(select auth.uid())` so Postgres treats it as a stable, cacheable
-> initplan rather than re-evaluating per row. On a large `transactions` table this is the
-> difference between an index scan and a full scan.
-
-### 4.3 RPC and RLS interaction
-
-The RPCs in §3 are `security definer`, so **RLS is bypassed inside them** — which is why
-every RPC re-validates ownership explicitly. Defense in depth:
-
-1. RLS protects direct table access from the client.
-2. RPC ownership guards protect the `security definer` path.
-3. `.select()` from the client is still RLS-filtered.
+`lib/actions.ts` already does this for `createTransaction`:
+it fetches the wallet with **both** `id` and `userId` in the `WHERE`.
+An attacker passing another user's `wallet_id` gets `WALLET_NOT_FOUND`.
 
 ---
 
@@ -802,391 +367,121 @@ every RPC re-validates ownership explicitly. Defense in depth:
 
 ### 5.1 The Fix for PRD §11.3
 
-Current `lib/schemas.ts`:
 ```ts
-amount: z.number(),          // ❌ accepts 0 and negatives
-```
-`SECURITY.md` demanded `z.number().positive(...)`. Resolved:
-
-```ts
-amount: z.number().positive("Amount must be greater than 0")
+amount: z.number()
+  .int('Jumlah harus bilangan bulat')
+  .positive('Jumlah harus lebih dari 0')   // ← rejects 0 and negatives
+  .max(100_000_000_000)
 ```
 
-Enforced at **three** layers (belt and braces):
-1. Zod in the Server Action (fast user feedback)
-2. DB `CHECK (amount > 0)` (authoritative)
-3. RPC guard `if p_amount <= 0 then raise` (defense in depth)
+`BIGINT` maps to `.int()` — a decimal amount would be truncated by the
+driver, so Zod rejects it before it reaches the DB.
 
-### 5.2 Complete Schema File
+### 5.2 Full Schema (`lib/schemas.ts`)
 
 ```ts
-// lib/schemas.ts — aligned with DATABASE-SPEC.md
-import { z } from 'zod';
-
-// ---------- Enums (single source of truth) ----------
-export const WalletTypeSchema    = z.enum(['cash', 'bank', 'e-wallet']);
-export const TxTypeSchema        = z.enum(['income', 'expense', 'transfer']);
-export const DebtTypeSchema      = z.enum(['piutang', 'utang']);
-export const CategoryTypeSchema  = z.enum(['income', 'expense']);
-
-// Money: positive, at most 2 decimal places, within numeric(15,2)
-export const MoneySchema = z
-  .number()
-  .positive('Amount must be greater than 0')
-  .max(999_999_999_999.99, 'Amount exceeds maximum')
-  .refine((v) => Number.isFinite(v), 'Amount must be finite');
-
-// Category tag: uppercase, 1-20 chars, matches DB CHECK
-export const CategoryTagSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(20)
-  .regex(/^[A-Z0-9_]+$/, 'Tag must be A-Z, 0-9 or _')
-  .default('LAINNYA');
-
-// ---------- Categories ----------
-export const CategorySchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid().nullable(),
-  name: z.string().min(1).max(50).trim(),
-  slug: CategoryTagSchema,
-  type: CategoryTypeSchema,
-  icon: z.string().nullable(),
-  sort_order: z.number().int().nonnegative(),
-  is_system: z.boolean(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-});
-
-// ---------- Wallets ----------
-export const WalletSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  name: z.string().min(1).max(50).trim(),
-  type: WalletTypeSchema,
-  balance: z.number(),
-  icon: z.string().nullable(),
-  color: z.string().nullable(),
-  is_active: z.boolean(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-});
-
-export const CreateWalletSchema = WalletSchema.pick({
-  name: true, type: true,
-}).extend({
-  balance: z.number().min(0).default(0),   // starting balance may be 0
-  icon: z.string().optional(),
-  color: z.string().optional(),
-});
-
-// ---------- Transactions ----------
 export const TransactionSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  wallet_id: z.string().uuid(),
-  category_id: z.string().uuid().nullable(),
-  title: z.string().min(1).max(100).trim(),
-  amount: MoneySchema,
-  type: TxTypeSchema,
-  category_tag: CategoryTagSchema,
-  note: z.string().max(200).nullable(),
-  to_wallet_id: z.string().uuid().nullable(),
-  occurred_at: z.string().datetime(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-});
-
-export const CreateTransactionSchema = z
-  .object({
-    wallet_id: z.string().uuid('Invalid Wallet ID'),
-    category_id: z.string().uuid().optional().nullable(),
-    title: z.string().min(1, 'Title required').max(100).trim(),
-    amount: MoneySchema,
-    type: TxTypeSchema,
-    category_tag: CategoryTagSchema,
-    note: z.string().max(200).optional().nullable(),
-    occurred_at: z.string().datetime().optional(),
-    to_wallet_id: z.string().uuid().optional().nullable(),
-  })
-  .refine(
-    (d) => (d.type === 'transfer' ? !!d.to_wallet_id : !d.to_wallet_id),
-    { message: 'Transfers require a destination wallet', path: ['to_wallet_id'] }
-  )
-  .refine(
-    (d) => (d.type === 'transfer' ? d.to_wallet_id !== d.wallet_id : true),
-    { message: 'Source and destination must differ', path: ['to_wallet_id'] }
-  );
-
-// ---------- Vaults ----------
-export const VaultSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  title: z.string().min(1).max(60).trim(),
-  target_amount: z.number().positive(),
-  current_amount: z.number().nonnegative(),
-  target_date: z.string().nullable(),
-  icon: z.string().nullable(),
-  is_completed: z.boolean(),
-  completed_at: z.string().datetime().nullable(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-});
-
-export const CreateVaultSchema = VaultSchema.pick({
-  title: true, target_amount: true,
-}).extend({
-  target_date: z.string().nullable().optional(),
-  icon: z.string().optional(),
-});
-
-// ---------- Debts ----------
-export const DebtSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  person_name: z.string().min(1).max(50).trim(),
-  phone_number: z.string().max(20).nullable(),
-  amount: z.number().positive(),
-  paid_amount: z.number().nonnegative(),
-  type: DebtTypeSchema,
-  is_paid: z.boolean(),
-  due_date: z.string().nullable(),
-  notes: z.string().max(200).nullable(),
-  settled_at: z.string().datetime().nullable(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-});
-
-export const CreateDebtSchema = z.object({
-  person_name: z.string().min(1).max(50).trim(),
-  phone_number: z.string().max(20).optional().nullable(),
-  amount: z.number().positive(),
-  type: DebtTypeSchema,
-  due_date: z.string().nullable().optional(),
-  notes: z.string().max(200).optional().nullable(),
-});
-
-// ---------- Gemini OCR (per PRD §9.2) ----------
-export const GeminiOCRResponseSchema = z.object({
-  merchant_name: z.string().default('Unknown Merchant'),
-  items: z
-    .array(
-      z.object({
-        name: z.string(),
-        price: z.number().nonnegative(),
-        quantity: z.number().positive().default(1),
-      })
-    )
-    .default([]),
-  detected_total: z.number().nonnegative(),
-  confidence_score: z.number().min(0).max(1),
-  detected_category: CategoryTagSchema,
-});
-
-// ---------- Types ----------
-export type Wallet = z.infer<typeof WalletSchema>;
-export type Transaction = z.infer<typeof TransactionSchema>;
-export type CreateTransactionInput = z.infer<typeof CreateTransactionSchema>;
-export type Vault = z.infer<typeof VaultSchema>;
-export type Debt = z.infer<typeof DebtSchema>;
-export type Category = z.infer<typeof CategorySchema>;
-export type GeminiOCRResponse = z.infer<typeof GeminiOCRResponseSchema>;
-
-// ---------- Server Action result ----------
-export type ActionResponse<T> =
-  | { success: true; data: T; error: null }
-  | { success: false; data: null; error: string };
+  wallet_id: z.string().min(1, 'Dompet wajib dipilih'),
+  to_wallet_id: z.string().min(1).optional(),
+  type: z.enum(['income', 'expense', 'transfer']),
+  amount: z.number().int().positive().max(100_000_000_000),
+  title: z.string().trim().min(1).max(120),
+  category_tag: z.enum(CATEGORY_ENUM).optional(),
+  note: z.string().trim().max(500).optional(),
+  occurred_at: z.string().datetime().optional(),
+})
+  .refine(d => d.type !== 'transfer' || !!d.to_wallet_id, { ... })
+  .refine(d => d.type !== 'transfer' || d.wallet_id !== d.to_wallet_id, { ... })
 ```
 
 ---
 
 ## 6. Seed Data
 
-```sql
--- ============================================================
--- 010_seed.sql
--- ============================================================
+### 6.1 Default Categories (Indonesian)
 
--- System default expense categories (Indonesian)
-insert into public.categories (user_id, name, slug, type, sort_order, is_system) values
-  (null, 'Makan & Minum', 'MAKAN',      'expense', 10, true),
-  (null, 'Transport',     'TRANSPORT',  'expense', 20, true),
-  (null, 'Belanja',       'BELANJA',    'expense', 30, true),
-  (null, 'Tagihan',       'TAGIHAN',    'expense', 40, true),
-  (null, 'Hiburan',       'HIBURAN',    'expense', 50, true),
-  (null, 'Kesehatan',     'KESEHATAN',  'expense', 60, true),
-  (null, 'Pendidikan',    'PENDIDIKAN', 'expense', 70, true),
-  (null, 'Lainnya',       'LAINNYA',    'expense', 90, true);
-
--- System default income categories
-insert into public.categories (user_id, name, slug, type, sort_order, is_system) values
-  (null, 'Gaji',      'GAJI',      'income', 10, true),
-  (null, 'Freelance', 'FREELANCE', 'income', 20, true),
-  (null, 'Bonus',     'BONUS',     'income', 30, true),
-  (null, 'Lainnya',   'LAINNYA',   'income', 90, true);
-```
-
-**New-user onboarding** (PRD FR-AUTH-7): after signup, create a default wallet.
+Seeded on user creation:
 
 ```sql
--- Called from application code after auth.users insert, or via a trigger
-create or replace function public.seed_new_user_defaults()
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_uid uuid := auth.uid();
-begin
-  if v_uid is null then
-    raise exception 'AUTH_REQUIRED';
-  end if;
-
-  insert into public.wallets (user_id, name, type, balance)
-  values (v_uid, 'Tunai', 'cash', 0)
-  on conflict do nothing;
-end;
-$$;
-
-revoke all on function public.seed_new_user_defaults() from public, anon;
-grant execute on function public.seed_new_user_defaults() to authenticated;
+INSERT INTO categories (id, userId, name, kind, sortOrder, isSystem) VALUES
+  (UUID(), ?, 'MAKAN',      'expense', 1, 1),
+  (UUID(), ?, 'TRANSPORT',  'expense', 2, 1),
+  (UUID(), ?, 'BELANJA',    'expense', 3, 1),
+  (UUID(), ?, 'TAGIHAN',    'expense', 4, 1),
+  (UUID(), ?, 'HIBURAN',    'expense', 5, 1),
+  (UUID(), ?, 'KESEHATAN',  'expense', 6, 1),
+  (UUID(), ?, 'PENDIDIKAN', 'expense', 7, 1),
+  (UUID(), ?, 'LAINNYA',    'both',    8, 1),
+  (UUID(), ?, 'GAJI',       'income',  9, 1);
 ```
 
-> Alternative: an `after insert on auth.users` trigger. Preferred approach is to call the
-> RPC from the client after first sign-in, because `auth.users` triggers run in the `auth`
-> schema and need `security definer` with elevated grants — more moving parts.
+### 6.2 Default Wallet
+
+Every new user gets one wallet named `Tunai` of type `cash`, balance `0`.
 
 ---
 
 ## 7. Migration Plan
 
-### 7.1 Zero-Downtime Strategy (from `database-migration`)
+### 7.1 Current State
 
-Numbered, forward-only, each reversible:
+Migrations are plain SQL files under `drizzle/`, applied by
+`scripts/migrate.js` (idempotent — uses `CREATE TABLE IF NOT EXISTS`).
 
-| # | File | Content | Rollback |
-| :-- | :--- | :--- | :--- |
-| 000 | `000_base.sql` | extensions, `set_updated_at()`, `uid()` | drop functions |
-| 001 | `001_categories.sql` | categories table + RLS | `drop table categories` |
-| 002 | `002_wallets.sql` | wallets table + RLS | `drop table wallets` |
-| 003 | `003_transactions.sql` | transactions + indexes | `drop table transactions` |
-| 004 | `004_vaults.sql` | vaults + partial index | `drop table vaults` |
-| 005 | `005_debts.sql` | debts + view | `drop view`, `drop table` |
-| 006 | `006_rpc_create_transaction.sql` | create RPC | `drop function` |
-| 007 | `007_rpc_delete_transaction.sql` | delete RPC | `drop function` |
-| 008 | `008_rpc_update_transaction.sql` | update RPC | `drop function` |
-| 009 | `009_rls.sql` | all policies | `drop policy` each |
-| 010 | `010_seed.sql` | default categories | `delete where is_system` |
-
-**Expand → Migrate → Contract** for any breaking change:
-
-1. **Expand** — add new nullable column / new table. Deploy. Old code still works.
-2. **Migrate** — backfill in batches (`limit 1000` loops, not one big update).
-3. **Contract** — add `NOT NULL` / drop old column only after code no longer reads it.
-
-### 7.2 Migrating from the current (legacy) schema
-
-The repo's existing `DATABASE.md` schema differs from this spec. Migration path:
-
-| Legacy | Target | Action |
-| :--- | :--- | :--- |
-| `wallets.type` enum `e-wallet/bank/cash` | same | ✅ no change |
-| `transactions` has no `to_wallet_id` | add | `alter table add column` (nullable) — **Expand** |
-| `transactions` has no `category_id` | add | nullable, FK to categories |
-| `transactions.created_at` used for display | add `occurred_at` | backfill `occurred_at = created_at` — **Migrate** |
-| `debts` has no `paid_amount` | add | default 0 |
-| `debts` has no `settled_at` | add | nullable |
-| no `categories` table | create | new |
-| `vaults` has no `is_completed` | add | derive: `current_amount >= target_amount` |
-| no RPCs | create | new |
-| RLS `using` only | add `with check` | `create policy ... with check` |
-
-```sql
--- Example: expand + backfill for occurred_at
-alter table public.transactions add column occurred_at timestamptz;
-
-update public.transactions
-   set occurred_at = created_at
- where occurred_at is null;      -- batch if table is large
-
-alter table public.transactions
-  alter column occurred_at set default now(),
-  alter column occurred_at set not null;
-
-create index idx_transactions_user_time
-  on public.transactions (user_id, occurred_at desc);
+```bash
+npm run db:push
 ```
 
-### 7.3 Rollback Rules
+| File | Contents |
+| :--- | :--- |
+| `drizzle/0000_init.sql` | All 8 tables |
 
-- Every migration file has a documented inverse (table above).
-- Never roll back by editing history — write a new forward migration.
-- Test every migration against a **local Supabase** instance first:
-  `supabase db reset` then `supabase db push`.
-- Run `supabase db advisors` (or MCP `get_advisors`) after every migration.
-- Per the skill: *"After implementing any fix, run a test query to confirm the change
-  works. A fix without verification is incomplete."*
+### 7.2 Rules
+
+1. **Never edit an applied migration** — add a new numbered file.
+2. Every migration must be **re-runnable** (`IF NOT EXISTS`).
+3. Keep a rollback script beside each forward script.
+4. Test on a branch database before production (TiDB supports branching).
+
+### 7.3 Rollback
+
+```sql
+DROP TABLE IF EXISTS debts;
+DROP TABLE IF EXISTS vaults;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS wallets;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS accounts;
+DROP TABLE IF EXISTS users;
+```
+
+⚠️ Destructive. Confirm the environment first.
+
+### 7.4 Future: Drizzle Kit
+
+Once the schema stabilises, adopt `drizzle-kit` for generated diffs:
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
 
 ---
 
 ## 8. Generated TypeScript Types
 
+The Drizzle schema **is** the type source — no codegen step needed:
+
+```ts
+import type { Wallet, Transaction, Vault, Debt } from '@/lib/db/schema'
+```
+
+`drizzle-kit` can additionally introspect a live DB:
+
 ```bash
-# Generate from a live project
-npx supabase gen types typescript --project-id "$PROJECT_REF" > types/database.types.ts
-
-# Or from local
-npx supabase gen types typescript --local > types/database.types.ts
+npx drizzle-kit introspect
 ```
-
-Usage:
-
-```ts
-// lib/supabase/database.types.ts  (generated — do not edit by hand)
-export type Database = {
-  public: {
-    Tables: {
-      wallets: {
-        Row: { id: string; user_id: string; name: string; /* ... */ }
-        Insert: { /* ... */ }
-        Update: { /* ... */ }
-      }
-      transactions: { /* ... */ }
-      vaults: { /* ... */ }
-      debts: { /* ... */ }
-      categories: { /* ... */ }
-    }
-    Functions: {
-      create_transaction: {
-        Args: {
-          p_wallet_id: string; p_amount: number; p_type: string;
-          p_title: string; p_category_tag?: string; p_note?: string;
-          p_occurred_at?: string; p_to_wallet_id?: string; p_category_id?: string;
-        }
-        Returns: Database['public']['Tables']['transactions']['Row']
-      }
-      delete_transaction: { Args: { p_transaction_id: string }; Returns: /* ... */ }
-      update_transaction: { Args: { /* ... */ }; Returns: /* ... */ }
-    }
-  }
-}
-```
-
-Wire into the clients:
-
-```ts
-import type { Database } from '@/lib/supabase/database.types'
-export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-```
-
-This satisfies PRD NR-MAIN-2 (all DB types generated from schema).
 
 ---
 
@@ -1194,162 +489,196 @@ This satisfies PRD NR-MAIN-2 (all DB types generated from schema).
 
 ### 9.1 Safe Daily Spend (PRD §6.7)
 
-```sql
--- Inputs: p_user_id, p_cycle_end date
-create or replace function public.safe_daily_spend(
-  p_user_id uuid default auth.uid(),
-  p_cycle_end date default (date_trunc('month', now()) + interval '1 month - 1 day')::date
+**Canonical formula** (also used by `QA-STRATEGY.md` tests):
+
+```
+safe_daily_spend = max(0,
+  (total_liquid − vault_allocations − upcoming_debts) / days_remaining
 )
-returns numeric
-language sql
-stable
-as $$
-  with locked as (
-    select coalesce(sum(v.current_amount), 0) as locked_funds
-      from public.vaults v
-     where v.user_id = p_user_id
-       and v.is_completed = false
-  ),
-  available as (
-    select coalesce(sum(w.balance), 0) as total
-      from public.wallets w
-     where w.user_id = p_user_id
-       and w.is_active = true
-  )
-  select greatest(
-    0,
-    (available.total - locked.locked_funds)
-      / greatest(1, (p_cycle_end - current_date) + 1)
-  )
-  from available, locked;
-$$;
 ```
 
-> Matches PRD §6.7: `spendable = Σ wallet balances − Σ vault current_amount`;
-> `safe_daily_spend = max(0, spendable / days_left)`.
-> `greatest(1, …)` guards division by zero on the last day of the cycle.
+```ts
+export function calculateSafeDailySpend(i: {
+  totalLiquid: number
+  vaultAllocations: number
+  upcomingDebts: number
+  daysRemaining: number
+}): number {
+  const days = Math.max(1, i.daysRemaining)      // guard divide-by-zero
+  const free = i.totalLiquid - i.vaultAllocations - i.upcomingDebts
+  return Math.max(0, Math.floor(free / days))
+}
+```
 
-### 9.2 Home Feed (grouped by day)
+SQL for the inputs:
 
 ```sql
-select
-  t.id, t.title, t.amount, t.type, t.category_tag,
-  w.name as wallet_name,
-  t.occurred_at
-from public.transactions t
-join public.wallets w on w.id = t.wallet_id
-where t.user_id = auth.uid()
-order by t.occurred_at desc
-limit 50;
+-- Total liquid
+SELECT COALESCE(SUM(balance), 0) FROM wallets
+WHERE userId = ? AND isArchived = 0;
+
+-- Vault allocations
+SELECT COALESCE(SUM(currentAmount), 0) FROM vaults
+WHERE userId = ? AND isCompleted = 0;
+
+-- Upcoming unpaid debts this cycle
+SELECT COALESCE(SUM(amount - paidAmount), 0) FROM debts
+WHERE userId = ? AND isPaid = 0 AND dueDate <= ?;
 ```
-→ uses `idx_transactions_user_time`.
+
+### 9.2 Home Feed (recent transactions)
+
+```sql
+SELECT t.*, w.name AS walletName
+FROM transactions t
+JOIN wallets w ON w.id = t.walletId
+WHERE t.userId = ?
+ORDER BY t.occurredAt DESC
+LIMIT 20;
+```
 
 ### 9.3 Monthly Summary
 
 ```sql
-select
-  type,
-  coalesce(sum(amount), 0) as total
-from public.transactions
-where user_id = auth.uid()
-  and occurred_at >= date_trunc('month', now())
-  and occurred_at <  date_trunc('month', now()) + interval '1 month'
-  and type in ('income','expense')
-group by type;
+SELECT
+  SUM(CASE WHEN type = 'income'  THEN amount ELSE 0 END) AS income,
+  SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS expense
+FROM transactions
+WHERE userId = ?
+  AND occurredAt >= ?
+  AND occurredAt <  ?;
 ```
-→ uses `idx_transactions_user_time_type`.
 
 ### 9.4 7-Day Spending Flow
 
 ```sql
-select
-  d.day::date,
-  coalesce(sum(t.amount), 0) as total
-from generate_series(
-  current_date - interval '6 days',
-  current_date,
-  interval '1 day'
-) as d(day)
-left join public.transactions t
-  on t.occurred_at::date = d.day::date
- and t.user_id = auth.uid()
- and t.type = 'expense'
-group by d.day
-order by d.day;
+SELECT DATE(occurredAt) AS d, SUM(amount) AS total
+FROM transactions
+WHERE userId = ? AND type = 'expense'
+  AND occurredAt >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+GROUP BY DATE(occurredAt)
+ORDER BY d;
 ```
-`generate_series` guarantees zero-filled days — the chart never has gaps.
+
+### 9.5 Top Categories
+
+```sql
+SELECT categoryTag, SUM(amount) AS total
+FROM transactions
+WHERE userId = ? AND type = 'expense'
+  AND occurredAt >= ?
+GROUP BY categoryTag
+ORDER BY total DESC
+LIMIT 5;
+```
 
 ---
 
 ## 10. Data Retention & Deletion
 
-Per PRD NR-SEC-8 (data-subject rights) and NG8 (no receipt retention).
+| Data | Retention |
+| :--- | :--- |
+| Transactions | While account active + 30 days after deletion request |
+| Receipt images | **Never persisted** (FR-OCR-7) |
+| Sessions | Until expiry; purge expired nightly |
+| Backups | 30-day rolling |
 
-| Data | Retention | Deletion |
-| :--- | :--- | :--- |
-| Transactions | Until user deletes | Cascade on user deletion |
-| Wallets | Until user deletes | Restricted if has transactions → archive |
-| Vaults / Debts | Until user deletes | Cascade |
-| Receipt images | **Never stored** | N/A (PRD FR-OCR-7) |
-| Auth records | Supabase-managed | `auth.users` delete cascades |
+### 10.1 Account Deletion Cascade
 
-```sql
--- All user-owned tables use: references auth.users(id) on delete cascade
--- So deleting an auth user removes all their financial data automatically.
-```
-
-**Verification of cascade:**
+MySQL **cannot** cascade without foreign keys, and we intentionally
+omit FKs (TiDB distributed DDL + app-level control). So deletion must be
+**explicit and ordered**:
 
 ```sql
--- Confirm no orphans after a test deletion
-select count(*) from public.transactions t
-left join auth.users u on u.id = t.user_id
-where u.id is null;   -- must be 0
+DELETE FROM transactions WHERE userId = ?;
+DELETE FROM debts        WHERE userId = ?;
+DELETE FROM vaults       WHERE userId = ?;
+DELETE FROM wallets      WHERE userId = ?;
+DELETE FROM categories   WHERE userId = ?;
+DELETE FROM sessions     WHERE userId = ?;
+DELETE FROM accounts     WHERE userId = ?;
+DELETE FROM users        WHERE id     = ?;
 ```
+
+Wrap in a transaction. Order matters: children before parent.
 
 ---
 
 ## 11. Verification Checklist
 
-Before merging any schema change:
+- [ ] `npm run db:push` applies cleanly
+- [ ] All 8 tables exist in `kasdesk` (not `sys`)
+- [ ] `amount` rejects `0` and negatives (Zod + test)
+- [ ] Balance changes after `createTransaction`
+- [ ] Balance reverses after `deleteTransaction`
+- [ ] Transfer updates **both** wallets
+- [ ] Overdraw is blocked
+- [ ] Every query filters by `userId` (no RLS!)
+- [ ] Passing another user's `wallet_id` → `WALLET_NOT_FOUND`
+- [ ] `EXPLAIN` shows `tx_user_date_idx` used for the home feed
+- [ ] All money is whole rupiah integers
 
-- [ ] `supabase db reset` succeeds locally from scratch
-- [ ] `supabase db push` applies cleanly
-- [ ] `supabase db advisors` reports no security warnings
-- [ ] Every table has RLS **enabled**
-- [ ] Every policy has both `USING` and `WITH CHECK` (except select-only)
-- [ ] `auth.uid()` wrapped as `(select auth.uid())` in all policies
-- [ ] No banned type appears in any migration (`money`, `timestamp`, `varchar(n)`, `serial`)
-- [ ] `amount > 0` enforced at Zod + CHECK + RPC (PRD §11.3)
-- [ ] Wallet balance changes only via RPC (PRD §11.4)
-- [ ] Transfer creates balanced double-entry effect
-- [ ] `create_transaction` rejects another user's wallet id (test it!)
-- [ ] Indexes exist for all queries in §9
-- [ ] `EXPLAIN ANALYZE` on §9.2 shows Index Scan, not Seq Scan
-- [ ] Generated TS types committed
+### 11.1 Known Gap
+
+`updateTransaction` (edit an amount) is **not implemented**. When added, it
+must apply the **delta** — old vs new amount — not overwrite the balance.
 
 ---
 
-## 12. RLS Security Test (must pass)
+## 12. Authorization Test (replaces the old RLS test)
 
-```sql
--- Run as user A, attempt to read user B's data
-set request.jwt.claim.sub = '<user_a_id>';
-select count(*) from public.transactions where user_id = '<user_b_id>';
--- Expected: 0 (RLS filters)
+```ts
+it('user A cannot read user B transactions', async () => {
+  const rows = await db.select().from(transactions)
+    .where(and(eq(transactions.id, txB.id), eq(transactions.userId, userA.id)))
+  expect(rows).toEqual([])
+})
 
--- Attempt to insert a row owned by user B
-insert into public.transactions (user_id, wallet_id, title, amount, type)
-values ('<user_b_id>', '<user_a_wallet>', 'hack', 1000, 'expense');
--- Expected: ERROR — new row violates WITH CHECK
-
--- Attempt the RPC against user B's wallet
-select public.create_transaction(
-  '<user_b_wallet_id>', 1000, 'expense', 'hack'
-);
--- Expected: ERROR — FORBIDDEN_WALLET
+it('user A cannot use user B wallet', async () => {
+  const res = await createTransaction({
+    wallet_id: walletB.id,
+    type: 'expense',
+    amount: 1000,
+    title: 'x',
+  })
+  expect(res.success).toBe(false)
+})
 ```
 
+Without RLS, these tests are **not optional** — they are the only thing
+standing between users and each other's financial data.
+
 ---
 
-**End of DATABASE-SPEC.md**
+## 13. TiDB-Specific Notes
+
+| Behaviour | Implication |
+| :--- | :--- |
+| MySQL wire protocol | Use `mysql2`, not `pg` |
+| Distributed transactions | Supported, but keep them short |
+| Auto-increment | Values are **not guaranteed contiguous** — irrelevant for UUID PKs |
+| DDL is online | Schema changes do not block reads/writes |
+| Index consistency | New indexes are eventually consistent — verify with `EXPLAIN` |
+| Connection limits | Serverless scales to zero — use a small pool (5) + keepalive |
+| `utf8mb4` default | Emoji-safe |
+
+### 13.1 Connection Settings (`lib/db/index.ts`)
+
+```ts
+mysql.createPool({
+  ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+  waitForConnections: true,
+  connectionLimit: 5,
+  maxIdle: 5,
+  idleTimeout: 60_000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10_000,
+  timezone: '+00:00',   // store UTC, format in id-ID at the view layer
+})
+```
+
+The pool is cached on `globalThis` in development to survive hot reloads.
+
+---
+
+**End of DATABASE-SPEC.md v2.0 (MySQL / TiDB Cloud)**
