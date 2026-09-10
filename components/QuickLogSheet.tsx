@@ -177,7 +177,7 @@ function Sheet({ wallets, onClose }: { wallets: WalletLite[]; onClose: () => voi
             <button
               type="submit"
               disabled={pending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-solid px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
               {pending && <Loader2 className="w-4 h-4 animate-spin" />}
               {pending ? 'Menyimpan…' : 'Simpan'}

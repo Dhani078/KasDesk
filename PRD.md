@@ -907,9 +907,9 @@ before the corresponding release ships. Full remediation detail lives in the der
 | 11.10 | ~~FAB has no `onClick` handler~~ **FIXED** — `QuickLogSheet` wired to `createTransaction` | `components/QuickLogSheet.tsx` | Done | FR-LOG-1 |
 | 11.11 | Zod `GeminiOCRResponseSchema` & `CONTEXT.md` OCR shapes conflict | both files | R4 | §9.2 |
 | 11.12 | ~~Data layer unused~~ **FIXED** — `actions.ts` now imported by `app/page.tsx`, `app/wallets/*`, `app/vaults`, `app/insights` | grep across `app/`, `components/` | Done | §5.1 R1 |
-| 11.13 | Two conflicting schemas (`CONTEXT.md` vs `DATABASE.md`) | both files | R0 | §12 |
-| 11.14 | `CONTEXT.md`/`MEMORY.md` claim Next.js 14; actual is 16.3.0 | `package.json` | R0 | §12 |
-| 11.15 | `AGENT.md` describes `src/app/`; actual is root `app/` | `AGENT.md` | R0 | §12 |
+| 11.13 | ~~Two conflicting schemas~~ **FIXED** — `CONTEXT.md`/`AGENT.md`/`MEMORY.md` all carry a SUPERSEDED banner; `DATABASE-SPEC.md` is the single source | headers of all three files | Done | §12 |
+| 11.14 | ~~`CONTEXT.md`/`MEMORY.md` claim Next.js 14~~ **FIXED** — both marked superseded; §12 stack table states 16.3.0 | headers + `package.json` | Done | §12 |
+| 11.15 | ~~`AGENT.md` describes `src/app/`~~ **FIXED** — marked superseded; §12.10 records root `app/` | `AGENT.md` | Done | §12 |
 | 11.16 | ~~Home screen data is hardcoded, not from DB~~ **FIXED** — `app/page.tsx` reads `getDashboard`/`getRecentTransactions`/`getWallets` | `test:balance:e2e` (8/8) | Done | §5.1 R1 |
 | 11.19 | **Lost-update race in balance mutation** (found during 11.4 work, not previously documented): read-modify-write let concurrent expenses overwrite each other — 10×Rp 1.000 from Rp 10.000 left Rp 8.000 | `scripts/test-concurrency.js` | Done | FR-WLT-5 |
 | 11.17 | Repo has 1 commit; all project work uncommitted | `git status` | R0 | §13 |
