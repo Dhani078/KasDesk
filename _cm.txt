@@ -1,32 +1,29 @@
-fix: reject transactions against archived wallets at the source
+fix: extend archived-wallet guard to vault deposits and withdrawals
 
-Real defect found by auditing the ledger, not from the PRD list.
+The guard from the previous commit covered only createTransaction. Auditing
+every path that mutates a wallet balance found two more:
 
-An archived wallet is excluded from Total Saldo by design. getWallets()
-filters isArchived=0, so the UI never offers one — but createTransaction()
-did not reject it. Any spend against an archived wallet therefore made money
-leave the ledger with no visible trace: Total Saldo is unchanged (the wallet
-is invisible) but the balance really did drop.
+  - depositToVault    — money leaves a wallet
+  - withdrawFromVault — money arrives at a wallet
 
-Measured with a fixture: active-only sum stays 1000000 while all-wallets sum
-drops to 1600000. The 400000 is gone and nowhere on screen.
+An archived DESTINATION is just as lossy as an archived source: the balance
+rises while Total Saldo stays flat, so the money still disappears from view.
+Both now select isArchived and throw WALLET_ARCHIVED, translated to a clear
+Indonesian message.
 
-Fixed by throwing WALLET_ARCHIVED for BOTH the source wallet and the transfer
-destination — an archived destination swallows money the same way. Surfaced as
-a clear Indonesian message rather than a generic failure.
+deleteTransaction is deliberately EXEMPT, and this is the interesting part.
+It also moves money, but it REVERSES an existing transaction. Blocking it
+would strand money: a user who archived a wallet could never delete its old
+transactions, leaving the balance permanently frozen. Reversal must always
+be possible, so the guard is intentionally absent there.
 
-Two notes on how this got tested:
+That exemption is easy to mistake for an oversight, so test-archived-coverage
+asserts it by name: deleteTransaction must NOT call the guard, and the source
+must document why. A future refactor "fixing the inconsistency" has to update
+the test and confront the consequence.
 
-1. The rule lives in lib/wallet-guard.ts, not lib/actions.ts. actions.ts is
-   'use server', which requires every export to be async — a plain exported
-   helper breaks the build with "Server Actions must be async functions".
-   It also cannot be imported from plain Node because requireUserId() needs a
-   Next request scope. Extracting it made the rule unit-testable (12 checks,
-   covering the 0/1/boolean/string/Buffer shapes MySQL may return for tinyint,
-   plus null-safety so a NULL column cannot block every transaction).
+Also adds a coverage test (20 checks) that parses lib/actions.ts to confirm
+every balance-mutating path selects the flag, calls the guard, and translates
+the error — so a new money path added later cannot quietly skip it.
 
-2. The DB-level test asserts the invariant the guard protects rather than
-   faking an authenticated request, which would have passed vacuously on
-   UNAUTHENTICATED.
-
-186 checks green across 19 suites.
+206 checks green across 20 suites.
