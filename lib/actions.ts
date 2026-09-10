@@ -575,6 +575,24 @@ export async function deleteDebt(id: string): Promise<ActionResponse<null>> {
   return { success: true, data: null }
 }
 
+/**
+ * Same as getWallets() but INCLUDING archived ones.
+ *
+ * Needed so an archived wallet can be restored. getWallets() filters
+ * isArchived=0, so an archive-only UI would be a one-way door: the wallet
+ * disappears from every list with no way back.
+ */
+export async function getWalletsIncludingArchived() {
+  const userId = await requireUserId()
+  if (!userId) return []
+
+  return db
+    .select()
+    .from(wallets)
+    .where(eq(wallets.userId, userId))
+    .orderBy(wallets.name)
+}
+
 /** Create a wallet owned by the current user. */
 export async function createWallet(
   raw: unknown
@@ -605,6 +623,53 @@ export async function createWallet(
   revalidatePath('/wallets')
   revalidatePath('/')
   return { success: true, data: { id } }
+}
+
+/**
+ * Archive or un-archive one of the user's wallets.
+ *
+ * Archiving is reversible and preferred over deleting: the wallet keeps its
+ * history, it just stops counting toward Total Saldo. Without this there was
+ * no way at all to retire a wallet — the isArchived column existed and was
+ * filtered on everywhere, but nothing could ever set it.
+ *
+ * Note: archiving a wallet with a NON-ZERO balance removes that money from
+ * Total Saldo. That is the point of archiving (the wallet is out of use), but
+ * it is surprising enough to warrant the caller confirming first.
+ */
+export async function archiveWallet(
+  walletId: string,
+  archived: boolean,
+): Promise<ActionResponse<null>> {
+  const userId = await requireUserId()
+  if (!userId) {
+    return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
+  }
+
+  if (!walletId || typeof walletId !== 'string') {
+    return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Dompet tidak valid.' } }
+  }
+
+  try {
+    // Scoped to the owner — without the userId filter this would let any
+    // signed-in user archive anyone's wallet.
+    const res = await db
+      .update(wallets)
+      .set({ isArchived: archived ? 1 : 0 })
+      .where(and(eq(wallets.id, walletId), eq(wallets.userId, userId)))
+
+    if (!res[0].affectedRows) {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Dompet tidak ditemukan.' } }
+    }
+
+    revalidatePath('/wallets')
+    revalidatePath(`/wallets/${walletId}`)
+    revalidatePath('/')
+    return { success: true, data: null }
+  } catch (e) {
+    console.error('[archiveWallet]', e instanceof Error ? e.message : e)
+    return { success: false, error: { code: 'UNKNOWN', message: 'Gagal mengubah dompet.' } }
+  }
 }
 
 /**

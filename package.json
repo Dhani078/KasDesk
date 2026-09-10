@@ -33,7 +33,8 @@
     "test:archived:coverage": "node scripts/test-archived-coverage.js",
     "test:newuser-seed": "npx tsx --env-file=.env.local scripts/test-newuser-seed.ts",
     "test:register:atomic": "node scripts/test-register-atomic.js",
-    "test:cleanup:fixtures": "node scripts/cleanup-fixtures.js"
+    "test:cleanup:fixtures": "node scripts/cleanup-fixtures.js",
+    "test:wallet-archive": "node scripts/test-wallet-archive.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
