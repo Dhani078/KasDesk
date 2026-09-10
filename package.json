@@ -27,6 +27,8 @@
     "test:google-flag": "node scripts/test-google-flag.js",
     "test:dashboard": "node scripts/test-dashboard-math.js",
     "test:insights": "node scripts/test-insights.js",
+    "test:archived": "node scripts/test-archived-wallet.js",
+    "test:archived:unit": "npx tsx scripts/test-archived-unit.ts",
     "test:cleanup": "node scripts/cleanup-test-user.js"
   },
   "dependencies": {
