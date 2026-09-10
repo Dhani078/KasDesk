@@ -49,7 +49,37 @@ function enforceCap(now: number) {
 }
 
 /**
- * Record an attempt and report whether it is allowed.
+ * Rate limit for a caller-defined budget.
+ *
+ * The default `checkRateLimit` is locked to the shared LOGIN constants on
+ * purpose — auth throttling should not be tunable per call site. OCR needs
+ * a different budget (more expensive, fewer calls), so it gets its own
+ * explicit function rather than a knob on the auth path.
+ */
+export function checkRateLimitWith(
+  key: string,
+  limit: number,
+  windowMs: number,
+): { ok: true } | { ok: false; retryAfterSec: number } {
+  const now = Date.now()
+  const k = `custom:${key}`
+
+  if (buckets.size > 0 && Math.random() < 0.01) sweep(now)
+  enforceCap(now)
+
+  const b = buckets.get(k)
+  if (!b || b.resetAt <= now) {
+    buckets.set(k, { count: 1, resetAt: now + windowMs })
+    return { ok: true }
+  }
+  if (b.count >= limit) {
+    return { ok: false, retryAfterSec: Math.ceil((b.resetAt - now) / 1000) }
+  }
+  b.count += 1
+  return { ok: true }
+}
+
+/** Record an attempt and report whether it is allowed.
  * @returns `{ ok: true }` or `{ ok: false, retryAfterSec }`.
  */
 export function checkRateLimit(key: string): { ok: true } | { ok: false; retryAfterSec: number } {

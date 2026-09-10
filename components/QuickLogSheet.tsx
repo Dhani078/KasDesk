@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Loader2, Check } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
+import { ScanReceiptButton, type ScanResult } from '@/components/ScanReceiptButton'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 
@@ -18,19 +19,30 @@ type WalletLite = { id: string; name: string; balance: number }
  */
 export function QuickLogSheet({ wallets }: { wallets: WalletLite[] }) {
   const [open, setOpen] = useState(false)
+  const [scanned, setScanned] = useState<ScanResult | null>(null)
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Catat transaksi"
-        className="fixed bottom-20 left-1/2 z-40 -translate-x-1/2 flex h-14 w-14 items-center justify-center rounded-2xl bg-text-primary text-canvas shadow-lg"
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </button>
-      {open && <Sheet wallets={wallets} onClose={() => setOpen(false)} />}
+      <div className="fixed bottom-20 left-1/2 z-40 -translate-x-1/2 flex items-center gap-3">
+        <ScanReceiptButton onResult={(r) => { setScanned(r); setOpen(true) }} />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Catat transaksi"
+          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-text-primary text-canvas shadow-lg"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      </div>
+      {open && (
+        <Sheet
+          wallets={wallets}
+          prefill={scanned}
+          onClose={() => { setOpen(false); setScanned(null) }}
+        />
+      )}
     </>
   )
 }
@@ -39,10 +51,34 @@ export function QuickLogButton({ wallets }: { wallets: WalletLite[] }) {
   return <QuickLogSheet wallets={wallets} />
 }
 
-function Sheet({ wallets, onClose }: { wallets: WalletLite[]; onClose: () => void }) {
+function Sheet({
+  wallets,
+  prefill,
+  onClose,
+}: {
+  wallets: WalletLite[]
+  prefill: ScanResult | null
+  onClose: () => void
+}) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
+
+  // Seed the form from a scan the moment the sheet opens with one.
+  useEffect(() => {
+    if (!prefill) return
+    const f = document.getElementById('ql-form') as HTMLFormElement | null
+    if (!f) return
+    const set = (id: string, v: string) => {
+      const el = f.elements.namedItem(id) as HTMLInputElement | HTMLSelectElement | null
+      if (el) el.value = v
+    }
+    if (prefill.detected_total > 0) set('amount', String(prefill.detected_total))
+    if (prefill.merchant_name && prefill.merchant_name !== 'UNKNOWN') {
+      set('title', prefill.merchant_name)
+    }
+    if (prefill.detected_category) set('category_tag', prefill.detected_category)
+  }, [prefill])
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -87,6 +123,19 @@ function Sheet({ wallets, onClose }: { wallets: WalletLite[]; onClose: () => voi
           </button>
         </div>
 
+        {prefill?.needs_confirmation && (
+          <p
+            role="status"
+            className="mb-3 rounded-xl bg-white/[0.04] px-3 py-2 text-[11px] leading-relaxed text-text-secondary"
+          >
+            Hasil scan kurang pasti
+            {prefill.confidence_score > 0
+              ? ` (${Math.round(prefill.confidence_score * 100)}%)`
+              : ''}
+            . Periksa nominal sebelum menyimpan.
+          </p>
+        )}
+
         {ok ? (
           <p className="py-8 text-center text-sm text-accent-income">Tersimpan ✓</p>
         ) : wallets.length === 0 ? (
@@ -94,7 +143,7 @@ function Sheet({ wallets, onClose }: { wallets: WalletLite[]; onClose: () => voi
             Buat dompet dulu sebelum mencatat.
           </p>
         ) : (
-          <form onSubmit={onSubmit} className="space-y-3">
+          <form id="ql-form" onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-3 gap-2">
               {(['expense', 'income', 'transfer'] as const).map((t) => (
                 <label key={t} className="cursor-pointer">

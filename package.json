@@ -19,6 +19,7 @@
     "test:vaults": "node scripts/test-vaults.js",
     "test:delete": "node scripts/test-delete.js",
     "test:transfer": "node scripts/test-transfer.js",
+    "test:ocr": "node scripts/test-ocr.js",
     "test:isolation": "node scripts/test-isolation.js",
     "test:cleanup": "node scripts/cleanup-test-user.js"
   },
