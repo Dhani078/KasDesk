@@ -197,10 +197,18 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
       affectedToWalletId = txRow.toWalletId
 
       const [w] = await tx
-        .select({ balance: wallets.balance })
+        .select({ balance: wallets.balance, isArchived: wallets.isArchived })
         .from(wallets)
         .where(eq(wallets.id, txRow.walletId))
         .limit(1)
+
+      // NOTE: deliberately NOT blocked when w.isArchived is true. Unlike the
+      // create paths, this REVERSES an existing transaction. Refusing would
+      // strand money: a user who archived a wallet could never delete its old
+      // transactions, leaving the balance permanently frozen. Reversal must
+      // always be possible. test-archived-coverage.js asserts this exemption
+      // explicitly rather than leaving it implicit.
+      if (!w) throw new Error('WALLET_NOT_FOUND')
 
       // Reverse the original effect — atomic, same lost-update reasoning.
       if (txRow.type === 'income') {
@@ -357,11 +365,14 @@ export async function depositToVault(
   try {
     await db.transaction(async (tx) => {
       const [w] = await tx
-        .select({ balance: wallets.balance })
+        .select({ balance: wallets.balance, isArchived: wallets.isArchived })
         .from(wallets)
         .where(and(eq(wallets.id, walletId), eq(wallets.userId, userId)))
         .limit(1)
       if (!w) throw new Error('WALLET_NOT_FOUND')
+      // Archived wallets are invisible in Total Saldo, so moving money out of
+      // one makes it vanish with no trace. Same guard as createTransaction.
+      if (isArchivedWallet(w)) throw new Error('WALLET_ARCHIVED')
       if (Number(w.balance) < amt) throw new Error('INSUFFICIENT_BALANCE')
 
       const [v] = await tx
@@ -403,7 +414,13 @@ export async function depositToVault(
     if (msg === 'WALLET_NOT_FOUND' || msg === 'VAULT_NOT_FOUND') {
       return { success: false, error: { code: 'NOT_FOUND', message: 'Dompet atau target tidak ditemukan.' } }
     }
-    console.error('[depositToVault]', msg)
+        if (msg === 'WALLET_ARCHIVED') {
+      return {
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Dompet ini sudah diarsipkan dan tidak bisa dipakai.' },
+      }
+    }
+console.error('[depositToVault]', msg)
     return { success: false, error: { code: 'UNKNOWN', message: 'Terjadi kesalahan. Coba lagi.' } }
   }
 }
@@ -435,11 +452,14 @@ export async function withdrawFromVault(
       if (Number(v.currentAmount) < amt) throw new Error('INSUFFICIENT_BALANCE')
 
       const [w] = await tx
-        .select({ id: wallets.id })
+        .select({ id: wallets.id, isArchived: wallets.isArchived })
         .from(wallets)
         .where(and(eq(wallets.id, walletId), eq(wallets.userId, userId)))
         .limit(1)
       if (!w) throw new Error('WALLET_NOT_FOUND')
+      // Money arriving at an archived wallet is invisible in Total Saldo —
+      // it would look like it disappeared even though the balance rose.
+      if (isArchivedWallet(w)) throw new Error('WALLET_ARCHIVED')
 
       await tx
         .update(vaults)
@@ -469,7 +489,13 @@ export async function withdrawFromVault(
     if (msg === 'WALLET_NOT_FOUND' || msg === 'VAULT_NOT_FOUND') {
       return { success: false, error: { code: 'NOT_FOUND', message: 'Dompet atau target tidak ditemukan.' } }
     }
-    console.error('[withdrawFromVault]', msg)
+        if (msg === 'WALLET_ARCHIVED') {
+      return {
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Dompet ini sudah diarsipkan dan tidak bisa dipakai.' },
+      }
+    }
+console.error('[withdrawFromVault]', msg)
     return { success: false, error: { code: 'UNKNOWN', message: 'Terjadi kesalahan. Coba lagi.' } }
   }
 }
