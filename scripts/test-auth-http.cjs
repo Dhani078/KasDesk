@@ -11,10 +11,24 @@ const { execFileSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
+const mysql = require('mysql2/promise')
+const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
+
+function loadEnv(f) {
+  const o = {}
+  for (const raw of fs.readFileSync(f, 'utf8').split(/\r?\n/)) {
+    const m = raw.trim().match(/^([A-Z0-9_]+)=(.*)$/)
+    if (m) o[m[1]] = m[2].trim()
+  }
+  return o
+}
+const env = loadEnv(path.join(__dirname, '..', '.env.local'))
 
 const BASE = process.env.BASE_URL || 'http://localhost:3333'
 const JAR = path.join(os.tmpdir(), `kasdesk-jar-${Date.now()}.txt`)
-const EMAIL = 'manual-test@example.com'
+// Create unique test user for this run
+const EMAIL = `auth-test-${Date.now()}@example.com`
 const PW = 'secret123'
 
 let pass = 0, fail = 0
@@ -45,12 +59,24 @@ function getCsrf() {
   return JSON.parse(out).csrfToken
 }
 
-try {
+async function main() {
+  const db = await mysql.createPool({
+    host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
+    user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
+    database: env.DATABASE_NAME,
+    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+    waitForConnections: true, connectionLimit: 5,
+  })
+  const uid = crypto.randomUUID()
+  await db.execute(
+    'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
+    [uid, 'Auth Tester', EMAIL, await bcrypt.hash(PW, 12)]
+  )
+
   console.log('\n=== 1. PROTECTED ROUTE WITHOUT SESSION ===')
   const r0 = curl([`${BASE}/`])
   check('/ redirects when unauthenticated (307)', r0.status === 307, `got ${r0.status}`)
-  check('redirect points to /login', /\/login/.test(r0.headers.location || ''),
-    r0.headers.location)
+  check('redirect points to /login', /\/login/.test(r0.headers.location || ''), r0.headers.location)
 
   console.log('\n=== 2. LOGIN WITH CORRECT PASSWORD ===')
   const csrf = getCsrf()
@@ -100,10 +126,14 @@ try {
   console.log(`\n${'='.repeat(46)}`)
   console.log(`RESULT: ${pass} passed, ${fail} failed`)
   console.log('='.repeat(46))
-} catch (e) {
-  console.error('ERROR:', e.message)
-  fail++
-} finally {
+
+  await db.execute('DELETE FROM users WHERE id=?', [uid])
+  await db.end()
   fs.rmSync(JAR, { force: true })
+  process.exit(fail === 0 ? 0 : 1)
 }
-process.exit(fail === 0 ? 0 : 1)
+
+main().catch(e => {
+  console.error('ERROR:', e.message)
+  process.exit(1)
+})

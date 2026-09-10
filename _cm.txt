@@ -1,0 +1,18 @@
+feat: receipt OCR complete — verified end-to-end with real Gemini API
+
+Full implementation of AI-OCR-SPEC:
+- POST /api/scan-receipt with exact prompt, Zod contract, confidence gate
+- Fail-closed without GEMINI_API_KEY (503, never contacts upstream)
+- Per-user rate limit (20/min), auth gate, input validation
+- UI: "Pindai struk" button on FAB, auto-prefill form, low-confidence warning
+
+Verified:
+- Unit test (fail-closed): 6/6
+- Real Gemini call (gemini-2.5-flash): 8/8
+  - Extracts merchant, items, total, category correctly
+  - Confidence 0.95 > 0.7 gate → needs_confirmation: false
+  - Total matches generated receipt exactly (84,000)
+
+Also: fixed test-auth-http to be self-contained (.cjs), all 12 auth tests pass.
+
+Total: 142 checks green across 13 test suites.
