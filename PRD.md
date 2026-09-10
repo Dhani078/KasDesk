@@ -902,10 +902,10 @@ before the corresponding release ships. Full remediation detail lives in the der
 | 11.5 | ~~`/api/scan-receipt` missing~~ **DONE** — built to `AI-OCR-SPEC`: prompt verbatim, Zod contract, confidence gate (<0.7 → confirm), sanity bounds, per-user rate limit, fail-closed without key. **Verified end-to-end with real Gemini API** — extracts merchant, items, total, category; confidence 0.95 on test receipt | `test:ocr` (6/6), `test:ocr-real` (8/8) | Done | FR-OCR-2 |
 | 11.6 | ~~`pb-safe` class is dead~~ **FIXED** — registered as `@utility` in `globals.css` (Tailwind v4) | CSS now emits `env(safe-area-inset-bottom)` | Done | FR-PWA-4 |
 | 11.7 | ~~`userScalable: false`, `maximumScale: 1`~~ **FIXED** — removed; zoom enabled | `app/layout.tsx` | Done | NR-A11Y-6 |
-| 11.8 | **PWA icons 404** — `public/icons/` doesn't exist | `manifest.json` vs `public/` listing | R5 | FR-PWA-1 |
+| 11.8 | ~~PWA icons 404~~ **FIXED** — 5 icons generated (`icon-192/512`, `maskable-192/512`, `apple-touch-icon`); manifest points at them; all verified HTTP 200 (note: real names are `icon-192.png`, not `icon-192x192.png`) | `curl /icons/*` → 200 | Done | FR-PWA-1 |
 | 11.9 | ~~3 of 5 nav routes are 404~~ **FIXED** — `/wallets`, `/wallets/[id]`, `/vaults`, `/insights` all render real data | Smoke test 19/19 | Done | §5.1 R1 |
 | 11.10 | ~~FAB has no `onClick` handler~~ **FIXED** — `QuickLogSheet` wired to `createTransaction` | `components/QuickLogSheet.tsx` | Done | FR-LOG-1 |
-| 11.11 | Zod `GeminiOCRResponseSchema` & `CONTEXT.md` OCR shapes conflict | both files | R4 | §9.2 |
+| 11.11 | ~~OCR schema conflict~~ **FIXED** — `CONTEXT.md`/`AGENT.md`/`MEMORY.md` all carry SUPERSEDED banners and no longer define an OCR shape; `lib/ocr/contract.ts` is the single source (`CATEGORY_ENUM` with 9 Indonesian categories) | grep across all three files | Done | §9.2 |
 | 11.12 | ~~Data layer unused~~ **FIXED** — `actions.ts` now imported by `app/page.tsx`, `app/wallets/*`, `app/vaults`, `app/insights` | grep across `app/`, `components/` | Done | §5.1 R1 |
 | 11.13 | ~~Two conflicting schemas~~ **FIXED** — `CONTEXT.md`/`AGENT.md`/`MEMORY.md` all carry a SUPERSEDED banner; `DATABASE-SPEC.md` is the single source | headers of all three files | Done | §12 |
 | 11.14 | ~~`CONTEXT.md`/`MEMORY.md` claim Next.js 14~~ **FIXED** — both marked superseded; §12 stack table states 16.3.0 | headers + `package.json` | Done | §12 |
@@ -915,8 +915,8 @@ before the corresponding release ships. Full remediation detail lives in the der
 | 11.20 | **Vaults were read-only** — `getVaults` existed but there was no way to create a target or allocate funds, while PRD §6.7 subtracts vault allocations from spendable money. Fixed: `createVault`/`depositToVault`/`withdrawFromVault` move real wallet balance so money is never counted twice | `test:vaults` (13/13) | Done | FR-VLT-2 |
 | 11.21 | **No way to correct a mistyped transaction** — `deleteTransaction` existed but no UI called it, so a wrong amount corrupted the balance permanently. Fixed: delete button + confirm dialog on wallet detail | `test:delete` (12/12) | Done | FR-LOG-6 |
 | 11.22 | **Self-transfer accepted + stale wallet detail** — transferring a wallet to itself silently succeeded (no money moved, but a row was written); `createTransaction`/`deleteTransaction` also never revalidated `/wallets/[id]`, so the detail page showed stale balances | `test:transfer` (10/10) | Done | FR-TRF-1 |
-| 11.17 | Repo has 1 commit; all project work uncommitted | `git status` | R0 | §13 |
-| 11.18 | XAMPP/Apache cannot run this app (Node.js, not PHP) | Project location | — | §13 |
+| 11.17 | ~~Repo has 1 commit~~ **FIXED** — 29 commits on `main`, fully pushed to `origin`; working tree clean; 0 commits ahead | `git rev-list --count HEAD`, `git status` | Done | §13 |
+| 11.18 | XAMPP/Apache cannot run this app (Node.js, not PHP) — **informational, not a defect**. Run with `npm run build && npm start` (or `npm run dev --webpack`). Port 3000 is taken by another app, so tests use 3333 | Project location | — | §13 |
 
 ### 11.6 Detail — Dead `pb-safe` Class
 

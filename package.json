@@ -22,6 +22,8 @@
     "test:ocr": "node scripts/test-ocr.js",
     "test:ocr-real": "node scripts/test-ocr-real.js",
     "test:isolation": "node scripts/test-isolation.js",
+    "test:register": "node scripts/test-register.js",
+    "test:register:unit": "node scripts/test-register-unit.js",
     "test:cleanup": "node scripts/cleanup-test-user.js"
   },
   "dependencies": {
