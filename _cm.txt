@@ -1,8 +1,0 @@
-fix: reject self-transfer, revalidate wallet detail routes
-
-Two defects found by auditing createTransaction rather than trusting it.
-
-1. Self-transfer was accepted
-   Transferring a wallet to itself decremented then incremented the same
-   row. Net effect: no money moved — but a transaction row was still
-   written, so it ***REMOVED***
