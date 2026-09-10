@@ -60,6 +60,13 @@ export async function createTransaction(
 
       // 3. For transfers, verify the destination wallet too
       if (data.type === 'transfer') {
+        // Transferring to the same wallet is a no-op that still writes a
+        // transaction row and burns an ID. Worse: it silently succeeds while
+        // looking like real activity. Reject it.
+        if (data.to_wallet_id === data.wallet_id) {
+          throw new Error('SAME_WALLET')
+        }
+
         const [to] = await tx
           .select({ id: wallets.id })
           .from(wallets)
@@ -121,7 +128,13 @@ export async function createTransaction(
 
     revalidatePath('/')
     revalidatePath('/wallets')
-    return { success: true, data: { id } }
+      // Detail pages for both legs of a transfer must refresh too, or the
+      // balances shown there go stale.
+      revalidatePath(`/wallets/${data.wallet_id}`)
+      if (data.type === 'transfer' && data.to_wallet_id) {
+        revalidatePath(`/wallets/${data.to_wallet_id}`)
+      }
+      return { success: true, data: { id } }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'UNKNOWN'
     if (msg === 'INSUFFICIENT_BALANCE') {
@@ -129,6 +142,12 @@ export async function createTransaction(
     }
     if (msg === 'WALLET_NOT_FOUND') {
       return { success: false, error: { code: 'NOT_FOUND', message: 'Dompet tidak ditemukan.' } }
+    }
+    if (msg === 'SAME_WALLET') {
+      return {
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Dompet asal dan tujuan tidak boleh sama.' },
+      }
     }
     // Never leak internal details to the client
     console.error('[createTransaction]', msg)
@@ -144,6 +163,9 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
   }
 
   try {
+    let affectedWalletId: string | null = null
+    let affectedToWalletId: string | null = null
+
     await db.transaction(async (tx) => {
       const [txRow] = await tx
         .select()
@@ -152,6 +174,9 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
         .limit(1)
 
       if (!txRow) throw new Error('NOT_FOUND')
+
+      affectedWalletId = txRow.walletId
+      affectedToWalletId = txRow.toWalletId
 
       const [w] = await tx
         .select({ balance: wallets.balance })
@@ -186,6 +211,10 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
 
     revalidatePath('/')
     revalidatePath('/wallets')
+    // The delete button lives on the wallet detail page, so that route must
+    // be revalidated too — otherwise the row stays visible after deletion.
+    if (affectedWalletId) revalidatePath(`/wallets/${affectedWalletId}`)
+    if (affectedToWalletId) revalidatePath(`/wallets/${affectedToWalletId}`)
     return { success: true, data: null }
   } catch (e) {
     console.error('[deleteTransaction]', e instanceof Error ? e.message : e)
