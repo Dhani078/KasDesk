@@ -5,6 +5,7 @@ import { eq, and, desc, gte, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { wallets, transactions, categories, vaults, debts } from '@/lib/db/schema'
 import { TransactionSchema, WalletSchema, DebtSchema, VaultSchema } from '@/lib/schemas'
+import { isArchivedWallet } from '@/lib/wallet-guard'
 import { requireUserId } from '@/lib/auth/session'
 import { daysLeftInMonth } from '@/lib/format'
 import type { ActionResponse } from '@/lib/types'
@@ -43,14 +44,22 @@ export async function createTransaction(
   try {
     const id = await db.transaction(async (tx) => {
       // 1. Verify the wallet belongs to this user (authorization at DB level)
+      //    AND is not archived. Archived wallets are excluded from Total Saldo,
+      //    so spending from one would make money vanish from every headline
+      //    number with no visible cause. getWallets() already hides them from
+      //    the UI; this rejects it at the source too.
       const [wallet] = await tx
-        .select({ id: wallets.id, balance: wallets.balance })
+        .select({ id: wallets.id, balance: wallets.balance, isArchived: wallets.isArchived })
         .from(wallets)
         .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId)))
         .limit(1)
 
       if (!wallet) {
         throw new Error('WALLET_NOT_FOUND')
+      }
+
+      if (isArchivedWallet(wallet)) {
+        throw new Error('WALLET_ARCHIVED')
       }
 
       // 2. Guard against overdrawing for expenses/transfers
@@ -68,12 +77,15 @@ export async function createTransaction(
         }
 
         const [to] = await tx
-          .select({ id: wallets.id })
+          .select({ id: wallets.id, isArchived: wallets.isArchived })
           .from(wallets)
           .where(and(eq(wallets.id, data.to_wallet_id!), eq(wallets.userId, userId)))
           .limit(1)
 
         if (!to) throw new Error('WALLET_NOT_FOUND')
+        // Same reasoning as the source wallet: an archived destination is
+        // invisible in Total Saldo, so the money would simply disappear.
+        if (isArchivedWallet(to)) throw new Error('WALLET_ARCHIVED')
       }
 
       const txId = crypto.randomUUID()
@@ -147,6 +159,12 @@ export async function createTransaction(
       return {
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'Dompet asal dan tujuan tidak boleh sama.' },
+      }
+    }
+    if (msg === 'WALLET_ARCHIVED') {
+      return {
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Dompet ini sudah diarsipkan dan tidak bisa dipakai.' },
       }
     }
     // Never leak internal details to the client

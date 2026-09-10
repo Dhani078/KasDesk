@@ -1,21 +1,32 @@
-fix: insights "7 Hari Terakhir" showed month-to-date, not 7 days
+fix: reject transactions against archived wallets at the source
 
-Real defect found by auditing the insights page, not from the PRD list.
+Real defect found by auditing the ledger, not from the PRD list.
 
-The section is labelled "7 Hari Terakhir" but rendered dash.monthlyExpense —
-month-to-date. Any spending earlier in the month inflated the figure, so the
-page overstated how fast money was leaving.
+An archived wallet is excluded from Total Saldo by design. getWallets()
+filters isArchived=0, so the UI never offers one — but createTransaction()
+did not reject it. Any spend against an archived wallet therefore made money
+leave the ledger with no visible trace: Total Saldo is unchanged (the wallet
+is invisible) but the balance really did drop.
 
-Proven with a fixture that separates the two windows:
-  - expense on day 1 of this month  = 700000  (in month, outside 7 days)
-  - expenses within last 7 days     = 300000
-  - page showed 1000000, should show 300000
+Measured with a fixture: active-only sum stays 1000000 while all-wallets sum
+drops to 1600000. The 400000 is gone and nowhere on screen.
 
-Fixed by summing getSpendingFlow(), which is already filtered to the last 7
-days and to expenses only — no new query needed. The now-unused getDashboard()
-call was removed rather than left as a wasted round-trip.
+Fixed by throwing WALLET_ARCHIVED for BOTH the source wallet and the transfer
+destination — an archived destination swallows money the same way. Surfaced as
+a clear Indonesian message rather than a generic failure.
 
-The test guards its own fixture: if run in the first week of the month the two
-windows overlap, so it reports SKIPPED instead of passing vacuously.
+Two notes on how this got tested:
 
-168 checks green across 17 suites.
+1. The rule lives in lib/wallet-guard.ts, not lib/actions.ts. actions.ts is
+   'use server', which requires every export to be async — a plain exported
+   helper breaks the build with "Server Actions must be async functions".
+   It also cannot be imported from plain Node because requireUserId() needs a
+   Next request scope. Extracting it made the rule unit-testable (12 checks,
+   covering the 0/1/boolean/string/Buffer shapes MySQL may return for tinyint,
+   plus null-safety so a NULL column cannot block every transaction).
+
+2. The DB-level test asserts the invariant the guard protects rather than
+   faking an authenticated request, which would have passed vacuously on
+   UNAUTHENTICATED.
+
+186 checks green across 19 suites.
