@@ -60,6 +60,17 @@ export async function POST(req: Request) {
   }
 
   // 4. Parse + pre-flight checks.
+  //
+  // Content-Length is checked BEFORE parsing the body. req.formData() buffers
+  // the whole request in memory, so without this a 500 MB upload would be read
+  // into RAM and only rejected afterwards — the size check below would never
+  // get a chance to run. The header is advisory (a client may omit or lie), so
+  // the post-parse file.size check stays as the real gate.
+  const declared = Number(req.headers.get('content-length') ?? 0)
+  if (declared && declared > MAX_BYTES + 1024 * 1024) {
+    return NextResponse.json({ error: 'IMAGE_TOO_LARGE' }, { status: 413 })
+  }
+
   let form: FormData
   try {
     form = await req.formData()

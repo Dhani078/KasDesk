@@ -1,26 +1,26 @@
-test: exercise the real Zod schemas with hostile input (29 checks)
+fix: check Content-Length before buffering the OCR upload
 
-The schemas look strict — integer, positive, max 100 billion — but a schema
-only protects the paths that actually run it. This drives the REAL
-TransactionSchema / WalletSchema / DebtSchema directly.
+await req.formData() reads the ENTIRE request into memory, and the 10 MB
+file.size check ran only AFTER that. So a multi-hundred-MB upload was buffered
+into RAM and then rejected — a memory DoS, made cheap by the route's 20
+requests/min per-user budget.
 
-Why schema-level rather than over HTTP: calling the server action needs its
-build-generated action id, which changes every build. I tried the HTTP version
-first and it "passed" 9/9 for the wrong reason — Next rejected every request
-before validation ran, so the balance never moved because nothing executed.
-That is a false sense of security, not a test. Deleted it.
+Fixed with a Content-Length pre-check before parsing. The header is advisory
+(a client may omit or lie), so the file.size backstop stays as the real gate;
+the pre-check exists purely so the common case never reaches the buffer.
 
-The cases worth naming are the ones that would CORRECT money if they slipped
-through:
-  - negative expense  -> would silently ADD funds
-  - zero amount       -> junk row in the history
-  - fractional amount -> breaks the integer-money invariant
-  - NaN / Infinity / string amounts, over-max, missing wallet, transfer to self
+Measured after the fix: an 11 MB upload is refused with 413 in ~139ms.
 
-Also asserts the schemas do NOT over-block: exactly-at-max amount, 120-char
-title, valid transfer, category tag, note — all still accepted. A validator
-that rejects legitimate input is its own bug.
+The test asserts the guard's PLACEMENT, not just its presence, because a
+Content-Length check after req.formData() would be useless — the body would
+already be in memory. That assertion initially failed for the wrong reason:
+it matched the string "req.formData()" inside the guard's own comment rather
+than the call. Now it searches for "await req.formData()".
 
-Result: all 29 pass. No schema defects found.
+Also worth recording: the first version of this test drove the route over
+HTTP with a forged Content-Length, and curl refuses to send a header that
+disagrees with the body, so the request never left and every case "passed".
+The OpenAI-style fake-action-id test from earlier had the same shape of
+mistake. Structural + timing assertions replaced it.
 
-249 checks green across 24 suites. Database clean: 1 demo user, 0 fixtures.
+249 -> 256 checks green across 25 suites.
