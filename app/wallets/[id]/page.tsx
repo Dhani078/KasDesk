@@ -8,6 +8,7 @@ import { wallets, transactions } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { formatIDR, formatDayGroup, toDateKey, formatTime } from '@/lib/format'
 import { EmptyState } from '@/components/EmptyState'
+import { DeleteTransactionButton } from '@/components/DeleteTransactionButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,6 +81,14 @@ export default async function WalletDetailPage({
                       {t.type === 'income' ? '+' : '−'}
                       {formatIDR(t.amount)}
                     </span>
+                    <DeleteTransactionButton
+                      txn={{
+                        id: t.id,
+                        title: t.title,
+                        amount: Number(t.amount),
+                        type: t.type as 'income' | 'expense' | 'transfer',
+                      }}
+                    />
                   </div>
                 ))}
               </div>

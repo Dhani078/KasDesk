@@ -1,0 +1,8 @@
+feat: delete transaction — correct a mistyped entry
+
+`deleteTransaction` existed and correctly reversed the balance, but no
+UI ever called it. A wrong amount was therefore permanent: the only
+way to fix it was to hand-edit the database.
+
+Added
+- `components/De***REMOVED***
