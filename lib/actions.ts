@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { eq, and, desc, gte } from 'drizzle-orm'
+import { eq, and, desc, gte, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { wallets, transactions, categories, vaults, debts } from '@/lib/db/schema'
 import { TransactionSchema, WalletSchema } from '@/lib/schemas'
@@ -69,7 +69,9 @@ export async function createTransaction(
         if (!to) throw new Error('WALLET_NOT_FOUND')
       }
 
-      const [row] = await tx.insert(transactions).values({
+      const txId = crypto.randomUUID()
+      await tx.insert(transactions).values({
+        id: txId,
         userId,
         walletId: data.wallet_id,
         toWalletId: data.to_wallet_id ?? null,
@@ -81,31 +83,40 @@ export async function createTransaction(
         occurredAt: data.occurred_at ? new Date(data.occurred_at) : new Date(),
       })
 
-      // 4. Update balance atomically
+      // 4. Update balance atomically.
+      //
+      //    CRITICAL: use `balance = balance ± amount`, never
+      //    `balance = <value we just read>`. The read-modify-write form is a
+      //    lost-update race — two concurrent expenses both read the same
+      //    starting balance and the second overwrites the first, silently
+      //    destroying money. Proven by scripts/test-concurrency.js: 10
+      //    concurrent Rp 1.000 withdrawals from Rp 10.000 left Rp 8.000
+      //    instead of Rp 0. The atomic form leaves Rp 0.
       if (data.type === 'income') {
-        await tx.update(wallets)
-          .set({ balance: wallet.balance + data.amount })
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} + ${data.amount}` })
           .where(eq(wallets.id, data.wallet_id))
       } else if (data.type === 'expense') {
-        await tx.update(wallets)
-          .set({ balance: wallet.balance - data.amount })
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} - ${data.amount}` })
           .where(eq(wallets.id, data.wallet_id))
       } else {
-        // transfer: deduct source, credit destination
-        await tx.update(wallets)
-          .set({ balance: wallet.balance - data.amount })
+        // transfer: deduct source, credit destination — both atomically
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} - ${data.amount}` })
           .where(eq(wallets.id, data.wallet_id))
-        const [toWallet] = await tx
-          .select({ balance: wallets.balance })
-          .from(wallets)
-          .where(eq(wallets.id, data.to_wallet_id!))
-          .limit(1)
-        await tx.update(wallets)
-          .set({ balance: (toWallet?.balance ?? 0) + data.amount })
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} + ${data.amount}` })
           .where(eq(wallets.id, data.to_wallet_id!))
       }
 
-      return row.insertId ? String(row.insertId) : crypto.randomUUID()
+      // `insertId` is only meaningful for auto-increment keys; our PK is a
+      // client-generated UUID, so it would return 0 here.
+      return txId
     })
 
     revalidatePath('/')
@@ -148,26 +159,25 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
         .where(eq(wallets.id, txRow.walletId))
         .limit(1)
 
-      // Reverse the original effect
+      // Reverse the original effect — atomic, same lost-update reasoning.
       if (txRow.type === 'income') {
-        await tx.update(wallets)
-          .set({ balance: (w?.balance ?? 0) - txRow.amount })
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} - ${txRow.amount}` })
           .where(eq(wallets.id, txRow.walletId))
       } else if (txRow.type === 'expense') {
-        await tx.update(wallets)
-          .set({ balance: (w?.balance ?? 0) + txRow.amount })
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} + ${txRow.amount}` })
           .where(eq(wallets.id, txRow.walletId))
       } else if (txRow.toWalletId) {
-        await tx.update(wallets)
-          .set({ balance: (w?.balance ?? 0) + txRow.amount })
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} + ${txRow.amount}` })
           .where(eq(wallets.id, txRow.walletId))
-        const [to] = await tx
-          .select({ balance: wallets.balance })
-          .from(wallets)
-          .where(eq(wallets.id, txRow.toWalletId))
-          .limit(1)
-        await tx.update(wallets)
-          .set({ balance: (to?.balance ?? 0) - txRow.amount })
+        await tx
+          .update(wallets)
+          .set({ balance: sql`${wallets.balance} - ${txRow.amount}` })
           .where(eq(wallets.id, txRow.toWalletId))
       }
 
