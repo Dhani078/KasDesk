@@ -1,14 +1,13 @@
 import { PieChart } from 'lucide-react'
 
-import { getDashboard, getSpendingFlow, getTopCategories, getDebts } from '@/lib/actions'
+import { getSpendingFlow, getTopCategories, getDebts } from '@/lib/actions'
 import { formatIDR, formatDateShort } from '@/lib/format'
 import { EmptyState } from '@/components/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
 export default async function InsightsPage() {
-  const [dash, flow, top, debts] = await Promise.all([
-    getDashboard(),
+  const [flow, top, debts] = await Promise.all([
     getSpendingFlow(),
     getTopCategories(5),
     getDebts(),
@@ -27,7 +26,7 @@ export default async function InsightsPage() {
           7 Hari Terakhir
         </h2>
         <p className="mb-4 font-mono text-lg font-semibold tabular-nums text-text-primary">
-          {formatIDR(dash.monthlyExpense)}
+          {formatIDR(flow.reduce((s, f) => s + f.total, 0))}
         </p>
         <div className="flex h-24 items-end gap-1.5">
           {flow.map((f) => (
