@@ -897,8 +897,8 @@ before the corresponding release ships. Full remediation detail lives in the der
 | :-- | :--- | :--- | :--- | :--- |
 | 11.1 | ~~Product name is "Vaultify" everywhere~~ **FIXED** | Renamed to KASDESK in `package.json`, `layout.tsx`, docs | Done | NR-NAME |
 | 11.2 | ~~No `middleware.ts` — sessions won't persist~~ **FIXED** | `middleware.ts` + `auth.edge.ts` now present; session via Auth.js JWT | Done | FR-AUTH-5 |
-| 11.3 | `amount: z.number()` lacks `.positive()` | `lib/schemas.ts` vs `SECURITY.md` | R1 | FR-LOG-4 |
-| 11.4 | **Wallet balance never updates** — assumed trigger doesn't exist | `lib/actions.ts` comment vs `DATABASE.md` | R1 | FR-WLT-5 |
+| 11.3 | ~~`amount: z.number()` lacks `.positive()`~~ **FIXED** — now `.int().positive().max(100_000_000_000)` | `lib/schemas.ts` | Done | FR-LOG-4 |
+| 11.4 | ~~Wallet balance never updates~~ **FIXED** — atomic `balance = balance ± amount`; verified 14/14 (income/expense/transfer/delete/overdraw/rollback/int64). **Also fixed a lost-update race** (see below) | `test:balance`, `test:concurrency` | Done | FR-WLT-5 |
 | 11.5 | Gemini SDK absent; `/api/scan-receipt` missing | `package.json`, `app/` tree | R4 | FR-OCR-2 |
 | 11.6 | ~~`pb-safe` class is dead~~ **FIXED** — registered as `@utility` in `globals.css` (Tailwind v4) | CSS now emits `env(safe-area-inset-bottom)` | Done | FR-PWA-4 |
 | 11.7 | ~~`userScalable: false`, `maximumScale: 1`~~ **FIXED** — removed; zoom enabled | `app/layout.tsx` | Done | NR-A11Y-6 |
