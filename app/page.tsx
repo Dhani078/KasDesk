@@ -1,97 +1,150 @@
-import { BottomNav } from "@/components/BottomNav";
+import Link from 'next/link'
+import { TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 
-export default function Dashboard() {
+import { getDashboard, getRecentTransactions, getWallets } from '@/lib/actions'
+import { formatIDR, formatSigned, formatDayGroup, toDateKey, formatTime } from '@/lib/format'
+import { QuickLogButton } from '@/components/QuickLogSheet'
+import { EmptyState } from '@/components/EmptyState'
+
+export const dynamic = 'force-dynamic'
+
+export default async function HomePage() {
+  const [dash, recent, wallets] = await Promise.all([
+    getDashboard(),
+    getRecentTransactions(20),
+    getWallets(),
+  ])
+
+  const hasWallets = wallets.length > 0
+
   return (
-    <main className="flex-1 w-full max-w-md mx-auto pb-24 relative">
-      {/* Header / Hero Balance */}
-      <section className="px-5 pt-12 pb-8">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-secondary mb-2">Total Net Worth</h2>
-        <div className="flex items-baseline gap-1">
-          <span className="text-text-secondary font-mono text-xl">Rp</span>
-          <h1 className="text-3xl font-medium tracking-tight font-mono tabular-nums text-text-primary">
-            14.250.000
-          </h1>
+    <main className="min-h-dvh px-5 pt-8 pb-32">
+      {/* ── Hero: total balance ─────────────────────────── */}
+      <header className="mb-6">
+        <p className="text-xs uppercase tracking-[0.08em] text-text-secondary mb-1">
+          Total Saldo
+        </p>
+        <h1 className="font-mono text-4xl font-semibold tabular-nums text-text-primary">
+          {formatIDR(dash.totalBalance)}
+        </h1>
+        <p className="mt-1 text-xs text-text-secondary">
+          {dash.walletCount} dompet aktif
+        </p>
+      </header>
+
+      {/* ── Safe Daily Spend (PRD FR-INS-1/2) ───────────── */}
+      <section className="mb-6 rounded-2xl border border-border-outer bg-surface p-4">
+        <div className="flex items-baseline justify-between">
+          <p className="text-xs uppercase tracking-[0.08em] text-text-secondary">
+            Aman Harian
+          </p>
+          <span className="font-mono text-2xl font-semibold tabular-nums text-accent-income">
+            {formatIDR(dash.safeDailySpend)}
+          </span>
         </div>
-        <div className="flex items-center gap-4 mt-6">
-          <div className="flex-1 bg-surface border border-border-outer p-3 rounded-lg">
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-text-secondary mb-1">Income</div>
-            <div className="font-mono text-sm text-accent-income tabular-nums">+4.500.000</div>
+        <p className="mt-1 text-[11px] text-text-secondary">
+          Bisa dibelanjakan per hari · {dash.daysLeft} hari tersisa bulan ini
+        </p>
+        {(dash.vaultAllocations > 0 || dash.upcomingDebts > 0) && (
+          <p className="mt-2 text-[11px] text-text-secondary">
+            Sudah dikurangi tabungan ({formatIDR(dash.vaultAllocations)}) dan utang (
+            {formatIDR(dash.upcomingDebts)})
+          </p>
+        )}
+      </section>
+
+      {/* ── Month summary ───────────────────────────────── */}
+      <section className="mb-6 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl border border-border-outer bg-surface p-4">
+          <div className="flex items-center gap-1.5 text-text-secondary mb-1">
+            <TrendingUp className="w-3.5 h-3.5" aria-hidden />
+            <span className="text-[11px] uppercase tracking-[0.06em]">Masuk</span>
           </div>
-          <div className="flex-1 bg-surface border border-border-outer p-3 rounded-lg">
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-text-secondary mb-1">Expense</div>
-            <div className="font-mono text-sm text-accent-expense tabular-nums">-1.250.000</div>
+          <p className="font-mono text-lg font-semibold tabular-nums text-accent-income">
+            {formatIDR(dash.monthlyIncome)}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border-outer bg-surface p-4">
+          <div className="flex items-center gap-1.5 text-text-secondary mb-1">
+            <TrendingDown className="w-3.5 h-3.5" aria-hidden />
+            <span className="text-[11px] uppercase tracking-[0.06em]">Keluar</span>
           </div>
+          <p className="font-mono text-lg font-semibold tabular-nums text-accent-expense">
+            {formatIDR(dash.monthlyExpense)}
+          </p>
         </div>
       </section>
 
-      {/* Recent Transactions (Grouped Inset Table) */}
-      <section className="px-5">
+      {/* ── Recent transactions ─────────────────────────── */}
+      <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-secondary">Recent Activity</h2>
-          <span className="text-[10px] text-text-secondary underline decoration-border-inner underline-offset-4">View All</span>
+          <h2 className="text-sm font-semibold text-text-primary">Transaksi</h2>
+          <Link href="/wallets" className="text-xs text-accent hover:underline">
+            Lihat dompet
+          </Link>
         </div>
-        
-        <div className="bg-surface rounded-lg border border-border-outer overflow-hidden">
-          {/* Transaction 1 */}
-          <div className="flex items-center justify-between p-4 border-b border-border-inner">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-text-secondary">[FOOD]</span>
-              <div>
-                <p className="text-sm font-medium text-text-primary">Nasi Goreng Gila</p>
-                <p className="text-[10px] text-text-secondary mt-0.5">BCA • 12:30 PM</p>
-              </div>
-            </div>
-            <span className="font-mono text-sm tabular-nums text-accent-expense">-35.000</span>
-          </div>
 
-          {/* Transaction 2 */}
-          <div className="flex items-center justify-between p-4 border-b border-border-inner">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-text-secondary">[SALARY]</span>
-              <div>
-                <p className="text-sm font-medium text-text-primary">PT. ABC Tech</p>
-                <p className="text-[10px] text-text-secondary mt-0.5">Mandiri • 09:00 AM</p>
-              </div>
-            </div>
-            <span className="font-mono text-sm tabular-nums text-accent-income">+8.000.000</span>
-          </div>
-
-          {/* Transaction 3 */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-text-secondary">[XFER]</span>
-              <div>
-                <p className="text-sm font-medium text-text-primary">To Gopay</p>
-                <p className="text-[10px] text-text-secondary mt-0.5">BCA • Yesterday</p>
-              </div>
-            </div>
-            <span className="font-mono text-sm tabular-nums text-accent-transfer">500.000</span>
-          </div>
-        </div>
+        {!hasWallets ? (
+          <EmptyState
+            icon={<Wallet className="w-6 h-6" />}
+            title="Belum ada dompet"
+            body="Buat dompet pertama untuk mulai mencatat."
+          />
+        ) : recent.length === 0 ? (
+          <EmptyState
+            icon={<Wallet className="w-6 h-6" />}
+            title="Belum ada transaksi"
+            body="Tekan tombol tengah di bawah untuk mencatat pengeluaran pertama."
+          />
+        ) : (
+          <ul className="space-y-4">
+            {groupByDay(recent).map(([day, rows]) => (
+              <li key={day}>
+                <p className="text-[11px] uppercase tracking-[0.06em] text-text-secondary mb-2">
+                  {formatDayGroup(rows[0].occurredAt)}
+                </p>
+                <div className="rounded-2xl border border-border-outer bg-surface divide-y divide-border-inner overflow-hidden">
+                  {rows.map((t) => {
+                    const isIncome = t.type === 'income'
+                    return (
+                      <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm text-text-primary">{t.title}</p>
+                          <p className="text-[11px] text-text-secondary">
+                            {t.categoryTag ?? 'LAINNYA'} · {formatTime(t.occurredAt)}
+                          </p>
+                        </div>
+                        <span
+                          className={`font-mono text-sm font-medium tabular-nums ${
+                            isIncome ? 'text-accent-income' : 'text-text-primary'
+                          }`}
+                        >
+                          {isIncome ? '+' : '−'}
+                          {formatIDR(Math.abs(t.amount)).replace('Rp ', 'Rp ')}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
-      {/* Vaults Overview */}
-      <section className="px-5 mt-8">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-secondary mb-3">Active Vaults</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-surface border border-border-outer p-4 rounded-lg">
-            <h3 className="text-xs font-medium text-text-primary mb-1">MacBook Pro</h3>
-            <div className="font-mono text-xs text-text-secondary tabular-nums mb-3">Rp 8M / 24M</div>
-            <div className="h-1 w-full bg-canvas rounded-full overflow-hidden">
-              <div className="h-full bg-text-primary w-1/3"></div>
-            </div>
-          </div>
-          <div className="bg-surface border border-border-outer p-4 rounded-lg">
-            <h3 className="text-xs font-medium text-text-primary mb-1">Emergency</h3>
-            <div className="font-mono text-xs text-text-secondary tabular-nums mb-3">Rp 2M / 10M</div>
-            <div className="h-1 w-full bg-canvas rounded-full overflow-hidden">
-              <div className="h-full bg-text-primary w-1/5"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <BottomNav />
+      <QuickLogButton wallets={wallets} />
     </main>
-  );
+  )
+}
+
+/** Group rows into day buckets, preserving date order. */
+function groupByDay<T extends { occurredAt: Date }>(rows: T[]): [string, T[]][] {
+  const out: [string, T[]][] = []
+  for (const r of rows) {
+    const k = toDateKey(r.occurredAt)
+    const last = out[out.length - 1]
+    if (last && last[0] === k) last[1].push(r)
+    else out.push([k, [r]])
+  }
+  return out
 }

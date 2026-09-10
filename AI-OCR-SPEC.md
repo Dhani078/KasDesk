@@ -445,7 +445,7 @@ work and must always be ≤ 1 tap away.
 | 8 | **Every prompt change is a reviewed diff** — with harness results attached |
 | 9 | **Deterministic graders over LLM judges** — judges only where truly ambiguous |
 | 10 | **Human review of the golden set** — labels are not AI-generated |
-| 11 | **Never let AI write the RPC or RLS** — those are hand-reviewed, always |
+| 11 | **Never let AI write the balance-mutating transaction logic or the user_id scoping** — those are hand-reviewed, always |
 | 12 | **Keep the OCR module small** — one route, one prompt, one schema, one client |
 
 ---
