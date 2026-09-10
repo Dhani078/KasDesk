@@ -917,6 +917,8 @@ before the corresponding release ships. Full remediation detail lives in the der
 | 11.22 | **Self-transfer accepted + stale wallet detail** — transferring a wallet to itself silently succeeded (no money moved, but a row was written); `createTransaction`/`deleteTransaction` also never revalidated `/wallets/[id]`, so the detail page showed stale balances | `test:transfer` (10/10) | Done | FR-TRF-1 |
 | 11.17 | ~~Repo has 1 commit~~ **FIXED** — 29 commits on `main`, fully pushed to `origin`; working tree clean; 0 commits ahead | `git rev-list --count HEAD`, `git status` | Done | §13 |
 | 11.18 | XAMPP/Apache cannot run this app (Node.js, not PHP) — **informational, not a defect**. Run with `npm run build && npm start` (or `npm run dev --webpack`). Port 3000 is taken by another app, so tests use 3333 | Project location | — | §13 |
+| 11.23 | **Google OAuth had no UI** — `auth.config.ts` registered the Google provider conditionally, but neither `/login` nor `/register` rendered any trigger, so supplying credentials would still leave no way to sign in. Fixed: `GoogleSignInButton` + `isGoogleEnabled()` flag | `test:google-flag` (9/9, both directions) | Done | FR-AUTH-3 |
+| 11.24 | ~~Auth pages prerendered the OAuth flag~~ **FIXED** — `/login` and `/register` were statically prerendered (○), baking in the build-time value of `isGoogleEnabled()`, so enabling Google later would never surface the button. Now `force-dynamic` | build output shows ƒ | Done | FR-AUTH-3 |
 
 ### 11.6 Detail — Dead `pb-safe` Class
 
