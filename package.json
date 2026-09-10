@@ -24,6 +24,8 @@
     "test:isolation": "node scripts/test-isolation.js",
     "test:register": "node scripts/test-register.js",
     "test:register:unit": "node scripts/test-register-unit.js",
+    "test:google-flag": "node scripts/test-google-flag.js",
+    "test:dashboard": "node scripts/test-dashboard-math.js",
     "test:cleanup": "node scripts/cleanup-test-user.js"
   },
   "dependencies": {
