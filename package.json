@@ -31,8 +31,9 @@
     "test:archived:unit": "npx tsx scripts/test-archived-unit.ts",
     "test:cleanup": "node scripts/cleanup-test-user.js",
     "test:archived:coverage": "node scripts/test-archived-coverage.js",
-    "test:newuser-seed": "node scripts/test-newuser-seed.js",
-    "test:register:atomic": "node scripts/test-register-atomic.js"
+    "test:newuser-seed": "npx tsx --env-file=.env.local scripts/test-newuser-seed.ts",
+    "test:register:atomic": "node scripts/test-register-atomic.js",
+    "test:cleanup:fixtures": "node scripts/cleanup-fixtures.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
