@@ -13,13 +13,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vaultify",
+  title: 'KASDESK',
   description: "High-density, mobile-first PWA for personal finance tracking.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Vaultify",
+    title: 'KASDESK',
   },
 };
 
@@ -27,8 +27,8 @@ export const viewport: Viewport = {
   themeColor: "#0D0D0F",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // maximumScale / userScalable removed deliberately: disabling pinch-zoom
+  // fails WCAG 2.2 SC 1.4.4 (Resize Text) and hurts low-vision users.
 };
 
 export default function RootLayout({

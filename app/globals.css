@@ -10,6 +10,12 @@
   --color-accent-income: #5EBA7D;
   --color-accent-expense: #E05A47;
   --color-accent-transfer: #8A92A0;
+
+  /* Used by the auth screens (login / register) */
+  --color-accent: #4F7FE8;
+  --color-danger: #E05A47;
+  --color-surface: #161619;
+  --color-border: rgba(255, 255, 255, 0.07);
   
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -25,4 +31,14 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+/*
+ * Safe-area bottom padding for the fixed bottom navigation on notched
+ * iPhones. Tailwind v4 needs a custom utility registered via @utility;
+ * without it, `pb-safe` in the markup compiles to nothing (0 matches in
+ * the built CSS) and the nav sits under the home indicator.
+ */
+@utility pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
