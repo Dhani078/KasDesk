@@ -36,7 +36,8 @@
     "test:cleanup:fixtures": "node scripts/cleanup-fixtures.js",
     "test:wallet-archive": "node scripts/test-wallet-archive.js",
     "test:input-bounds": "npx tsx scripts/test-input-bounds.ts",
-    "test:ocr:limits": "node scripts/test-ocr-limits.js"
+    "test:ocr:limits": "node scripts/test-ocr-limits.js",
+    "test:key-transport": "node scripts/test-key-transport.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
