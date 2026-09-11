@@ -63,6 +63,36 @@ function Sheet({
 }) {
   const [pending, setPending] = useState(false)
   // FR-LOG-7: default to the last-used wallet, fall back to the first one.
+  // FR-LOG-3: amount as formatted IDR text ("12.000"); parsed by stripping
+  // non-digits on submit. State instead of DOM read so the format masks live.
+  const [amountText, setAmountText] = useState('')
+  // FR-LOG-5: selected category + last-used ordering (localStorage).
+  const [catSel, setCatSel] = useState(() => {
+    if (typeof window === 'undefined') return 'LAINNYA'
+    try {
+      return localStorage.getItem('kasdesk:last-category') || 'LAINNYA'
+    } catch { return 'LAINNYA' }
+  })
+  const [catOrder, setCatOrder] = useState<string[]>(() => {
+    try {
+      const last = localStorage.getItem('kasdesk:last-category')
+      if (last && CATEGORY_ENUM.includes(last as (typeof CATEGORY_ENUM)[number])) {
+        return [last, ...CATEGORY_ENUM.filter((c) => c !== last)]
+      }
+    } catch {}
+    return [...CATEGORY_ENUM]
+  })
+  // FR-LOG-3: format "12000" -> "12.000" while typing.
+  function onAmountChange(raw: string) {
+    const digits = raw.replace(/\D/g, '').slice(0, 12)
+    setAmountText(digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '')
+  }
+  function pickCat(c: string) {
+    setCatSel(c)
+    try { localStorage.setItem('kasdesk:last-category', c) } catch {}
+    setCatOrder([c, ...CATEGORY_ENUM.filter((x) => x !== c)])
+  }
+
   const [walletSel, setWalletSel] = useState(() => {
     if (typeof window === 'undefined') return wallets[0]?.id ?? ''
     try {
@@ -77,17 +107,16 @@ function Sheet({
   // Seed the form from a scan the moment the sheet opens with one.
   useEffect(() => {
     if (!prefill) return
-    const f = document.getElementById('ql-form') as HTMLFormElement | null
-    if (!f) return
-    const set = (id: string, v: string) => {
-      const el = f.elements.namedItem(id) as HTMLInputElement | HTMLSelectElement | null
-      if (el) el.value = v
-    }
-    if (prefill.detected_total > 0) set('amount', String(prefill.detected_total))
+    // Inputs are controlled now (amountText / catSel), so prefill must go
+    // through state, not direct DOM writes.
+    if (prefill.detected_total > 0) onAmountChange(String(prefill.detected_total))
+    if (prefill.detected_category) pickCat(prefill.detected_category)
     if (prefill.merchant_name && prefill.merchant_name !== 'UNKNOWN') {
-      set('title', prefill.merchant_name)
+      const f = document.getElementById('ql-form') as HTMLFormElement | null
+      const el = f?.elements.namedItem('title') as HTMLInputElement | null
+      if (el) el.value = prefill.merchant_name
     }
-    if (prefill.detected_category) set('category_tag', prefill.detected_category)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefill])
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -194,7 +223,9 @@ function Sheet({
                 inputMode="numeric"
                 autoFocus
                 required
-                placeholder="35000"
+                placeholder="0"
+                value={amountText}
+                onChange={(e) => onAmountChange(e.target.value)}
                 className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
               />
             </div>
@@ -240,17 +271,29 @@ function Sheet({
                 <label htmlFor="category_tag" className="mb-1 block text-xs text-text-secondary">
                   Kategori
                 </label>
-                <select
-                  id="category_tag"
-                  name="category_tag"
-                  className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
+                <input type="hidden" name="category_tag" value={catSel} />
+                <div
+                  role="radiogroup"
+                  aria-label="Kategori"
+                  className="flex flex-wrap gap-1.5"
                 >
-                  {CATEGORY_ENUM.map((c) => (
-                    <option key={c} value={c}>
+                  {catOrder.map((c) => (
+                    <button
+                      type="button"
+                      key={c}
+                      role="radio"
+                      aria-checked={catSel === c}
+                      onClick={() => pickCat(c)}
+                      className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
+                        catSel === c
+                          ? 'bg-accent-solid text-white'
+                          : 'bg-white/[0.04] text-text-secondary ring-1 ring-border-outer'
+                      }`}
+                    >
                       {c}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
             </div>
 

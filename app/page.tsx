@@ -18,6 +18,10 @@ export default async function HomePage() {
 
   const hasWallets = wallets.length > 0
 
+  // FR-TXN-2: resolve wallet id to display name for the feed rows.
+  const walletName = (id: string | null): string | undefined =>
+    id ? wallets.find((w) => w.id === id)?.name : undefined
+
   return (
     <main className="min-h-dvh px-5 pt-8 pb-32">
       {/* ── Hero: total balance ─────────────────────────── */}
@@ -115,6 +119,7 @@ export default async function HomePage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm text-text-primary">{t.title}</p>
                           <p className="text-[11px] text-text-secondary">
+                            {walletName(t.walletId) ? `${walletName(t.walletId)} · ` : ''}
                             {t.categoryTag ?? 'LAINNYA'} · {formatTime(t.occurredAt)}
                           </p>
                         </div>
