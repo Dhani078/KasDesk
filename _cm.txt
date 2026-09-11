@@ -1,35 +1,29 @@
-feat: offline transaction queue (FR-OFF-2/3/4/6, minimal-correct)
+feat: close three feature gaps — Quick-Log ergonomics + partial debt payment
 
-PRD promised offline logging with a local queue, auto-sync on reconnect, a UI
-indicator and IndexedDB persistence (FR-OFF-2/3/4/6, all P0/P1). Nothing
-existed — ARCHITECTURE referenced lib/offline/queue.ts that was never written.
+Audited the 80 FR rows against the code and found three P0/P1 promises that
+had no implementation:
 
-Built the minimal-but-correct slice the user approved (LWW excluded):
+1. FR-LOG-2 (P0): amount field now autoFocus on open.
+2. FR-LOG-7 (P0): wallet select defaults to last-used wallet (localStorage
+   key kasdesk:last-wallet), fallback to the first wallet; choice persists
+   across opens.
+3. FR-DBT-3 (P0): partial debt payment. settleDebt(id, amount?) —
+   undefined keeps the old full-settle behaviour, a number adds a partial
+   payment to paidAmount. Refuses non-positive amounts and overpay (no silent
+   clamping — "paid 20k" must not silently become 15k). isPaid flips only
+   when paidAmount reaches amount; settledAt is set only on completion and
+   preserved for still-open debts. UI: "Bayar Sebagian" modal per open debt
+   row (Wallet icon, remaining shown, numeric input).
 
-  lib/offline/queue.ts       raw IndexedDB (no wrapper lib): one store, ops
-                             keyed by id, survives reload (FR-OFF-6)
-  lib/offline/sync.ts        'use client' module; drains oldest-first by
-                             calling the REAL createTransaction action.
-                             Terminal refusals (validation, insufficient
-                             balance, archived wallet) are dropped so the
-                             queue cannot wedge; transient failures break and
-                             keep the op for the next reconnect (FR-OFF-3)
-  components/OfflineIndicator banner + auto-drain on 'online' + on mount;
-                             hidden on auth screens
-  components/QuickLogSheet   when navigator.onLine is false the submit
-                             enqueues instead of erroring — and confirms to
-                             the user, because a queued transaction is still a
-                             recorded transaction, just delivered later
+Notes on the JSX surgery: the partial-pay modal inserted cleanly, but the
+first edit dropped the opening fragment <> for the button cluster and the
+state additions were written in a second pass — tsc caught both (JSX parent
+error) before anything ran. The settleDebt select also had to gain settledAt
+so the update can preserve it.
 
-Deliberately NOT built (FR-OFF-5): dedupe / last-write-wins. The server action
-is not idempotent, so a sync that dies after server commit but before queue
-removal can double-create on the next attempt. Marked ponytail: in code with
-the clientId-column upgrade path, and in the PRD row.
+test:debt-partial (13/13) checks the action contract structurally, replays the
+action's SQL sequence for a 60k + 40k split on a 100k debt (isPaid stays 0
+until the total), and confirms ownership scoping is intact. Old test:debts
+still 15/15 (backward compatible).
 
-The test suite (15 checks) is logic + structural: IndexedDB does not exist in
-Node and importing QuickLogSheet pulls Next's react/loader, so the queue CRUD,
-the drain ordering/failure contract ('use client' boundary included — that one
-caught a comment-vs-code false negative) and the two submit branches are
-asserted by source inspection. A real browser offline E2E remains the gap.
-
-289 -> 304 checks green across 29 suites.
+304 -> 317 checks green across 30 suites.

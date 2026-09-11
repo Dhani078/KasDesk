@@ -535,24 +535,63 @@ export async function createDebt(raw: unknown): Promise<ActionResponse<{ id: str
 }
 
 /** Mark a debt fully settled. Scoped to the owner. */
-export async function settleDebt(id: string): Promise<ActionResponse<null>> {
+/**
+ * Mark a debt as fully paid, or record a PARTIAL payment (FR-DBT-3).
+ *
+ * amount defaults to the remaining balance, so the existing full-settle call
+ * keeps working. A partial payment adds to paidAmount; when it reaches the
+ * total the debt flips to paid. Setting paidAmount beyond amount is rejected
+ * rather than silently clamped — a "paid 20k" that becomes 15k would mislead
+ * the user about what actually happened.
+ */
+export async function settleDebt(id: string, amount?: number): Promise<ActionResponse<null>> {
   const userId = await requireUserId()
   if (!userId) {
     return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
   }
 
-  const res = await db
-    .update(debts)
-    .set({ isPaid: 1, paidAmount: sql`${debts.amount}`, settledAt: new Date() })
-    .where(and(eq(debts.id, id), eq(debts.userId, userId)))
-
-  if (!res[0].affectedRows) {
-    return { success: false, error: { code: 'NOT_FOUND', message: 'Utang tidak ditemukan.' } }
+  const amt = amount === undefined ? null : Math.trunc(Number(amount))
+  if (amt !== null && (!Number.isFinite(amt) || amt <= 0)) {
+    return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Jumlah harus lebih dari 0' } }
   }
 
-  revalidatePath('/debts')
-  revalidatePath('/')
-  return { success: true, data: null }
+  try {
+    const [d] = await db
+          .select({ amount: debts.amount, paidAmount: debts.paidAmount, settledAt: debts.settledAt })
+          .from(debts)
+          .where(and(eq(debts.id, id), eq(debts.userId, userId)))
+          .limit(1)
+    if (!d) {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Utang tidak ditemukan.' } }
+    }
+
+    const remaining = Number(d.amount) - Number(d.paidAmount)
+    const pay = amt ?? remaining
+    if (pay > remaining) {
+      return {
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Melebihi sisa utang.' },
+      }
+    }
+
+    const newPaid = Number(d.paidAmount) + pay
+    const isPaid = newPaid >= Number(d.amount)
+    await db
+      .update(debts)
+      .set({
+        paidAmount: newPaid,
+        isPaid: isPaid ? 1 : 0,
+        settledAt: isPaid ? new Date() : d.settledAt ?? null,
+      })
+      .where(and(eq(debts.id, id), eq(debts.userId, userId)))
+
+    revalidatePath('/debts')
+    revalidatePath('/')
+    return { success: true, data: null }
+  } catch (e) {
+    console.error('[settleDebt]', e instanceof Error ? e.message : e)
+    return { success: false, error: { code: 'UNKNOWN', message: 'Terjadi kesalahan. Coba lagi.' } }
+  }
 }
 
 /** Delete a debt. Scoped to the owner. */

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, X, Loader2, Check } from 'lucide-react'
+import { Plus, X, Loader2, Check, Wallet } from 'lucide-react'
 
 import { createDebt, settleDebt, deleteDebt } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
@@ -102,14 +102,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function DebtRow({ debt }: { debt: DebtLite }) {
   const [pending, start] = useTransition()
-  const [error, setError] = useState<string | null>(null)
+    const [error, setError] = useState<string | null>(null)
+    const [payOpen, setPayOpen] = useState(false)
+    const [payAmount, setPayAmount] = useState('')
 
-  function onSettle() {
-    start(async () => {
-      const r = await settleDebt(debt.id)
-      if (!r.success) setError(r.error.message)
-    })
-  }
+    function onSettle(amount?: number) {
+      start(async () => {
+        const r = await settleDebt(debt.id, amount)
+        if (!r.success) setError(r.error.message)
+        setPayOpen(false)
+      })
+    }
   function onDelete() {
     start(async () => {
       const r = await deleteDebt(debt.id)
@@ -143,15 +146,26 @@ function DebtRow({ debt }: { debt: DebtLite }) {
         {formatIDR(debt.amount)}
       </span>
       {!debt.isPaid && (
+              <>
+              <button
+                type="button"
+                onClick={() => onSettle()}
+                disabled={pending}
+                aria-label={`Tandai lunas ${debt.personName}`}
+                className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" />
+              </button>
         <button
           type="button"
-          onClick={onSettle}
+          onClick={() => setPayOpen(true)}
           disabled={pending}
-          aria-label={`Tandai lunas ${debt.personName}`}
+          aria-label={`Bayar sebagian ${debt.personName}`}
           className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer disabled:opacity-50"
         >
-          <Check className="h-3.5 w-3.5" />
+          <Wallet className="h-3.5 w-3.5" />
         </button>
+        </>
       )}
       <button
         type="button"
@@ -162,6 +176,58 @@ function DebtRow({ debt }: { debt: DebtLite }) {
       >
         <X className="h-3.5 w-3.5" />
       </button>
+
+      {payOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setPayOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Bayar sebagian"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-text-primary">Bayar Sebagian</h2>
+              <button type="button" onClick={() => setPayOpen(false)} aria-label="Tutup" className="text-text-secondary">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-text-secondary">
+              {debt.personName} · sisa {formatIDR(Math.max(0, Number(debt.amount) - Number(debt.paidAmount)))}
+            </p>
+            <input
+              autoFocus
+              type="text"
+              inputMode="numeric"
+              placeholder="Jumlah yang dibayar"
+              value={payAmount}
+              onChange={(e) => setPayAmount(e.target.value.replace(/[^\d]/g, ''))}
+              className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
+            />
+            {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPayOpen(false)}
+                className="flex-1 rounded-xl px-4 py-3 text-sm text-text-secondary ring-1 ring-border-outer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => onSettle(Number(payAmount || '0'))}
+                disabled={pending || !payAmount}
+                className="flex-1 rounded-xl bg-accent-solid px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Simpan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
