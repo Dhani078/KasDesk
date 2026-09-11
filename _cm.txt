@@ -1,26 +1,35 @@
-feat: LogoutButton — sign-out control + cache purge
+feat: offline transaction queue (FR-OFF-2/3/4/6, minimal-correct)
 
-Two findings from the PWA audit:
+PRD promised offline logging with a local queue, auto-sync on reconnect, a UI
+indicator and IndexedDB persistence (FR-OFF-2/3/4/6, all P0/P1). Nothing
+existed — ARCHITECTURE referenced lib/offline/queue.ts that was never written.
 
-1. There was NO sign-out control. logoutAction existed but nothing called it,
-   so a signed-in user could not end their session from the UI.
+Built the minimal-but-correct slice the user approved (LWW excluded):
 
-2. The service worker caches authenticated HTML (pages NetworkFirst, 24h)
-   because the PRD requires offline use (G6 / FR-OFF). On a shared phone the
-   next person could be served the previous user's dashboard from cache.
+  lib/offline/queue.ts       raw IndexedDB (no wrapper lib): one store, ops
+                             keyed by id, survives reload (FR-OFF-6)
+  lib/offline/sync.ts        'use client' module; drains oldest-first by
+                             calling the REAL createTransaction action.
+                             Terminal refusals (validation, insufficient
+                             balance, archived wallet) are dropped so the
+                             queue cannot wedge; transient failures break and
+                             keep the op for the next reconnect (FR-OFF-3)
+  components/OfflineIndicator banner + auto-drain on 'online' + on mount;
+                             hidden on auth screens
+  components/QuickLogSheet   when navigator.onLine is false the submit
+                             enqueues instead of erroring — and confirms to
+                             the user, because a queued transaction is still a
+                             recorded transaction, just delivered later
 
-Added LogoutButton on the home header: calls logoutAction and best-effort
-purges all caches first (never blocks sign-out if the browser refuses).
+Deliberately NOT built (FR-OFF-5): dedupe / last-write-wins. The server action
+is not idempotent, so a sync that dies after server commit but before queue
+removal can double-create on the next attempt. Marked ponytail: in code with
+the clientId-column upgrade path, and in the PRD row.
 
-The test drives the REAL signout endpoint: logged-in / and /wallets render
-200; after sign-out both redirect again, so the session genuinely ended.
+The test suite (15 checks) is logic + structural: IndexedDB does not exist in
+Node and importing QuickLogSheet pulls Next's react/loader, so the queue CRUD,
+the drain ordering/failure contract ('use client' boundary included — that one
+caught a comment-vs-code false negative) and the two submit branches are
+asserted by source inspection. A real browser offline E2E remains the gap.
 
-While re-running the suite, dashboard-math and wallet-archive broke — the new
-button's inline SVG sits between "Total Saldo" and its value, and its label
-contains "Keluar". Both were TEST bugs, not app bugs:
-  - afterLabel scanned only 400 chars; widened to 4000 (SVG is ~600 chars)
-  - shownTotal used a hard 300-char slice; now uses afterLabel
-  - "Keluar" now anchors after "Masuk" so it cannot match the logout button
-    and read the wrong number (it was picking up Total Saldo)
-
-279 -> 289 checks green across 28 suites. DB clean (1 demo user).
+289 -> 304 checks green across 29 suites.

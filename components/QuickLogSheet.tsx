@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Loader2, Check } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
+import { enqueueOp } from '@/lib/offline/queue'
 import { ScanReceiptButton, type ScanResult } from '@/components/ScanReceiptButton'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
@@ -86,14 +87,33 @@ function Sheet({
     setPending(true)
 
     const fd = new FormData(e.currentTarget)
-    const res = await createTransaction({
+    const payload = {
       wallet_id: String(fd.get('wallet_id') ?? ''),
       type: String(fd.get('type') ?? 'expense'),
       amount: Number(String(fd.get('amount') ?? '0').replace(/[^\d]/g, '')),
       title: String(fd.get('title') ?? ''),
       category_tag: String(fd.get('category_tag') ?? 'LAINNYA'),
       note: String(fd.get('note') ?? '') || undefined,
-    })
+    }
+
+    // FR-OFF-2/6: offline does not mean failure — park the op in the
+    // IndexedDB queue (survives reload) and let OfflineIndicator drain it on
+    // reconnect. The 'offline' state here is the browser's, not the server's
+    // — a queued payment is still visible and still synced, just later.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      try {
+        await enqueueOp({ kind: 'create-transaction', payload })
+        setPending(false)
+        setOk(true)
+        setTimeout(onClose, 700)
+        return
+      } catch {
+        // IndexedDB unavailable (private mode etc.): fall through to the
+        // normal path, which will at least produce an error message.
+      }
+    }
+
+    const res = await createTransaction(payload)
 
     setPending(false)
     if (!res.success) {
