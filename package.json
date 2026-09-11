@@ -38,7 +38,8 @@
     "test:input-bounds": "npx tsx scripts/test-input-bounds.ts",
     "test:ocr:limits": "node scripts/test-ocr-limits.js",
     "test:key-transport": "node scripts/test-key-transport.js",
-    "test:security-headers": "node scripts/test-security-headers.js"
+    "test:security-headers": "node scripts/test-security-headers.js",
+    "test:logout": "node scripts/test-logout.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

@@ -1,34 +1,26 @@
-feat: security headers for all routes
+feat: LogoutButton — sign-out control + cache purge
 
-Responses carried NO security headers at all. For a finance app the sharpest
-gap is framing: a look-alike site could iframe the app for clickjacking.
+Two findings from the PWA audit:
 
-Added to next.config.ts for every route:
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: microphone=(), geolocation=()
-  Content-Security-Policy-Report-Only (see below)
+1. There was NO sign-out control. logoutAction existed but nothing called it,
+   so a signed-in user could not end their session from the UI.
 
-Two deliberate choices:
+2. The service worker caches authenticated HTML (pages NetworkFirst, 24h)
+   because the PRD requires offline use (G6 / FR-OFF). On a shared phone the
+   next person could be served the previous user's dashboard from cache.
 
-1. CSP is REPORT-ONLY, not enforcing. A strict policy has to account for
-   Next's inline bootstrap scripts, the PWA service worker and Tailwind's
-   runtime; a wrong enforcing CSP either breaks the app or gets disabled by
-   the first person it blocks. Report-only surfaces violations in the console
-   with zero risk, and can be promoted once those reports are clean. The test
-   asserts an enforcing CSP has NOT appeared, so this cannot be flipped by
-   accident.
+Added LogoutButton on the home header: calls logoutAction and best-effort
+purges all caches first (never blocks sign-out if the browser refuses).
 
-2. Camera is not in Permissions-Policy. The receipt scanner uses a <input
-   type=file capture>, not getUserMedia, so no camera permission is needed and
-   adding camera=() would have been a wrong claim (and could break the native
-   "take photo" flow).
+The test drives the REAL signout endpoint: logged-in / and /wallets render
+200; after sign-out both redirect again, so the session genuinely ended.
 
-The test checks both presence AND that the app still functions — a bad header
-can satisfy the first while breaking the second. It also asserts signed-out
-/ still redirects, so headers cannot silently bypass auth. That last check
-caught a bug in the test itself: an early version called / without the session
-cookie and wrongly reported a failure.
+While re-running the suite, dashboard-math and wallet-archive broke — the new
+button's inline SVG sits between "Total Saldo" and its value, and its label
+contains "Keluar". Both were TEST bugs, not app bugs:
+  - afterLabel scanned only 400 chars; widened to 4000 (SVG is ~600 chars)
+  - shownTotal used a hard 300-char slice; now uses afterLabel
+  - "Keluar" now anchors after "Masuk" so it cannot match the logout button
+    and read the wrong number (it was picking up Total Saldo)
 
-263 -> 279 checks green across 27 suites.
+279 -> 289 checks green across 28 suites. DB clean (1 demo user).

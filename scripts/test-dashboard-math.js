@@ -68,7 +68,9 @@ function parseIDR(s) {
 function afterLabel(html, label) {
   const i = html.indexOf(label)
   if (i < 0) return NaN
-  return parseIDR(html.slice(i, i + 400))
+  // Scan a generous window: since the LogoutButton was added, the markup
+  // between a label and its value can contain a long inline SVG.
+  return parseIDR(html.slice(i, i + 4000))
 }
 
 const EMAIL = `dash-${Date.now()}@example.com`
@@ -167,7 +169,9 @@ async function main() {
   const spendable = expectedTotal - vaultAlloc - debts
   const expectedSafe = Math.max(0, Math.floor(spendable / Math.max(1, daysLeft)))
 
-  const shownTotal = parseIDR(html.slice(html.indexOf('Total Saldo'), html.indexOf('Total Saldo') + 300))
+  // A long inline SVG (LogoutButton) sits between "Total Saldo" and its
+  // value, so a narrow slice misses the number entirely.
+  const shownTotal = afterLabel(html, 'Total Saldo')
   const shownSafe = afterLabel(html, 'Aman Harian')
 
   check(`Total Saldo = ${expectedTotal}`, shownTotal === expectedTotal, `shown ${shownTotal}`)
@@ -185,7 +189,12 @@ async function main() {
     [uid, monthStart]
   )
   const shownInc = afterLabel(html, 'Masuk')
-  const shownExp = afterLabel(html, 'Keluar')
+  // The LogoutButton also contains the word "Keluar" (in its aria-label and
+  // its label), which appears BEFORE the summary-section label that means
+  // monthly expense. Anchor on the first "Keluar" AFTER "Masuk" instead.
+  const iMasuk = html.indexOf('Masuk')
+  const iKeluar = html.indexOf('Keluar', iMasuk)
+  const shownExp = iKeluar < 0 ? NaN : parseIDR(html.slice(iKeluar, iKeluar + 4000))
   check(`Masuk = ${Number(inc.b)} (transfers excluded)`, shownInc === Number(inc.b), `shown ${shownInc}`)
   check(`Keluar = ${Number(exp.b)} (transfers excluded)`, shownExp === Number(exp.b), `shown ${shownExp}`)
   check('transfer 999000 did NOT inflate Keluar', shownExp !== 999000, `shown ${shownExp}`)

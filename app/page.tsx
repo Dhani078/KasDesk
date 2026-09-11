@@ -5,6 +5,7 @@ import { getDashboard, getRecentTransactions, getWallets } from '@/lib/actions'
 import { formatIDR, formatSigned, formatDayGroup, toDateKey, formatTime } from '@/lib/format'
 import { QuickLogButton } from '@/components/QuickLogSheet'
 import { EmptyState } from '@/components/EmptyState'
+import { LogoutButton } from '@/components/LogoutButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,9 +22,12 @@ export default async function HomePage() {
     <main className="min-h-dvh px-5 pt-8 pb-32">
       {/* ── Hero: total balance ─────────────────────────── */}
       <header className="mb-6">
-        <p className="text-xs uppercase tracking-[0.08em] text-text-secondary mb-1">
-          Total Saldo
-        </p>
+        <div className="mb-1 flex items-start justify-between">
+          <p className="text-xs uppercase tracking-[0.08em] text-text-secondary">
+            Total Saldo
+          </p>
+          <LogoutButton />
+        </div>
         <h1 className="font-mono text-4xl font-semibold tabular-nums text-text-primary">
           {formatIDR(dash.totalBalance)}
         </h1>
