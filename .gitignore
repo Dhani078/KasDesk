@@ -14,3 +14,19 @@ next-env.d.ts
 
 # scratch commit-message file (never tracked)
 _cm.txt
+
+# agent-loop artifacts (kept locally, never shipped)
+.agents/
+conductor/
+skills-lock.json
+AGENT.md
+AGENTS.md
+CLAUDE.md
+CONTEXT.md
+MEMORY.md
+SCHEMAS.md
+DESIGN.md
+GEMINI.md
+REACTIVITY.md
+SECURITY.md
+DATABASE.md

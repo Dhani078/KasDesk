@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KASDESK
 
-## Getting Started
+Aplikasi keuangan pribadi (PWA, Next.js) — catat pengeluaran, kelola dompet, tabungan, dan utang. Data di TiDB Cloud (MySQL-compatible).
 
-First, run the development server:
+## Fitur
+
+- **Pencatatan cepat** — FAB → bottom sheet → transaksi dalam 2 ketukan; pemindai struk via Gemini (OCR) dengan konfirmasi otomatis
+- **Dompet** — multiple wallet (cash/bank/e-wallet/investasi), transfer antar dompet, arsip & pulihkan
+- **Tabungan (Vault)** — target nominal + tanggal, alokasi dari dompet, progress bar; dana vault tidak dihitung dalam "Aman Harian"
+- **Utang & Piutang** — catat utang/piutang, bayar penuh atau **sebagian**, jatuh tempo
+- **Insight** — aman harian (PRD §6.7), grafik 7 hari, kategori terbesar bulan ini
+- **Offline** — log transaksi saat offline → antrean IndexedDB → sinkron otomatis saat koneksi kembali
+- **PWA** — installable, offline shell, tema gelap
+
+## Stack
+
+| Layer | Teknologi |
+|---|---|
+| Frontend | Next.js (App Router), React, Tailwind CSS v4 |
+| Backend | Server Actions, Route Handlers |
+| DB | TiDB Cloud (MySQL 8) via Drizzle ORM |
+| Auth | Auth.js v5 (email+password, Google OAuth opsional) |
+| OCR | Google Gemini API (`gemini-2.5-flash`) |
+
+## Menjalankan
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # isi kredensial Anda
+npm run db:push              # migrasi skema
+npm run seed:demo            # data contoh (opsional)
+npm run dev                  # http://localhost:3000 (sesuaikan AUTH_URL)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Produksi: `npm run build && npm start -p 3333`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Konfigurasi env (`.env.local`, jangan commit)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variabel | Keperluan |
+|---|---|
+| `DATABASE_HOST/PORT/USER/PASSWORD/NAME` | TiDB Cloud |
+| `AUTH_SECRET` | Auth.js — `openssl rand -base64 32` |
+| `AUTH_URL` | Harus sama dengan port server yang berjalan |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Google OAuth — kosongkan untuk nonaktif |
+| `GEMINI_API_KEY` | OCR struk — kosong = OCR nonaktif (fail-closed) |
 
-## Learn More
+## Pengujian
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# butuh server jalan: npx next start -p 3333 (kecuali unit)
+# jalankan semua suite satu per satu (lihat daftar di bawah)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Semua suite: `test:smoke`, `test:isolation`, `test:debts`, `test:debt-partial`, `test:vaults`, `test:delete`, `test:transfer`, `test:ocr`, `test:ocr:limits`, `test:balance`, `test:balance:e2e`, `test:concurrency`, `test:ratelimit`, `test:register`, `test:register:atomic`, `test:register:unit`, `test:google-flag`, `test:dashboard`, `test:insights`, `test:archived`, `test:archived:unit`, `test:archived:coverage`, `test:wallet-archive`, `test:input-bounds`, `test:key-transport`, `test:security-headers`, `test:logout`, `test:offline`, `test:newuser-seed`, `test:cleanup`, `test:cleanup:fixtures`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> Catatan: `test:ocr-real` butuh `GEMINI_API_KEY` + kuota. Skema kredensial: `.env.local` (gitignored) satu-satunya tempat nilai asli; `.env.example` hanya placeholder.
 
-## Deploy on Vercel
+## Keamanan
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Kredensial hanya di `.env.local` (gitignored)
+- Rate limit login/registrasi/OCR
+- Penolakan transaksi terhadap dompet terarsip di semua jalur uang
+- Header keamanan (nosniff, X-Frame-Options, Referrer-Policy, CSP report-only)
+- Kunci Gemini via header `x-goog-api-key`, bukan query string
