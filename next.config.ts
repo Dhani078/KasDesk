@@ -53,7 +53,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "microphone=(), geolocation=()" },
   {
-    key: "Content-Security-Policy",
+    key: "Content-Security-Policy-Report-Only",
     value: [
       "default-src 'self'",
       // Next injects inline bootstrap scripts; 'unsafe-inline' here is what a

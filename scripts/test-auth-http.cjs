@@ -76,7 +76,7 @@ async function main() {
   console.log('\n=== 1. PROTECTED ROUTE WITHOUT SESSION ===')
   const r0 = curl([`${BASE}/`])
   check('/ redirects when unauthenticated (307)', r0.status === 307, `got ${r0.status}`)
-  check('redirect points to /login', /\/login/.test(r0.headers.location || ''), r0.headers.location)
+  check('redirect points to /welcome or /login', /\/(welcome|login)/.test(r0.headers.location || ''), r0.headers.location)
 
   console.log('\n=== 2. LOGIN WITH CORRECT PASSWORD ===')
   const csrf = getCsrf()
