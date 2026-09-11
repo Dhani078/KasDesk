@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Loader2, Check } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
+import { usePendingTx } from '@/components/pending-tx'
 import { enqueueOp } from '@/lib/offline/queue'
 import { ScanReceiptButton, type ScanResult } from '@/components/ScanReceiptButton'
 import { CATEGORY_ENUM } from '@/lib/schemas'
@@ -61,6 +62,7 @@ function Sheet({
   prefill: ScanResult | null
   onClose: () => void
 }) {
+  const { addPending, resolvePending } = usePendingTx()
   const [pending, setPending] = useState(false)
   // FR-LOG-7: default to the last-used wallet, fall back to the first one.
   // FR-LOG-3: amount as formatted IDR text ("12.000"); parsed by stripping
@@ -151,13 +153,25 @@ function Sheet({
       }
     }
 
+    // FR-LOG-6: optimistic row appears in the feed immediately (before the
+    // network round-trip); FR-LOG-11: on failure it rolls back.
+    const clientId = addPending({
+      walletId: payload.wallet_id,
+      type: payload.type as 'income' | 'expense' | 'transfer',
+      amount: payload.amount,
+      title: payload.title,
+      categoryTag: payload.category_tag ?? 'LAINNYA',
+    })
+
     const res = await createTransaction(payload)
 
     setPending(false)
     if (!res.success) {
+      resolvePending(clientId, false)
       setError(res.error.message)
       return
     }
+    resolvePending(clientId, true)
     setOk(true)
     setTimeout(onClose, 700)
   }

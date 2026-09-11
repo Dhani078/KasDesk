@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { TrendingUp, TrendingDown, Wallet } from 'lucide-react'
 
 import { getDashboard, getRecentTransactions, getWallets } from '@/lib/actions'
-import { formatIDR, formatSigned, formatDayGroup, toDateKey, formatTime } from '@/lib/format'
+import { formatIDR, formatSigned } from '@/lib/format'
 import { QuickLogButton } from '@/components/QuickLogSheet'
 import { EmptyState } from '@/components/EmptyState'
 import { LogoutButton } from '@/components/LogoutButton'
+import { HomeFeed } from '@/components/HomeFeed'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,9 +19,11 @@ export default async function HomePage() {
 
   const hasWallets = wallets.length > 0
 
-  // FR-TXN-2: resolve wallet id to display name for the feed rows.
-  const walletName = (id: string | null): string | undefined =>
-    id ? wallets.find((w) => w.id === id)?.name : undefined
+  // FR-TXN-2: id->name map for the feed (plain data; HomeFeed is a client
+  // component and cannot receive a function from the server).
+  const walletNames: Record<string, string> = Object.fromEntries(
+    wallets.map((w) => [w.id, w.name]),
+  )
 
   return (
     <main className="min-h-dvh px-5 pt-8 pb-32">
@@ -105,55 +108,22 @@ export default async function HomePage() {
             body="Tekan tombol tengah di bawah untuk mencatat pengeluaran pertama."
           />
         ) : (
-          <ul className="space-y-4">
-            {groupByDay(recent).map(([day, rows]) => (
-              <li key={day}>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-text-secondary mb-2">
-                  {formatDayGroup(rows[0].occurredAt)}
-                </p>
-                <div className="rounded-2xl border border-border-outer bg-surface divide-y divide-border-inner overflow-hidden">
-                  {rows.map((t) => {
-                    const isIncome = t.type === 'income'
-                    return (
-                      <div key={t.id} className="flex items-center gap-3 px-4 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm text-text-primary">{t.title}</p>
-                          <p className="text-[11px] text-text-secondary">
-                            {walletName(t.walletId) ? `${walletName(t.walletId)} · ` : ''}
-                            {t.categoryTag ?? 'LAINNYA'} · {formatTime(t.occurredAt)}
-                          </p>
-                        </div>
-                        <span
-                          className={`font-mono text-sm font-medium tabular-nums ${
-                            isIncome ? 'text-accent-income' : 'text-text-primary'
-                          }`}
-                        >
-                          {isIncome ? '+' : '−'}
-                          {formatIDR(Math.abs(t.amount)).replace('Rp ', 'Rp ')}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <HomeFeed
+            rows={recent.map((r) => ({
+              id: r.id,
+              walletId: r.walletId,
+              type: r.type,
+              amount: Number(r.amount ?? 0),
+              title: r.title,
+              categoryTag: r.categoryTag,
+              occurredAt: r.occurredAt,
+            }))}
+            walletNames={walletNames}
+          />
         )}
       </section>
 
       <QuickLogButton wallets={wallets} />
     </main>
   )
-}
-
-/** Group rows into day buckets, preserving date order. */
-function groupByDay<T extends { occurredAt: Date }>(rows: T[]): [string, T[]][] {
-  const out: [string, T[]][] = []
-  for (const r of rows) {
-    const k = toDateKey(r.occurredAt)
-    const last = out[out.length - 1]
-    if (last && last[0] === k) last[1].push(r)
-    else out.push([k, [r]])
-  }
-  return out
 }

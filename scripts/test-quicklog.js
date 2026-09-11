@@ -55,10 +55,15 @@ check('wallet select is controlled',
   has(sheet, 'value={walletSel}') && has(sheet, 'name="wallet_id"'))
 
 console.log('\n=== FR-TXN-2: wallet name in the feed row ===')
-check('home renders wallet name before category',
-  has(home, 'walletName(t.walletId)'))
-check('walletName resolves from the wallets list',
-  has(home, 'wallets.find((w) => w.id === id)'))
+// After the optimistic-feed refactor the row renders in HomeFeed (client),
+// which receives a plain id->name record from the server component.
+check('page passes a walletNames record to HomeFeed',
+  has(home, 'walletNames={walletNames}') && has(home, 'Object.fromEntries'))
+const feed2 = fs.readFileSync(path.join(__dirname, '..', 'components', 'HomeFeed.tsx'), 'utf8')
+check('feed resolves name from the record',
+  has(feed2, 'wallets.find') || has(feed2, 'walletNames[id]'))
+check('feed renders wallet name before category',
+  has(feed2, 'walletName(t.walletId)'))
 
 console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
 process.exit(fail ? 1 : 0)
