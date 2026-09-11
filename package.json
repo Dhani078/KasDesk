@@ -40,7 +40,8 @@
     "test:key-transport": "node scripts/test-key-transport.js",
     "test:security-headers": "node scripts/test-security-headers.js",
     "test:logout": "node scripts/test-logout.js",
-    "test:offline": "npx tsx scripts/test-offline-queue.ts"
+    "test:offline": "npx tsx scripts/test-offline-queue.ts",
+    "test:debt-partial": "node scripts/test-debt-partial.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

@@ -62,6 +62,15 @@ function Sheet({
   onClose: () => void
 }) {
   const [pending, setPending] = useState(false)
+  // FR-LOG-7: default to the last-used wallet, fall back to the first one.
+  const [walletSel, setWalletSel] = useState(() => {
+    if (typeof window === 'undefined') return wallets[0]?.id ?? ''
+    try {
+      const last = localStorage.getItem('kasdesk:last-wallet')
+      if (last && wallets.some((w) => w.id === last)) return last
+    } catch {}
+    return wallets[0]?.id ?? ''
+  })
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
 
@@ -183,6 +192,7 @@ function Sheet({
                 id="amount"
                 name="amount"
                 inputMode="numeric"
+                autoFocus
                 required
                 placeholder="35000"
                 className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
@@ -211,6 +221,11 @@ function Sheet({
                 <select
                   id="wallet_id"
                   name="wallet_id"
+                  value={walletSel}
+                  onChange={(e) => {
+                    setWalletSel(e.target.value)
+                    try { localStorage.setItem('kasdesk:last-wallet', e.target.value) } catch {}
+                  }}
                   required
                   className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
                 >
