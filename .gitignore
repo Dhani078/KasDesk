@@ -11,3 +11,6 @@ next-env.d.ts
 /public/workbox-*.js
 /public/sw.js.map
 /workbox-*.js*
+
+# scratch commit-message file (never tracked)
+_cm.txt
