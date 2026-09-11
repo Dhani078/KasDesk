@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { BottomNav } from './BottomNav'
 import { OfflineIndicator } from './OfflineIndicator'
+import { PendingTxProvider } from './pending-tx'
 
 const AUTH_ROUTES = ['/login', '/register']
 
@@ -17,7 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const hideNav = AUTH_ROUTES.some((r) => pathname?.startsWith(r))
 
   return (
-    <>
+    <PendingTxProvider>
       {children}
       {!hideNav && (
         <>
@@ -25,6 +26,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <BottomNav />
         </>
       )}
-    </>
+    </PendingTxProvider>
   )
 }

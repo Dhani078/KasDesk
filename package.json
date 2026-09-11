@@ -42,7 +42,8 @@
     "test:logout": "node scripts/test-logout.js",
     "test:offline": "npx tsx scripts/test-offline-queue.ts",
     "test:debt-partial": "node scripts/test-debt-partial.js",
-    "test:quicklog": "node scripts/test-quicklog.js"
+    "test:quicklog": "node scripts/test-quicklog.js",
+    "test:optimistic": "node scripts/test-optimistic.js"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
