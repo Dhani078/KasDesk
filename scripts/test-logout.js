@@ -81,7 +81,7 @@ async function main() {
   console.log('=== A. Sign-out must exist and actually end the session ===')
 
   // Structural: a UI control must call the action.
-  const home = fs.readFileSync(path.join(__dirname, '..', 'app', 'page.tsx'), 'utf8')
+  const home = fs.readFileSync(path.join(__dirname, '..', 'app', '(dashboard)', 'page.tsx'), 'utf8')
   check('home page renders the LogoutButton', /LogoutButton/.test(home))
 
   const btn = fs.readFileSync(path.join(__dirname, '..', 'components', 'LogoutButton.tsx'), 'utf8')

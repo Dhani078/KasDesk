@@ -82,7 +82,7 @@ export function DeleteTransactionButton({ txn }: { txn: TxnRow }) {
               {txn.type === 'income' ? '+' : '−'}
               {formatIDR(txn.amount)}
             </p>
-            <p className="mb-4 text-[11px] leading-relaxed text-text-secondary">
+            <p className="mb-4 text-xs leading-relaxed text-text-secondary">
               Saldo dompet akan dikembalikan seperti sebelum transaksi ini dicatat.
             </p>
 

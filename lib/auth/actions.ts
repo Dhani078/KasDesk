@@ -4,7 +4,7 @@ import { AuthError } from 'next-auth'
 import { signIn, signOut } from '@/auth'
 import { registerUser } from '@/auth'
 import { registerSchema, loginSchema } from '@/lib/schemas'
-import { checkRateLimit, clearRateLimit } from '@/lib/auth/rate-limit'
+import { checkDistributedRateLimit } from '@/lib/auth/distributed-rate-limit'
 import { isGoogleEnabled } from '@/lib/auth/google-enabled'
 
 export type AuthFormState = { error: string } | null
@@ -24,8 +24,8 @@ export async function loginAction(
 
   // Throttle by account, not by IP: rate-limiting the IP would let an
   // attacker lock out a victim by guessing their email.
-  const key = `login:${parsed.data.email.toLowerCase()}`
-  const gate = checkRateLimit(key)
+  const key = parsed.data.email.toLowerCase()
+  const gate = await checkDistributedRateLimit('login', key)
   if (!gate.ok) {
     const min = Math.ceil(gate.retryAfterSec / 60)
     return {
@@ -34,9 +34,8 @@ export async function loginAction(
   }
 
   try {
-    // Success: reset the counter so a legitimate user who fat-fingered
-    // their password 8 times isn't still locked out after getting it right.
-    clearRateLimit(key)
+    // The counter is cleared inside Credentials.authorize only after the
+    // password has been verified. Clearing it here would disable throttling.
     await signIn('credentials', {
       email: parsed.data.email,
       password: parsed.data.password,
@@ -66,10 +65,11 @@ export async function registerAction(
     return { error: parsed.error.issues[0]?.message ?? 'Input tidak valid' }
   }
 
-  // Coarse guard against mass account creation. Keyed by email prefix so a
-  // script hammering one address cannot exhaust the whole keyspace.
-  const gate = checkRateLimit(`register:${parsed.data.email.split('@')[1] ?? 'x'}`)
-  if (!gate.ok) {
+  // Per-address and process-wide budgets: never bucket an entire email domain,
+  // which would let a few attempts lock out every Gmail/Outlook user.
+  const addressGate = await checkDistributedRateLimit('register', parsed.data.email.toLowerCase())
+  const globalGate = await checkDistributedRateLimit('register-global', 'all', 60, 60)
+  if (!addressGate.ok || !globalGate.ok) {
     return { error: 'Terlalu banyak pendaftaran. Coba lagi nanti.' }
   }
 

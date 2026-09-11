@@ -33,6 +33,7 @@ export const users = mysqlTable('users', {
   passwordHash: varchar('passwordHash', { length: 255 }),
   locale: varchar('locale', { length: 8 }).notNull().default('id-ID'),
   currency: char('currency', { length: 3 }).notNull().default('IDR'),
+  sessionInvalidBefore: timestamp('sessionInvalidBefore', { fsp: 3 }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (t) => [
@@ -108,8 +109,10 @@ export const transactions = mysqlTable('transactions', {
   note: varchar('note', { length: 500 }),
   occurredAt: timestamp('occurredAt', { fsp: 3 }).notNull().defaultNow(),
   createdAt: createdAt(),
+  clientMutationId: char('clientMutationId', { length: 36 }),
   updatedAt: updatedAt(),
 }, (t) => [
+  uniqueIndex('tx_user_client_mutation_uq').on(t.userId, t.clientMutationId),
   index('tx_user_date_idx').on(t.userId, t.occurredAt),
   index('tx_wallet_date_idx').on(t.walletId, t.occurredAt),
   index('tx_user_wallet_idx').on(t.userId, t.walletId),
@@ -149,9 +152,42 @@ export const debts = mysqlTable('debts', {
   index('debts_user_open_idx').on(t.userId, t.isPaid),
 ]);
 
+// ───────────────────────────────────────────────────────── budgets
+export const budgets = mysqlTable('budgets', {
+  id: pk(),
+  userId: char('userId', { length: 36 }).notNull(),
+  month: char('month', { length: 7 }).notNull(),
+  categoryTag: varchar('categoryTag', { length: 32 }).notNull(),
+  amount: bigint('amount', { mode: 'number' }).notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [
+  uniqueIndex('budgets_user_month_category_uq').on(t.userId, t.month, t.categoryTag),
+  index('budgets_user_month_idx').on(t.userId, t.month),
+]);
+
+// ───────────────────────────────────────────────── recurring reminders
+export const recurringRules = mysqlTable('recurringRules', {
+  id: pk(),
+  userId: char('userId', { length: 36 }).notNull(),
+  title: varchar('title', { length: 120 }).notNull(),
+  type: varchar('type', { length: 8 }).notNull(),
+  amount: bigint('amount', { mode: 'number' }).notNull(),
+  categoryTag: varchar('categoryTag', { length: 32 }),
+  frequency: varchar('frequency', { length: 12 }).notNull(),
+  nextRunAt: timestamp('nextRunAt', { fsp: 3 }).notNull(),
+  isActive: tinyint('isActive').notNull().default(1),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [
+  index('recurring_user_next_idx').on(t.userId, t.nextRunAt),
+]);
+
 export type User = typeof users.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Vault = typeof vaults.$inferSelect;
 export type Debt = typeof debts.$inferSelect;
 export type Category = typeof categories.$inferSelect;
+export type Budget = typeof budgets.$inferSelect;
+export type RecurringRule = typeof recurringRules.$inferSelect;

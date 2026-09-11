@@ -5,6 +5,20 @@ const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
+  extendDefaultRuntimeCaching: false,
+  workboxOptions: {
+    skipWaiting: false,
+    clientsClaim: true,
+    runtimeCaching: [
+      { urlPattern: /\/api\//, handler: "NetworkOnly" },
+      { urlPattern: ({ request }) => request.mode === "navigate", handler: "NetworkOnly" },
+      {
+        urlPattern: /\.(?:png|jpg|jpeg|webp|svg|ico|woff2)$/i,
+        handler: "CacheFirst",
+        options: { cacheName: "kasdesk-static", expiration: { maxEntries: 80, maxAgeSeconds: 2592000 } },
+      },
+    ],
+  },
 });
 
 /**
@@ -29,19 +43,17 @@ const withPWA = withPWAInit({
  *    the receipt scanner uses a file input, not getUserMedia, so the default
  *    applies and a native "take photo" flow keeps working.
  *
- *  - CSP is REPORT-ONLY. It exists to surface violations in the browser
- *    console without blocking anything, because a strict enforcement policy
- *    needs the script/style sources of Next, the PWA service worker and
- *    Tailwind's runtime, and a wrong one is worse than none. Promote to
- *    enforcing once the reports are clean.
+ *  - CSP is enforced. Inline bootstrap/style allowances remain narrowly scoped
+ *    to the current Next.js runtime and should move to nonces when supported.
  */
 const securityHeaders = [
+  ...(process.env.NODE_ENV === "production" ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }] : []),
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "microphone=(), geolocation=()" },
   {
-    key: "Content-Security-Policy-Report-Only",
+    key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
       // Next injects inline bootstrap scripts; 'unsafe-inline' here is what a
@@ -51,6 +63,9 @@ const securityHeaders = [
       "img-src 'self' data: blob:",
       "connect-src 'self'",
       "font-src 'self' data:",
+      "object-src 'none'",
+      "worker-src 'self' blob:",
+      "manifest-src 'self'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -59,8 +74,14 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  compress: true,
+  poweredByHeader: false,
+  experimental: { optimizePackageImports: ["lucide-react"] },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/icons/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+    ];
   },
 };
 

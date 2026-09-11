@@ -65,7 +65,7 @@ export function VaultsClient({
                   <p className="min-w-0 truncate text-sm font-medium text-text-primary">
                     {v.name}
                     {v.isCompleted === 1 && (
-                      <span className="ml-2 text-[10px] uppercase tracking-wider text-accent-income">
+                      <span className="ml-2 text-xs uppercase tracking-wider text-accent-income">
                         Tercapai
                       </span>
                     )}
@@ -92,7 +92,7 @@ export function VaultsClient({
                 </div>
 
                 {v.targetDate && (
-                  <p className="mt-1 text-[11px] text-text-secondary">
+                  <p className="mt-1 text-xs text-text-secondary">
                     Target {formatDate(v.targetDate)}
                   </p>
                 )}
@@ -230,7 +230,7 @@ function MoveSheet({
           />
         </Field>
         {dir === 'in' && remaining > 0 && (
-          <p className="text-[11px] text-text-secondary">
+          <p className="text-xs text-text-secondary">
             Kurang {formatIDR(remaining)} lagi untuk mencapai target.
           </p>
         )}
@@ -256,7 +256,7 @@ function Sheet({
       <div
         role="dialog" aria-modal="true" aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="truncate pr-2 text-base font-semibold text-text-primary">{title}</h2>

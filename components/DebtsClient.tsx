@@ -92,7 +92,7 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-[11px] uppercase tracking-[0.06em] text-text-secondary">{title}</p>
+      <p className="mb-2 text-xs uppercase tracking-[0.06em] text-text-secondary">{title}</p>
       <div className="divide-y divide-border-inner overflow-hidden rounded-2xl border border-border-outer bg-surface">
         {children}
       </div>
@@ -129,7 +129,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
         <p className={`truncate text-sm ${debt.isPaid ? 'text-text-secondary line-through' : 'text-text-primary'}`}>
           {debt.personName}
         </p>
-        <p className="text-[11px] text-text-secondary">
+        <p className="text-xs text-text-secondary">
           {debt.note ? `${debt.note} · ` : ''}
           {debt.dueDate ? (
             <span className={overdue ? 'text-danger' : ''}>
@@ -140,7 +140,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
             'Tanpa tempo'
           )}
         </p>
-        {error && <p className="text-[11px] text-danger">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
       </div>
       <span className="font-mono text-sm tabular-nums text-text-primary">
         {formatIDR(debt.amount)}
@@ -187,7 +187,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
             aria-modal="true"
             aria-label="Bayar sebagian"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+            className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-text-primary">Bayar Sebagian</h2>
@@ -264,7 +264,7 @@ function NewDebtSheet({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label="Catat utang"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">Catat Utang / Piutang</h2>

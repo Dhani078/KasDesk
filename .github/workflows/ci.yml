@@ -1,0 +1,29 @@
+name: Quality
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: npm run build
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 3306
+          DATABASE_USER: ci
+          DATABASE_PASSWORD: ci
+          DATABASE_NAME: kasdesk
+          AUTH_SECRET: ci-only-secret-ci-only-secret-32
+          AUTH_TRUST_HOST: 'true'
+      - run: node scripts/validate-release.js
+      - run: npm audit --omit=dev --audit-level=high

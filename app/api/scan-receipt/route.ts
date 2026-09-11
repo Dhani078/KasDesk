@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { requireUserId } from '@/lib/auth/session'
-import { checkRateLimitWith } from '@/lib/auth/rate-limit'
+import { checkDistributedRateLimit } from '@/lib/auth/distributed-rate-limit'
 import {
   GeminiOCRResponseSchema,
   CATEGORY_ENUM,
@@ -17,6 +17,14 @@ export const dynamic = 'force-dynamic'
 /** AI-OCR-SPEC §1.1 step 2 — client downscales first; this is the backstop. */
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+
+function hasValidImageSignature(buf: Buffer, mime: string): boolean {
+  if (mime === 'image/jpeg') return buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
+  if (mime === 'image/png') return buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))
+  if (mime === 'image/webp') return buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP'
+  if (mime === 'image/heic' || mime === 'image/heif') return buf.length >= 12 && buf.toString('ascii', 4, 8) === 'ftyp'
+  return false
+}
 
 const GEMINI_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
@@ -41,7 +49,7 @@ export async function POST(req: Request) {
 
   // 2. Rate limit per user (spec §5.3). Keyed by user, not IP: an IP-based
   //    limit would let one attacker lock out everyone on shared mobile NAT.
-  const rl = checkRateLimitWith(`ocr:${userId}`, 20, 60_000)
+  const rl = await checkDistributedRateLimit('ocr', userId, 20, 60)
   if (!rl.ok) {
     return NextResponse.json(
       { error: 'RATE_LIMITED', retry_after: rl.retryAfterSec },
@@ -85,12 +93,15 @@ export async function POST(req: Request) {
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: 'IMAGE_TOO_LARGE' }, { status: 413 })
   }
-  if (file.type && !ACCEPTED.includes(file.type)) {
+  if (!file.type || !ACCEPTED.includes(file.type)) {
     return NextResponse.json({ error: 'UNSUPPORTED_TYPE' }, { status: 415 })
   }
 
   // Image is held in memory only — never written to disk (spec §1.1 / FR-OCR-7).
   const buf = Buffer.from(await file.arrayBuffer())
+  if (!hasValidImageSignature(buf, file.type)) {
+    return NextResponse.json({ error: 'INVALID_IMAGE' }, { status: 415 })
+  }
   const b64 = buf.toString('base64')
 
   // 5. Call Gemini (server-side key).

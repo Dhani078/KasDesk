@@ -43,13 +43,17 @@
     "test:offline": "npx tsx scripts/test-offline-queue.ts",
     "test:debt-partial": "node scripts/test-debt-partial.js",
     "test:quicklog": "node scripts/test-quicklog.js",
-    "test:optimistic": "node scripts/test-optimistic.js"
+    "test:optimistic": "node scripts/test-optimistic.js",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run build",
+    "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js",
+    "test:all": "npm run test:unit && npm run typecheck && npm run lint",
+    "release:check": "npm run test:all && node scripts/validate-release.js",
+    "test:feature-max": "node scripts/test-feature-max.js"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "^1.11.3",
     "@ducanh2912/next-pwa": "^10.2.9",
     "bcryptjs": "^3.0.3",
-    "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.30.0",
     "mysql2": "^3.24.4",
@@ -57,9 +61,7 @@
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "tailwind-merge": "^3.6.0",
-    "zod": "^4.4.3",
-    "zustand": "^5.0.14"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -71,6 +73,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "tsx": "^4.23.13"
   }
 }

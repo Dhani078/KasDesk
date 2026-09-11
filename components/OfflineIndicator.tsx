@@ -59,7 +59,7 @@ export function OfflineIndicator() {
   if (online && pending === 0 && !syncing) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-20 z-40 flex justify-center px-4">
+    <div className="fixed inset-x-0 bottom-40 z-40 flex justify-center px-4">
       <div className="flex items-center gap-2 rounded-2xl border border-border-outer bg-surface px-4 py-2.5 text-xs shadow-lg">
         {syncing ? (
           <>

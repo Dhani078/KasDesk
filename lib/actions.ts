@@ -7,7 +7,7 @@ import { wallets, transactions, categories, vaults, debts } from '@/lib/db/schem
 import { TransactionSchema, WalletSchema, DebtSchema, VaultSchema } from '@/lib/schemas'
 import { isArchivedWallet } from '@/lib/wallet-guard'
 import { requireUserId } from '@/lib/auth/session'
-import { daysLeftInMonth } from '@/lib/format'
+import { getMonthWindow } from '@/lib/timezone'
 import type { ActionResponse } from '@/lib/types'
 
 /**
@@ -43,6 +43,15 @@ export async function createTransaction(
 
   try {
     const id = await db.transaction(async (tx) => {
+      if (data.client_mutation_id) {
+        const [existing] = await tx
+          .select({ id: transactions.id })
+          .from(transactions)
+          .where(and(eq(transactions.userId, userId), eq(transactions.clientMutationId, data.client_mutation_id)))
+          .limit(1)
+        if (existing) return existing.id
+      }
+
       // 1. Verify the wallet belongs to this user (authorization at DB level)
       //    AND is not archived. Archived wallets are excluded from Total Saldo,
       //    so spending from one would make money vanish from every headline
@@ -94,6 +103,7 @@ export async function createTransaction(
         userId,
         walletId: data.wallet_id,
         toWalletId: data.to_wallet_id ?? null,
+        clientMutationId: data.client_mutation_id ?? null,
         type: data.type,
         amount: data.amount,
         title: data.title,
@@ -115,22 +125,24 @@ export async function createTransaction(
         await tx
           .update(wallets)
           .set({ balance: sql`${wallets.balance} + ${data.amount}` })
-          .where(eq(wallets.id, data.wallet_id))
+          .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
       } else if (data.type === 'expense') {
-        await tx
+        const debit = await tx
           .update(wallets)
           .set({ balance: sql`${wallets.balance} - ${data.amount}` })
-          .where(eq(wallets.id, data.wallet_id))
+          .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId), eq(wallets.isArchived, 0), gte(wallets.balance, data.amount)))
+        if (!debit[0].affectedRows) throw new Error('INSUFFICIENT_BALANCE')
       } else {
         // transfer: deduct source, credit destination — both atomically
-        await tx
+        const debit = await tx
           .update(wallets)
           .set({ balance: sql`${wallets.balance} - ${data.amount}` })
-          .where(eq(wallets.id, data.wallet_id))
+          .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId), eq(wallets.isArchived, 0), gte(wallets.balance, data.amount)))
+        if (!debit[0].affectedRows) throw new Error('INSUFFICIENT_BALANCE')
         await tx
           .update(wallets)
           .set({ balance: sql`${wallets.balance} + ${data.amount}` })
-          .where(eq(wallets.id, data.to_wallet_id!))
+          .where(and(eq(wallets.id, data.to_wallet_id!), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
       }
 
       // `insertId` is only meaningful for auto-increment keys; our PK is a
@@ -248,6 +260,163 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
   }
 }
 
+/** FR-TXN-4: edit a transaction, recomputing wallet balances atomically.
+ *
+ * Editable: amount, title, category, note, source wallet (income/expense
+ * only). TYPE is immutable — for a transfer, the wallet pair stays fixed and
+ * only amount/title/category/note change, because changing one leg of a
+ * transfer is ambiguous. Date editing is a documented follow-up.
+ *
+ * Balance logic (one transaction): reverse the old effect exactly like
+ * deleteTransaction (reversal allowed even on archived wallets), then apply
+ * the new effect. New-source wallets must be owned + active (same guard as
+ * createTransaction), and an expense/transfer must not overdraw the
+ * post-reversal balance.
+ */
+export async function updateTransaction(
+  id: string,
+  raw: unknown,
+): Promise<ActionResponse<null>> {
+  const userId = await requireUserId()
+  if (!userId) {
+    return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
+  }
+
+  const parsed = TransactionSchema.safeParse(raw)
+  if (!parsed.success) {
+    const first = parsed.error.issues[0]
+    return {
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: first?.message ?? 'Data tidak valid',
+        field: first?.path.join('.'),
+      },
+    }
+  }
+  const data = parsed.data
+
+  try {
+    let affectedWalletId: string | null = null
+    let affectedToWalletId: string | null = null
+
+    await db.transaction(async (tx) => {
+      const [txRow] = await tx
+        .select()
+        .from(transactions)
+        .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+                .limit(1)
+              if (!txRow) throw new Error('NOT_FOUND')
+
+              // Type is immutable on edit — a transfer's wallet pair defines its
+              // meaning and cannot be silently turned into a single-wallet row.
+              if (data.type !== txRow.type) throw new Error('TYPE_IMMUTABLE')
+
+      // Old effect (whatever the current row says) — immutable type.
+      const oldWallet = txRow.walletId
+      const oldTo = txRow.toWalletId as string | null
+      affectedWalletId = oldWallet
+      affectedToWalletId = oldTo
+
+      // 1. Reverse old effect (reversal always allowed, even archived).
+      if (txRow.type === 'income') {
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} - ${txRow.amount}` }).where(eq(wallets.id, oldWallet))
+      } else if (txRow.type === 'expense') {
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} + ${txRow.amount}` }).where(eq(wallets.id, oldWallet))
+      } else if (oldTo) {
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} + ${txRow.amount}` }).where(eq(wallets.id, oldWallet))
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} - ${txRow.amount}` }).where(eq(wallets.id, oldTo))
+      }
+
+      // 2. Decide the NEW wallet(s). For transfers the pair is fixed.
+      const isTransfer = txRow.type === 'transfer'
+      const newSource = isTransfer ? oldWallet : data.wallet_id
+      const newTo = isTransfer ? oldTo : (data.type === 'transfer' ? data.to_wallet_id ?? null : null)
+
+      // 3. New wallets must be owned + active (create-style guard).
+      const [ws] = await tx
+        .select({ id: wallets.id, isArchived: wallets.isArchived })
+        .from(wallets)
+        .where(and(eq(wallets.id, newSource), eq(wallets.userId, userId)))
+        .limit(1)
+      if (!ws) throw new Error('WALLET_NOT_FOUND')
+      if (isArchivedWallet(ws)) throw new Error('WALLET_ARCHIVED')
+
+      if (data.type === 'transfer' || isTransfer) {
+        if (newTo) {
+          const [wd] = await tx
+            .select({ id: wallets.id, isArchived: wallets.isArchived })
+            .from(wallets)
+            .where(and(eq(wallets.id, newTo), eq(wallets.userId, userId)))
+            .limit(1)
+          if (!wd) throw new Error('WALLET_NOT_FOUND')
+          if (isArchivedWallet(wd)) throw new Error('WALLET_ARCHIVED')
+        } else if (!isTransfer) {
+          throw new Error('WALLET_NOT_FOUND')
+        }
+      } else if (newTo) {
+        throw new Error('SAME_WALLET')
+      }
+
+      // 4. Insufficient check on the post-reversal source balance.
+      const type = txRow.type as string
+      if (type !== 'income') {
+        const [b] = await tx.select({ balance: wallets.balance }).from(wallets).where(eq(wallets.id, newSource)).limit(1)
+        if (!b || Number(b.balance) < data.amount) throw new Error('INSUFFICIENT_BALANCE')
+      }
+
+      // 5. Apply new effect (same type as the old row).
+      if (type === 'income') {
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} + ${data.amount}` }).where(eq(wallets.id, newSource))
+      } else if (type === 'expense') {
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} - ${data.amount}` }).where(eq(wallets.id, newSource))
+      } else if (newTo) {
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} - ${data.amount}` }).where(eq(wallets.id, newSource))
+        await tx.update(wallets).set({ balance: sql`${wallets.balance} + ${data.amount}` }).where(eq(wallets.id, newTo))
+      }
+
+      // 6. Persist the new fields (type never changes).
+      await tx.update(transactions).set({
+        walletId: newSource,
+        toWalletId: newTo,
+        amount: data.amount,
+        title: data.title,
+        categoryTag: data.category_tag ?? txRow.categoryTag,
+        note: data.note ?? txRow.note,
+        occurredAt: data.occurred_at ? new Date(data.occurred_at) : txRow.occurredAt,
+      }).where(eq(transactions.id, id))
+    })
+
+    revalidatePath('/')
+    revalidatePath('/wallets')
+    if (affectedWalletId) revalidatePath(`/wallets/${affectedWalletId}`)
+    if (affectedToWalletId) revalidatePath(`/wallets/${affectedToWalletId}`)
+    return { success: true, data: null }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'UNKNOWN'
+    if (msg === 'NOT_FOUND') {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Transaksi tidak ditemukan.' } }
+    }
+    if (msg === 'INSUFFICIENT_BALANCE') {
+      return { success: false, error: { code: 'INSUFFICIENT_BALANCE', message: 'Saldo tidak cukup.' } }
+    }
+    if (msg === 'WALLET_ARCHIVED') {
+      return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Dompet ini sudah diarsipkan dan tidak bisa dipakai.' } }
+    }
+    if (msg === 'WALLET_NOT_FOUND') {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Dompet tidak ditemukan.' } }
+    }
+    if (msg === 'SAME_WALLET') {
+      return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Dompet asal dan tujuan tidak boleh sama.' } }
+    }
+    if (msg === 'TYPE_IMMUTABLE') {
+      return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Jenis transaksi tidak bisa diubah.' } }
+    }
+    console.error('[updateTransaction]', msg)
+    return { success: false, error: { code: 'UNKNOWN', message: 'Terjadi kesalahan. Coba lagi.' } }
+  }
+}
+
 /** Recent transactions for the home feed. */
 export async function getRecentTransactions(limit = 20) {
   const userId = await requireUserId()
@@ -305,7 +474,7 @@ export async function getDebts() {
 /**
  * Vaults are REAL allocations, not virtual labels.
  *
- * PRD §6.7 defines: spendable = totalBalance − vaultAllocations − debts.
+ * Vault deposits physically leave wallet balances; spendable subtracts debts only.
  * If setting money aside did not reduce the wallet balance, that money
  * would be counted twice: once as "in the vault" and again as spendable
  * cash. So every deposit/withdrawal moves actual wallet balance.
@@ -383,10 +552,11 @@ export async function depositToVault(
       if (!v) throw new Error('VAULT_NOT_FOUND')
 
       // Atomic — see the lost-update note on createTransaction.
-      await tx
+      const debit = await tx
         .update(wallets)
         .set({ balance: sql`${wallets.balance} - ${amt}` })
-        .where(eq(wallets.id, walletId))
+        .where(and(eq(wallets.id, walletId), eq(wallets.userId, userId), eq(wallets.isArchived, 0), gte(wallets.balance, amt)))
+      if (!debit[0].affectedRows) throw new Error('INSUFFICIENT_BALANCE')
       await tx
         .update(vaults)
         .set({ currentAmount: sql`${vaults.currentAmount} + ${amt}` })
@@ -461,10 +631,11 @@ export async function withdrawFromVault(
       // it would look like it disappeared even though the balance rose.
       if (isArchivedWallet(w)) throw new Error('WALLET_ARCHIVED')
 
-      await tx
+      const debit = await tx
         .update(vaults)
         .set({ currentAmount: sql`${vaults.currentAmount} - ${amt}` })
-        .where(eq(vaults.id, vaultId))
+        .where(and(eq(vaults.id, vaultId), eq(vaults.userId, userId), gte(vaults.currentAmount, amt)))
+      if (!debit[0].affectedRows) throw new Error('INSUFFICIENT_BALANCE')
       await tx
         .update(wallets)
         .set({ balance: sql`${wallets.balance} + ${amt}` })
@@ -556,40 +727,35 @@ export async function settleDebt(id: string, amount?: number): Promise<ActionRes
   }
 
   try {
-    const [d] = await db
-          .select({ amount: debts.amount, paidAmount: debts.paidAmount, settledAt: debts.settledAt })
-          .from(debts)
-          .where(and(eq(debts.id, id), eq(debts.userId, userId)))
-          .limit(1)
-    if (!d) {
-      return { success: false, error: { code: 'NOT_FOUND', message: 'Utang tidak ditemukan.' } }
-    }
+    await db.transaction(async (tx) => {
+      const [d] = await tx
+        .select({ amount: debts.amount, paidAmount: debts.paidAmount, settledAt: debts.settledAt })
+        .from(debts)
+        .where(and(eq(debts.id, id), eq(debts.userId, userId)))
+        .limit(1)
+        .for('update')
+      if (!d) throw new Error('NOT_FOUND')
 
-    const remaining = Number(d.amount) - Number(d.paidAmount)
-    const pay = amt ?? remaining
-    if (pay > remaining) {
-      return {
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Melebihi sisa utang.' },
-      }
-    }
+      const remaining = Number(d.amount) - Number(d.paidAmount)
+      const pay = amt ?? remaining
+      if (pay <= 0 || pay > remaining) throw new Error('OVERPAYMENT')
 
-    const newPaid = Number(d.paidAmount) + pay
-    const isPaid = newPaid >= Number(d.amount)
-    await db
-      .update(debts)
-      .set({
-        paidAmount: newPaid,
-        isPaid: isPaid ? 1 : 0,
-        settledAt: isPaid ? new Date() : d.settledAt ?? null,
-      })
-      .where(and(eq(debts.id, id), eq(debts.userId, userId)))
+      const newPaid = Number(d.paidAmount) + pay
+      const isPaid = newPaid >= Number(d.amount)
+      await tx
+        .update(debts)
+        .set({ paidAmount: newPaid, isPaid: isPaid ? 1 : 0, settledAt: isPaid ? new Date() : d.settledAt ?? null })
+        .where(and(eq(debts.id, id), eq(debts.userId, userId)))
+    })
 
     revalidatePath('/debts')
     revalidatePath('/')
     return { success: true, data: null }
   } catch (e) {
-    console.error('[settleDebt]', e instanceof Error ? e.message : e)
+    const msg = e instanceof Error ? e.message : 'UNKNOWN'
+    if (msg === 'NOT_FOUND') return { success: false, error: { code: 'NOT_FOUND', message: 'Utang tidak ditemukan.' } }
+    if (msg === 'OVERPAYMENT') return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Pembayaran melebihi sisa utang.' } }
+    console.error('[settleDebt]', msg)
     return { success: false, error: { code: 'UNKNOWN', message: 'Terjadi kesalahan. Coba lagi.' } }
   }
 }
@@ -749,7 +915,8 @@ export async function getDashboard() {
 
   // Month-to-date totals for the home summary.
   const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthWindow = getMonthWindow(now)
+  const monthStart = monthWindow.start
   const monthRows = await db
     .select({ type: transactions.type, amount: transactions.amount })
     .from(transactions)
@@ -774,8 +941,10 @@ export async function getDashboard() {
     0,
   )
 
-  const daysLeft = daysLeftInMonth(now)
-  const spendable = totalBalance - vaultAllocations - upcomingDebts
+  const daysLeft = monthWindow.daysLeft
+  // Vault deposits already reduce wallet balances, so subtracting them again
+  // would double-count reserved money. Only outstanding debts remain.
+  const spendable = totalBalance - upcomingDebts
   const safeDailySpend = Math.max(0, Math.floor(spendable / Math.max(1, daysLeft)))
 
   return {
@@ -834,7 +1003,7 @@ export async function getTopCategories(limit = 5) {
   if (!userId) return []
 
   const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthStart = getMonthWindow(now).start
 
   const rows = await db
     .select({ categoryTag: transactions.categoryTag, amount: transactions.amount })
