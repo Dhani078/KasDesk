@@ -32,7 +32,7 @@ export default async function InsightsPage() {
       </section>
 
       <section className="surface-card mb-6 rounded-2xl p-5">
-        <div className="flex items-end justify-between gap-4"><div><h2 className="text-sm font-semibold">Pengeluaran 7 hari</h2><p className="mt-1 text-xs text-text-secondary">Sentuh batang untuk melihat nominal</p></div><p className="font-mono text-lg font-semibold">{formatIDR(weeklyTotal)}</p></div>
+        <div className="flex items-end justify-between gap-4"><div><h2 className="text-sm font-semibold">7 Hari Terakhir</h2><p className="mt-1 text-xs text-text-secondary">Sentuh batang untuk melihat nominal</p></div><p className="font-mono text-lg font-semibold">{formatIDR(weeklyTotal)}</p></div>
         <div className="mt-6 flex h-40 items-end gap-2" role="img" aria-label="Grafik pengeluaran tujuh hari terakhir">
           {flow.map((item) => (
             <div key={item.day.toISOString()} className="flex min-w-0 flex-1 flex-col items-center gap-2">
@@ -47,7 +47,7 @@ export default async function InsightsPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section><h2 className="mb-3 text-sm font-semibold">Kategori terbesar</h2>{top.length === 0 ? <EmptyState icon={<BarChart3 className="h-6 w-6" />} title="Belum ada pengeluaran" body="Laporan muncul setelah transaksi pertama." /> : <ul className="surface-card space-y-4 rounded-2xl p-5">{top.map((item)=><li key={item.category}><div className="mb-2 flex justify-between gap-3 text-sm"><span>{item.category}</span><span className="font-mono text-text-secondary">{formatIDR(item.amount)}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-accent" style={{width:`${Math.max(2,Math.round(item.share*100))}%`}} /></div></li>)}</ul>}</section>
+        <section><h2 className="mb-3 text-sm font-semibold">Kategori Terbesar</h2>{top.length === 0 ? <EmptyState icon={<BarChart3 className="h-6 w-6" />} title="Belum ada pengeluaran" body="Laporan muncul setelah transaksi pertama." /> : <ul className="surface-card space-y-4 rounded-2xl p-5">{top.map((item)=><li key={item.category}><div className="mb-2 flex justify-between gap-3 text-sm"><span>{item.category}</span><span className="font-mono text-text-secondary">{formatIDR(item.amount)}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-accent" style={{width:`${Math.max(2,Math.round(item.share*100))}%`}} /></div></li>)}</ul>}</section>
         <section><h2 className="mb-3 text-sm font-semibold">Utang dan piutang aktif</h2>{openDebts.length === 0 ? <div className="rounded-2xl border border-dashed border-border-outer p-6 text-center text-sm text-text-secondary">Tidak ada kewajiban berjalan.</div> : <ul className="surface-card divide-y divide-border-inner overflow-hidden rounded-2xl">{openDebts.map((debt)=>{const remaining=Math.max(0,Number(debt.amount)-Number(debt.paidAmount));const positive=debt.direction==='piutang';return <li key={debt.id} className="flex items-center gap-3 px-5 py-4"><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{debt.personName}</p><p className="mt-1 text-xs text-text-secondary">{positive?'Piutang':'Utang'}{debt.dueDate?` · ${formatDateShort(debt.dueDate)}`:''}</p></div><span className={`font-mono text-sm ${positive?'text-accent-income':'text-accent-expense'}`}>{formatIDR(remaining)}</span></li>})}</ul>}</section>
       </div>
     </main>

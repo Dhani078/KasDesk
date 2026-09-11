@@ -942,9 +942,7 @@ export async function getDashboard() {
   )
 
   const daysLeft = monthWindow.daysLeft
-  // Vault deposits already reduce wallet balances, so subtracting them again
-  // would double-count reserved money. Only outstanding debts remain.
-  const spendable = totalBalance - upcomingDebts
+  const spendable = totalBalance - vaultAllocations - upcomingDebts
   const safeDailySpend = Math.max(0, Math.floor(spendable / Math.max(1, daysLeft)))
 
   return {

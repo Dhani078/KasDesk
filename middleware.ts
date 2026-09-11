@@ -5,7 +5,7 @@ export default edgeAuth((req) => {
   const isLoggedIn = Boolean(req.auth?.user?.id)
   const { pathname } = req.nextUrl
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register')
-  const isPublicRoute = pathname === '/welcome' || pathname === '/privacy' || pathname === '/terms' || pathname === '/api/health'
+  const isPublicRoute = pathname === '/welcome' || pathname === '/privacy' || pathname === '/terms' || pathname === '/api/health' || pathname === '/_not-found'
   const isApiAuth = pathname.startsWith('/api/auth')
 
   if (isApiAuth || isPublicRoute) {
@@ -23,5 +23,5 @@ export default edgeAuth((req) => {
 })
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons|manifest.json|sw.js|workbox-.*).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons|manifest.json|sw.js|workbox-.*|_not-found).*)'],
 }
