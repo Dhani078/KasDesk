@@ -118,7 +118,7 @@ async function main() {
   check('login', await login(EMAIL, PW))
 
   const home0 = curl([`${BASE}/`])
-  const total0 = parseIDR(home0.slice(home0.indexOf('Total Saldo'), home0.indexOf('Total Saldo') + 400))
+  const total0 = parseIDR(home0.slice(home0.indexOf('Total Saldo'), home0.indexOf('Total Saldo') + 4000))
   check('Total Saldo starts at 1.250.000 (both wallets)', total0 === 1250000, `got ${total0}`)
 
   // ---- Archive via the database (the action itself needs a request scope) ----
@@ -127,7 +127,7 @@ async function main() {
   check('wallet flagged archived in DB', Number(arch[0].isArchived) === 1)
 
   const home1 = curl([`${BASE}/`])
-  const total1 = parseIDR(home1.slice(home1.indexOf('Total Saldo'), home1.indexOf('Total Saldo') + 400))
+  const total1 = parseIDR(home1.slice(home1.indexOf('Total Saldo'), home1.indexOf('Total Saldo') + 4000))
   check('archived wallet drops out of Total Saldo (1.000.000)', total1 === 1000000, `got ${total1}`)
 
   // ---- The critical bit: it must still be listed so it can be restored ----
@@ -140,7 +140,7 @@ async function main() {
   // ---- Restore ----
   await db.execute('UPDATE wallets SET isArchived=0 WHERE id=? AND userId=?', [wB, uid])
   const home2 = curl([`${BASE}/`])
-  const total2 = parseIDR(home2.slice(home2.indexOf('Total Saldo'), home2.indexOf('Total Saldo') + 400))
+  const total2 = parseIDR(home2.slice(home2.indexOf('Total Saldo'), home2.indexOf('Total Saldo') + 4000))
   check('restore puts the balance back (1.250.000)', total2 === 1250000, `got ${total2}`)
 
   // ---- Cross-user isolation: archiving must be scoped to the owner ----
