@@ -23,9 +23,9 @@ const env = loadEnv(path.join(__dirname, '..', '.env.local'))
 const BASE = process.env.BASE_URL || 'http://localhost:3333'
 const HAS_KEY = !!env.GEMINI_API_KEY
 
-const receiptPath = path.join(__dirname, '..', 'test_receipt.png')
+const receiptPath = path.join(__dirname, '..', 'scripts/fixtures/test_receipt.png')
 if (!fs.existsSync(receiptPath)) {
-  console.error('test_receipt.png not found at', receiptPath)
+  console.error('scripts/fixtures/test_receipt.png not found at', receiptPath)
   process.exit(1)
 }
 
