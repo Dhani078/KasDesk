@@ -12,5 +12,5 @@
  * Only the boolean crosses to the client — the secret itself never does.
  */
 export function isGoogleEnabled(): boolean {
-  return Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET)
+  return false
 }

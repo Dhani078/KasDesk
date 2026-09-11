@@ -18,9 +18,17 @@ export const registerSchema = z.object({
   password: z
     .string()
     .min(8, 'Password minimal 8 karakter')
-    .max(72, 'Password maksimal 72 karakter'), // bcrypt truncates past 72 bytes
+    .max(72, 'Password maksimal 72 karakter')
+    .refine((value) => new TextEncoder().encode(value).length <= 72,
+      'Password maksimal 72 byte UTF-8'),
   name: z.string().trim().min(1).max(120).optional(),
 })
+
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
+  newPassword: z.string().min(8, 'Password baru minimal 8 karakter').max(72).refine((value) => new TextEncoder().encode(value).length <= 72, 'Password maksimal 72 byte UTF-8'),
+}).refine((data) => data.currentPassword !== data.newPassword, { message: 'Password baru harus berbeda', path: ['newPassword'] })
 
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email('Email tidak valid'),
@@ -42,6 +50,7 @@ export const TransactionSchema = z
     category_tag: z.enum(CATEGORY_ENUM).optional(),
     note: z.string().trim().max(500, 'Catatan terlalu panjang').optional(),
     occurred_at: z.string().datetime().optional(),
+    client_mutation_id: z.string().uuid().optional(),
   })
   .refine((d) => d.type !== 'transfer' || !!d.to_wallet_id, {
     message: 'Transfer memerlukan dompet tujuan',

@@ -9,10 +9,8 @@
  * mutation type appears later, extend the `kind` field — the drain logic in
  * lib/offline/sync.ts switches on it.
  *
- * Note on duplicates: server actions are not idempotent, so a sync that dies
- * after the server committed but before the op was removed can, on the next
- * sync, create the transaction twice. Full last-write-wins / dedupe is
- * FR-OFF-5 and tracked as follow-up; this is the FR-OFF-2/3/6 slice.
+ * Replay safety: every queued transaction carries a client mutation UUID and
+ * the database enforces a per-user unique index, so reconnect retries are idempotent.
  */
 
 export type QueuedOp = {
@@ -67,5 +65,14 @@ export async function removeOp(id: string): Promise<void> {
     tx.objectStore(STORE).delete(id)
     tx.oncomplete = () => { db.close(); resolve() }
     tx.onerror = () => { db.close(); reject(tx.error) }
+  })
+}
+
+export function clearOfflineData(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_NAME)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+    request.onblocked = () => resolve()
   })
 }

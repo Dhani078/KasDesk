@@ -62,3 +62,23 @@ Semua suite: `test:smoke`, `test:isolation`, `test:debts`, `test:debt-partial`, 
 - Penolakan transaksi terhadap dompet terarsip di semua jalur uang
 - Header keamanan (nosniff, X-Frame-Options, Referrer-Policy, CSP report-only)
 - Kunci Gemini via header `x-goog-api-key`, bukan query string
+
+## Fitur produktivitas
+
+- `/transactions` — pencarian transaksi, filter jenis, dan rentang tanggal.
+- `/planning` — budget kategori bulanan dan pengingat transaksi mingguan/bulanan.
+- `/settings` — privasi nominal, tema, instalasi, export, perubahan password, dan penghapusan akun.
+- Edit transaksi mendukung perubahan tanggal dan waktu.
+- Export akun mencakup dompet, transaksi, kategori, target, utang, budget, dan pengingat rutin.
+
+Jalankan migrasi `0000` sampai `0004` sebelum menggunakan fitur perencanaan.
+
+
+## Production handoff
+
+Ikuti `ANTIGRAVITY-HANDOFF.md` untuk build, migrasi staging, Vercel, device test, monitoring, dan integrasi eksternal.
+
+
+## Prompt Antigravity
+
+Setelah mengekstrak paket, salin isi `PROMPT-ANTIGRAVITY.md` ke Antigravity. Prompt tersebut meminta instalasi bersih, migrasi TiDB staging, production build, seluruh test, bundle analysis, Lighthouse, pengujian perangkat, Vercel Preview, monitoring, laporan akhir, dan artefak bersih.

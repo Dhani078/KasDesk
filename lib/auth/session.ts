@@ -1,21 +1,18 @@
+import { eq } from 'drizzle-orm'
 import { auth } from '@/auth'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
 
-/**
- * Resolve the signed-in user id, or null when unauthenticated.
- *
- * Every Server Action must call this and then scope its query with
- * `eq(table.userId, userId)`. MySQL has no Row Level Security, so this
- * check is the ONLY thing preventing cross-user data access.
- */
 export async function requireUserId(): Promise<string | null> {
   const session = await auth()
-  return session?.user?.id ?? null
+  const id = session?.user?.id
+  if (!id) return null
+  const [user] = await db.select({ id: users.id, invalidBefore: users.sessionInvalidBefore }).from(users).where(eq(users.id, id)).limit(1)
+  if (!user) return null
+  if (user.invalidBefore && (session.issuedAt ?? 0) * 1000 < user.invalidBefore.getTime()) return null
+  return user.id
 }
 
-/**
- * Same as `requireUserId` but throws when unauthenticated.
- * Use in actions where a missing session is a programming error.
- */
 export async function assertUserId(): Promise<string> {
   const id = await requireUserId()
   if (!id) throw new Error('UNAUTHENTICATED')

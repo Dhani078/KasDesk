@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `sessionInvalidBefore` DATETIME(3) DEFAULT NULL AFTER `currency`;

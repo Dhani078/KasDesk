@@ -63,7 +63,7 @@ export function HomeFeed({
     <ul className="space-y-4">
       {groups.map((g) => (
         <li key={g.day}>
-          <p className="mb-2 text-[11px] uppercase tracking-[0.06em] text-text-secondary">
+          <p className="mb-2 text-xs uppercase tracking-[0.06em] text-text-secondary">
             {formatDayGroup(new Date(g.day))}
           </p>
           <div className="divide-y divide-border-inner overflow-hidden rounded-2xl border border-border-outer bg-surface">
@@ -82,7 +82,7 @@ export function HomeFeed({
                       <p className="truncate text-sm text-text-primary">
                         {t.failed ? `${t.title} — gagal` : t.title}
                       </p>
-                      <p className="text-[11px] text-text-secondary">
+                      <p className="text-xs text-text-secondary">
                         {walletName(t.walletId) ? `${walletName(t.walletId)} · ` : ''}
                         {t.categoryTag} · {formatTime(t.createdAt)}
                       </p>
@@ -104,7 +104,7 @@ export function HomeFeed({
                 <div key={item.key} className="flex items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-text-primary">{t.title}</p>
-                    <p className="text-[11px] text-text-secondary">
+                    <p className="text-xs text-text-secondary">
                       {walletName(t.walletId) ? `${walletName(t.walletId)} · ` : ''}
                       {t.categoryTag ?? 'LAINNYA'} · {formatTime(new Date(t.occurredAt))}
                     </p>

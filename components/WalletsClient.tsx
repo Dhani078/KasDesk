@@ -67,7 +67,7 @@ export function WalletsClient({
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-text-primary">{w.name}</p>
-                  <p className="text-[11px] uppercase tracking-[0.06em] text-text-secondary">
+                  <p className="text-xs uppercase tracking-[0.06em] text-text-secondary">
                     {TYPE_LABEL[w.type] ?? w.type}
                   </p>
                 </div>
@@ -93,7 +93,7 @@ export function WalletsClient({
                 <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-text-secondary">{w.name}</p>
-                    <p className="text-[11px] uppercase tracking-[0.06em] text-text-secondary">
+                    <p className="text-xs uppercase tracking-[0.06em] text-text-secondary">
                       {TYPE_LABEL[w.type] ?? w.type}
                     </p>
                   </div>
@@ -105,7 +105,7 @@ export function WalletsClient({
               </div>
             ))}
           </div>
-          <p className="mt-2 px-1 text-[11px] text-text-secondary">
+          <p className="mt-2 px-1 text-xs text-text-secondary">
             Dompet yang diarsipkan tidak dihitung dalam Total Saldo.
           </p>
         </section>
@@ -145,7 +145,7 @@ function NewWalletSheet({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label="Dompet baru"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">Dompet Baru</h2>
@@ -240,7 +240,7 @@ function ArchiveButton({ id, name, balance }: { id: string; name: string; balanc
             aria-modal="true"
             aria-label={`Arsipkan ${name}`}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+            className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-semibold text-text-primary">Arsipkan dompet?</h2>
@@ -321,7 +321,7 @@ function RestoreButton({ id, name }: { id: string; name: string }) {
         )}
         Pulihkan
       </button>
-      {error && <p role="alert" className="text-[10px] text-danger">{error}</p>}
+      {error && <p role="alert" className="text-xs text-danger">{error}</p>}
     </div>
   )
 }

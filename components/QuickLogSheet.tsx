@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, Loader2, Check } from 'lucide-react'
+import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import { X, Loader2 } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
 import { usePendingTx } from '@/components/pending-tx'
 import { enqueueOp } from '@/lib/offline/queue'
-import { ScanReceiptButton, type ScanResult } from '@/components/ScanReceiptButton'
+import type { ScanResult } from '@/components/ScanReceiptButton'
+
+const ScanReceiptButton = dynamic(() => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton), { loading: () => <span className="h-14 w-14 animate-pulse rounded-2xl bg-surface" aria-hidden /> })
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 
@@ -67,9 +70,10 @@ function Sheet({
   // FR-LOG-7: default to the last-used wallet, fall back to the first one.
   // FR-LOG-3: amount as formatted IDR text ("12.000"); parsed by stripping
   // non-digits on submit. State instead of DOM read so the format masks live.
-  const [amountText, setAmountText] = useState('')
+  const [amountText, setAmountText] = useState(() => prefill?.detected_total ? formatIDR(prefill.detected_total).replace(/^Rp\s?/, '') : '')
   // FR-LOG-5: selected category + last-used ordering (localStorage).
   const [catSel, setCatSel] = useState(() => {
+    if (prefill?.detected_category) return prefill.detected_category
     if (typeof window === 'undefined') return 'LAINNYA'
     try {
       return localStorage.getItem('kasdesk:last-category') || 'LAINNYA'
@@ -106,20 +110,9 @@ function Sheet({
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
 
-  // Seed the form from a scan the moment the sheet opens with one.
-  useEffect(() => {
-    if (!prefill) return
-    // Inputs are controlled now (amountText / catSel), so prefill must go
-    // through state, not direct DOM writes.
-    if (prefill.detected_total > 0) onAmountChange(String(prefill.detected_total))
-    if (prefill.detected_category) pickCat(prefill.detected_category)
-    if (prefill.merchant_name && prefill.merchant_name !== 'UNKNOWN') {
-      const f = document.getElementById('ql-form') as HTMLFormElement | null
-      const el = f?.elements.namedItem('title') as HTMLInputElement | null
-      if (el) el.value = prefill.merchant_name
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefill])
+  const [titleText, setTitleText] = useState(() =>
+    prefill?.merchant_name && prefill.merchant_name !== 'UNKNOWN' ? prefill.merchant_name : '',
+  )
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -128,6 +121,7 @@ function Sheet({
 
     const fd = new FormData(e.currentTarget)
     const payload = {
+      client_mutation_id: crypto.randomUUID(),
       wallet_id: String(fd.get('wallet_id') ?? ''),
       type: String(fd.get('type') ?? 'expense'),
       amount: Number(String(fd.get('amount') ?? '0').replace(/[^\d]/g, '')),
@@ -186,7 +180,7 @@ function Sheet({
         aria-modal="true"
         aria-label="Catat transaksi"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">Catat Transaksi</h2>
@@ -198,7 +192,7 @@ function Sheet({
         {prefill?.needs_confirmation && (
           <p
             role="status"
-            className="mb-3 rounded-xl bg-white/[0.04] px-3 py-2 text-[11px] leading-relaxed text-text-secondary"
+            className="mb-3 rounded-xl bg-white/[0.04] px-3 py-2 text-xs leading-relaxed text-text-secondary"
           >
             Hasil scan kurang pasti
             {prefill.confidence_score > 0
@@ -251,6 +245,8 @@ function Sheet({
               <input
                 id="title"
                 name="title"
+                value={titleText}
+                onChange={(e) => setTitleText(e.target.value)}
                 required
                 maxLength={120}
                 placeholder="Nasi Goreng"

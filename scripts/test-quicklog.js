@@ -18,7 +18,7 @@ const check = (n, c, d = '') => {
 }
 
 const sheet = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8')
-const home = fs.readFileSync(path.join(__dirname, '..', 'app', 'page.tsx'), 'utf8')
+const home = fs.readFileSync(path.join(__dirname, '..', 'app', '(dashboard)', 'page.tsx'), 'utf8')
 
 // Raw strings: the source contains backslashes (regex classes) that a regex
 // test would have to double-escape. includes() avoids that entirely.

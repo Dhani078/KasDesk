@@ -15,10 +15,8 @@
  * it forever would wedge the queue. An op that fails because the network
  * died is left queued; the caller decides whether to retry.
  *
- * ponytail: no FR-OFF-5 conflict resolution yet — server-side action does
- * not dedupe, so a sync interrupted after commit can double-create.
- * Add a client-generated `clientId` column + unique index when FR-OFF-5
- * is built.
+ * Replay is idempotent through client_mutation_id. Business conflicts are
+ * returned as terminal failures instead of being retried forever.
  */
 'use client'
 

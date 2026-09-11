@@ -1,17 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { AppShell } from "@/components/AppShell";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: 'KASDESK',
@@ -40,10 +29,10 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${inter.variable} ${jetbrainsMono.variable} dark antialiased`}
+      className="dark antialiased"
     >
       <body className="min-h-full flex flex-col bg-canvas text-text-primary">
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

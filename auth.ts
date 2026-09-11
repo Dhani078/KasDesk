@@ -6,6 +6,7 @@ import { authConfig } from './auth.config'
 import { db } from '@/lib/db'
 import { users, categories, wallets } from '@/lib/db/schema'
 import { verifyPassword } from '@/lib/auth/password'
+import { clearDistributedRateLimit } from '@/lib/auth/distributed-rate-limit'
 import { registerSchema } from '@/lib/schemas'
 
 /**
@@ -48,6 +49,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user) return null
         if (!(await verifyPassword(password, user.passwordHash))) return null
 
+        // Clear only after successful credential verification.
+        await clearDistributedRateLimit('login', email)
         return {
           id: user.id,
           email: user.email,

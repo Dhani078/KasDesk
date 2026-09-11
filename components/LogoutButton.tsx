@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { LogOut, Loader2 } from 'lucide-react'
 
 import { logoutAction } from '@/lib/auth/actions'
+import { clearOfflineData } from '@/lib/offline/queue'
 
 /**
  * Sign-out button.
@@ -33,6 +34,7 @@ export function LogoutButton() {
     // Best-effort: purge cached pages BEFORE the session ends, while we still
     // have a document context that can reach the cache storage.
     try {
+      await clearOfflineData()
       if (typeof caches !== 'undefined') {
         const names = await caches.keys()
         await Promise.all(names.map((n) => caches.delete(n)))

@@ -1,16 +1,50 @@
 {
-  "name": "KASDESK — Catatan Keuangan Pribadi",
+  "id": "/",
+  "name": "KASDESK \u2014 Keuangan Pribadi",
   "short_name": "KASDESK",
-  "description": "PWA keuangan pribadi mobile-first untuk mencatat pengeluaran harian, mengelola dompet, tabungan, dan utang.",
+  "description": "Catat transaksi, kelola dompet, target, utang, dan laporan dalam satu aplikasi.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#0D0D0F",
   "theme_color": "#0D0D0F",
-  "orientation": "portrait-primary",
-  "lang": "id",
+  "orientation": "any",
+  "lang": "id-ID",
   "dir": "ltr",
-  "categories": ["finance", "productivity"],
+  "categories": [
+    "finance",
+    "productivity",
+    "utilities"
+  ],
+  "shortcuts": [
+    {
+      "name": "Dompet",
+      "short_name": "Dompet",
+      "url": "/wallets",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Laporan",
+      "short_name": "Laporan",
+      "url": "/insights",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -25,17 +59,16 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/maskable-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/maskable-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "apple_touch_icon": "/icons/apple-touch-icon.png"
+  ]
 }

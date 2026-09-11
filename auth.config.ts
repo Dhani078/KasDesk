@@ -1,5 +1,4 @@
 import type { NextAuthConfig } from 'next-auth'
-import Google from 'next-auth/providers/google'
 
 /**
  * Edge-safe half of the Auth.js config.
@@ -10,6 +9,7 @@ import Google from 'next-auth/providers/google'
  * callback therefore lives in `auth.ts`, which is Node-only.
  */
 export const authConfig = {
+  trustHost: true,
   pages: {
     signIn: '/login',
   },
@@ -26,21 +26,14 @@ export const authConfig = {
     /** Expose the id on `session.user.id` for Server Actions to consume. */
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub
+      session.issuedAt = typeof token.iat === 'number' ? token.iat : 0
       return session
     },
   },
   // Only providers that work on the Edge live here.
   // `Credentials` is added in `auth.ts` because `authorize` needs Node.
-  providers: [
-    // Google is only configured when credentials are present, so the app
-    // still boots in development without them.
-    ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
-      ? [
-          Google({
-            clientId: process.env.AUTH_GOOGLE_ID,
-            clientSecret: process.env.AUTH_GOOGLE_SECRET,
-          }),
-        ]
-      : []),
-  ],
+  // Google OAuth is intentionally disabled until its local-user mapping and
+  // account-linking flow have dedicated integration tests.
+  providers: [],
+
 } satisfies NextAuthConfig
