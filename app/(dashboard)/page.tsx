@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { TrendingUp, TrendingDown, Wallet, Settings } from 'lucide-react'
 
+import { auth } from '@/auth'
 import { getDashboard, getRecentTransactions, getWallets } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
 import { QuickLogButton } from '@/components/QuickLogSheet'
@@ -12,11 +13,16 @@ import { PrivacyToggle } from '@/components/PrivacyToggle'
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const [dash, recent, wallets] = await Promise.all([
+  const [session, dash, recent, wallets] = await Promise.all([
+    auth(),
     getDashboard(),
     getRecentTransactions(20),
     getWallets(),
   ])
+
+  const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Kawan'
+  const hour = new Date().getHours()
+  const greeting = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam'
 
   const hasWallets = wallets.length > 0
 
@@ -28,21 +34,63 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-5 pt-8 pb-32 sm:px-8 sm:pt-12">
-      {/* ── Hero: total balance ─────────────────────────── */}
+      {/* ── Header & Greeting ───────────────────────────── */}
       <header className="mb-6">
-        <div className="mb-1 flex items-start justify-between">
-          <p className="text-xs uppercase tracking-[0.08em] text-text-secondary">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">{greeting}</p>
+            <h2 className="text-base font-semibold text-text-primary capitalize">{userName} 👋</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <PrivacyToggle />
+            <Link href="/settings" aria-label="Pengaturan" className="grid h-11 w-11 place-items-center rounded-xl border border-border-outer bg-surface text-text-secondary transition hover:text-text-primary active:scale-95">
+              <Settings className="h-4 w-4" aria-hidden />
+            </Link>
+            <LogoutButton />
+          </div>
+        </div>
+
+        <div className="surface-card rounded-3xl p-5 border border-border-outer shadow-sm">
+          <p className="text-xs uppercase tracking-[0.08em] text-text-secondary mb-1">
             Total Saldo
           </p>
-          <div className="flex items-center gap-2"><PrivacyToggle /><Link href="/settings" aria-label="Pengaturan" className="grid h-11 w-11 place-items-center rounded-xl border border-border-outer bg-surface text-text-secondary transition hover:text-text-primary active:scale-95"><Settings className="h-4 w-4" aria-hidden /></Link><LogoutButton /></div>
+          <div className="flex items-baseline justify-between">
+            <h1 className="font-mono text-3xl sm:text-4xl font-semibold tabular-nums text-text-primary">
+              {formatIDR(dash.totalBalance)}
+            </h1>
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
+              {dash.walletCount} Dompet
+            </span>
+          </div>
         </div>
-        <h1 className="font-mono text-4xl font-semibold tabular-nums text-text-primary">
-          {formatIDR(dash.totalBalance)}
-        </h1>
-        <p className="mt-1 text-xs text-text-secondary">
-          {dash.walletCount} dompet aktif
-        </p>
       </header>
+
+      {/* ── Quick Wallets Scroll ──────────────────────────── */}
+      {hasWallets && (
+        <section className="mb-6">
+          <div className="mb-2.5 flex items-center justify-between">
+            <p className="text-xs uppercase tracking-[0.08em] text-text-secondary">Dompet Kamu</p>
+            <Link href="/wallets" className="text-xs text-accent hover:underline">Kelola &rarr;</Link>
+          </div>
+          <div className="-mx-5 flex gap-2.5 overflow-x-auto px-5 py-1 scrollbar-none">
+            {wallets.map((w) => (
+              <Link
+                key={w.id}
+                href={`/wallets/${w.id}`}
+                className="shrink-0 flex items-center gap-2.5 rounded-2xl border border-border-outer bg-surface/80 px-3.5 py-2.5 text-xs transition hover:border-accent/40 active:scale-95"
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent/10 text-accent">
+                  <Wallet className="h-3.5 w-3.5" />
+                </span>
+                <div>
+                  <p className="font-medium text-text-primary">{w.name}</p>
+                  <p className="font-mono text-text-secondary tabular-nums">{formatIDR(w.balance)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Safe Daily Spend (PRD FR-INS-1/2) ───────────── */}
       <section className="mb-6 surface-card rounded-2xl p-5">
