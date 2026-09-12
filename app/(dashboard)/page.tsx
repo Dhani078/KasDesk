@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { TrendingUp, TrendingDown, Wallet, Settings, ShieldCheck } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Settings, ShieldCheck, Sparkles, PlusCircle } from 'lucide-react'
 
 import { auth } from '@/auth'
 import { getRecentTransactions, getWallets } from '@/lib/actions'
@@ -26,14 +26,16 @@ export default async function HomePage() {
   const greeting = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam'
   const hasWallets = wallets.length > 0
   const walletNames: Record<string, string> = Object.fromEntries(wallets.map((w) => [w.id, w.name]))
+  const hasAnyData = hasWallets || recent.length > 0 || dash.monthlyIncome > 0 || dash.monthlyExpense > 0
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-5 pt-8 pb-32 sm:px-8 sm:pt-12">
       <header className="mb-6">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">{greeting}</p>
             <h2 className="text-base font-semibold text-text-primary capitalize">{userName} 👋</h2>
+            <p className="mt-1 text-xs text-text-secondary">Kelola uang tanpa ribet, satu catatan kecil setiap hari.</p>
           </div>
           <div className="flex items-center gap-2">
             <PrivacyToggle />
@@ -44,12 +46,23 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="surface-card rounded-3xl p-5 border border-border-outer shadow-sm">
-          <p className="text-xs uppercase tracking-[0.08em] text-text-secondary mb-1">Total Saldo</p>
-          <div className="flex items-baseline justify-between">
-            <h1 className="font-mono text-3xl sm:text-4xl font-semibold tabular-nums text-text-primary">{formatIDR(dash.totalBalance)}</h1>
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">{dash.walletCount} Dompet</span>
-          </div>
+        {!hasAnyData && (
+          <section className="mb-4 rounded-3xl border border-accent/25 bg-accent/10 p-5">
+            <div className="flex gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent/15 text-accent"><Sparkles className="h-5 w-5" aria-hidden /></span>
+              <div>
+                <h1 className="text-lg font-semibold text-text-primary">Mulai dari dompet pertama</h1>
+                <p className="mt-1 text-sm leading-6 text-text-secondary">Tambahkan cash, bank, atau e-wallet. Setelah itu kamu bisa catat transaksi, lihat Aman Harian, dan dapat saran otomatis.</p>
+                <Link href="/wallets" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent-solid px-4 text-sm font-semibold text-white"><PlusCircle className="h-4 w-4" aria-hidden /> Buat dompet</Link>
+              </div>
+            </div>
+          </section>
+        )}
+
+        <div className="surface-card rounded-3xl border border-border-outer p-5 shadow-sm">
+          <div className="mb-1 flex items-center justify-between gap-3"><p className="text-xs uppercase tracking-[0.08em] text-text-secondary">Total Saldo</p><span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">{dash.walletCount} Dompet</span></div>
+          <h1 className="font-mono text-3xl font-semibold tabular-nums text-text-primary sm:text-4xl">{formatIDR(dash.totalBalance)}</h1>
+          <p className="mt-2 text-xs leading-5 text-text-secondary">Saldo aktif yang siap dipantau. Aktifkan mode privasi kalau sedang di tempat umum.</p>
         </div>
       </header>
 
@@ -66,6 +79,7 @@ export default async function HomePage() {
         </div>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-accent" style={{ width: `${dash.healthScore}%` }} /></div>
         <p className="mt-3 text-xs leading-5 text-text-secondary">Savings rate bulan ini {dash.savingsRate}%. {dash.healthTips[0] ?? 'Pertahankan ritme catatan dan review mingguan.'}</p>
+        <Link href="/coach" className="mt-4 inline-flex min-h-10 items-center rounded-xl border border-border-outer px-3 text-xs font-medium text-accent">Lihat saran coach →</Link>
       </section>
 
       {hasWallets && (
@@ -98,7 +112,7 @@ export default async function HomePage() {
 
       <section>
         <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-semibold text-text-primary">Transaksi</h2><Link href="/transactions" className="text-xs text-accent hover:underline">Semua transaksi</Link></div>
-        {!hasWallets ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada dompet" body="Buat dompet pertama untuk mulai mencatat." /> : recent.length === 0 ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada transaksi" body="Tekan tombol tengah di bawah untuk mencatat pengeluaran pertama." /> : <HomeFeed rows={recent.map((r) => ({ id: r.id, walletId: r.walletId, type: r.type, amount: Number(r.amount ?? 0), title: r.title, categoryTag: r.categoryTag, occurredAt: r.occurredAt }))} walletNames={walletNames} />}
+        {!hasWallets ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada dompet" body="Buat dompet pertama untuk mulai mencatat." action={<Link href="/wallets" className="primary-button">Buat dompet</Link>} /> : recent.length === 0 ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada transaksi" body="Tekan tombol + di bawah untuk mencatat pemasukan atau pengeluaran pertama." /> : <HomeFeed rows={recent.map((r) => ({ id: r.id, walletId: r.walletId, type: r.type, amount: Number(r.amount ?? 0), title: r.title, categoryTag: r.categoryTag, occurredAt: r.occurredAt }))} walletNames={walletNames} />}
       </section>
 
       <QuickLogButton wallets={wallets} />
