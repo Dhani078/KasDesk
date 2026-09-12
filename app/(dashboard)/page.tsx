@@ -31,13 +31,13 @@ export default async function HomePage() {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-5 pt-8 pb-32 sm:px-8 sm:pt-12">
       <header className="mb-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">{greeting}</p>
-            <h2 className="text-base font-semibold text-text-primary capitalize">{userName} 👋</h2>
-            <p className="mt-1 text-xs text-text-secondary">Kelola uang tanpa ribet, satu catatan kecil setiap hari.</p>
+            <h2 className="truncate text-base font-semibold text-text-primary capitalize">{userName} 👋</h2>
+            <p className="mt-1 text-xs leading-5 text-text-secondary">Kelola uang tanpa ribet, satu catatan kecil setiap hari.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <PrivacyToggle />
             <Link href="/settings" aria-label="Pengaturan" className="grid h-11 w-11 place-items-center rounded-xl border border-border-outer bg-surface text-text-secondary transition hover:text-text-primary active:scale-95">
               <Settings className="h-4 w-4" aria-hidden />
@@ -112,7 +112,7 @@ export default async function HomePage() {
 
       <section>
         <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-semibold text-text-primary">Transaksi</h2><Link href="/transactions" className="text-xs text-accent hover:underline">Semua transaksi</Link></div>
-        {!hasWallets ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada dompet" body="Buat dompet pertama untuk mulai mencatat." action={<Link href="/wallets" className="primary-button">Buat dompet</Link>} /> : recent.length === 0 ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada transaksi" body="Tekan tombol + di bawah untuk mencatat pemasukan atau pengeluaran pertama." /> : <HomeFeed rows={recent.map((r) => ({ id: r.id, walletId: r.walletId, type: r.type, amount: Number(r.amount ?? 0), title: r.title, categoryTag: r.categoryTag, occurredAt: r.occurredAt }))} walletNames={walletNames} />}
+        {!hasWallets ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada dompet" body="Buat dompet pertama untuk mulai mencatat pemasukan, pengeluaran, dan target tabungan." actionHref="/wallets" actionLabel="Buat dompet" /> : recent.length === 0 ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada transaksi" body="Tekan tombol + di bawah untuk mencatat pemasukan atau pengeluaran pertama." /> : <HomeFeed rows={recent.map((r) => ({ id: r.id, walletId: r.walletId, type: r.type, amount: Number(r.amount ?? 0), title: r.title, categoryTag: r.categoryTag, occurredAt: r.occurredAt }))} walletNames={walletNames} />}
       </section>
 
       <QuickLogButton wallets={wallets} />
