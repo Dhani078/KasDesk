@@ -93,6 +93,11 @@ function Sheet({
     const digits = raw.replace(/\D/g, '').slice(0, 12)
     setAmountText(digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '')
   }
+  function addQuickAmount(val: number) {
+    const current = Number(amountText.replace(/\D/g, '') || 0)
+    const next = current + val
+    setAmountText(next.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'))
+  }
   function pickCat(c: string) {
     setCatSel(c)
     try { localStorage.setItem('kasdesk:last-category', c) } catch {}
@@ -236,6 +241,27 @@ function Sheet({
                 onChange={(e) => onAmountChange(e.target.value)}
                 className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
               />
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {[10000, 20000, 50000, 100000, 200000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => addQuickAmount(amt)}
+                    className="rounded-lg border border-border-outer bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95"
+                  >
+                    +{amt >= 1000000 ? `${amt / 1000000}jt` : `${amt / 1000}rb`}
+                  </button>
+                ))}
+                {amountText && (
+                  <button
+                    type="button"
+                    onClick={() => setAmountText('')}
+                    className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-1 text-[11px] text-text-secondary hover:text-danger active:scale-95"
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
             </div>
 
             <div>
