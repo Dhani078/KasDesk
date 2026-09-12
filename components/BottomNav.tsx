@@ -25,7 +25,12 @@ export function BottomNav() {
               : pathname.startsWith(href)
           return (
             <li key={href} className="min-w-0 flex-1">
-              <Link href={href} aria-current={active ? 'page' : undefined} className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-medium transition-all ${active ? 'bg-accent/12 text-accent shadow-[inset_0_0_0_1px_rgba(79,127,232,.12)]' : 'text-text-secondary hover:text-text-primary'}`}>
+              <Link
+                href={href}
+                prefetch={true}
+                aria-current={active ? 'page' : undefined}
+                className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs font-medium transition-all active:scale-95 active:opacity-75 ${active ? 'bg-accent/12 text-accent shadow-[inset_0_0_0_1px_rgba(79,127,232,.12)]' : 'text-text-secondary hover:text-text-primary'}`}
+              >
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
                 <span className="truncate">{label}</span>
               </Link>

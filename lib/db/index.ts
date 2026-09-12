@@ -25,11 +25,9 @@ function createPool(): mysql.Pool {
   return pool;
 }
 
-// Reuse the pool across hot reloads in dev (prevents connection exhaustion)
+// Reuse the pool across hot reloads in dev and warm serverless containers in prod
 const pool = globalForDb.__kasdeskPool ?? createPool();
-if (process.env.NODE_ENV !== 'production') {
-  globalForDb.__kasdeskPool = pool;
-}
+globalForDb.__kasdeskPool = pool;
 
 export const db = drizzle(pool, { schema, mode: 'default' });
 export { pool };
