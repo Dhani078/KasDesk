@@ -45,7 +45,7 @@ export default function WelcomePage() {
               <div className="rounded-2xl border border-border-inner bg-black/10 p-4"><p className="text-xs text-text-secondary">Pemasukan</p><p className="mt-1 font-mono text-lg text-accent-income">Rp8,5 jt</p></div>
               <div className="rounded-2xl border border-border-inner bg-black/10 p-4"><p className="text-xs text-text-secondary">Pengeluaran</p><p className="mt-1 font-mono text-lg text-accent-expense">Rp2,18 jt</p></div>
             </div>
-            <div className="mt-4 flex h-24 items-end gap-2 rounded-2xl border border-border-inner bg-black/10 p-4" aria-label="Contoh grafik pengeluaran tujuh hari">
+            <div role="img" aria-label="Contoh grafik pengeluaran tujuh hari" className="mt-4 flex h-24 items-end gap-2 rounded-2xl border border-border-inner bg-black/10 p-4">
               {[38,62,44,78,52,88,66].map((height,index)=><span key={index} className="flex-1 rounded-t bg-accent/75" style={{height:`${height}%`}} />)}
             </div>
             <div className="mt-5"><PwaInstall /></div>
