@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Download, FileText, KeyRound, Settings2, ShieldCheck, Smartphone, Target } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Download, FileText, KeyRound, Lightbulb, Settings2, ShieldCheck, Smartphone, Target } from 'lucide-react'
 import { PrivacyToggle } from '@/components/PrivacyToggle'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DeleteAccountForm } from '@/components/DeleteAccountForm'
 import { ChangePasswordForm } from '@/components/ChangePasswordForm'
 
 const rows = [
+  { href: '/coach', Icon: Lightbulb, title: 'Coach keuangan', body: 'Saran otomatis dari pola uangmu.' },
   { href: '/planning', Icon: Target, title: 'Budget & pengingat', body: 'Atur batas kategori dan transaksi rutin.' },
   { href: '/install', Icon: Smartphone, title: 'Instal aplikasi', body: 'Pasang di iPhone, Android, atau laptop.' },
 ]
