@@ -23,9 +23,31 @@
   ],
   "shortcuts": [
     {
+      "name": "Catat Transaksi",
+      "short_name": "Catat",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Dompet",
       "short_name": "Dompet",
       "url": "/wallets",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Utang & Piutang",
+      "short_name": "Utang",
+      "url": "/debts",
       "icons": [
         {
           "src": "/icons/icon-192.png",
