@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, X, Loader2, Check, Wallet } from 'lucide-react'
+import { Plus, X, Loader2, Check, Wallet, MessageCircle } from 'lucide-react'
 
 import { createDebt, settleDebt, deleteDebt } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
@@ -123,6 +123,10 @@ function DebtRow({ debt }: { debt: DebtLite }) {
   const overdue =
     debt.dueDate && !debt.isPaid && new Date(debt.dueDate) < new Date()
 
+  const remaining = Number(debt.amount) - Number(debt.paidAmount || 0)
+  const waMessage = `Halo ${debt.personName}, mau mengingatkan catatan pinjaman${debt.note ? ` (${debt.note})` : ''} sebesar ${formatIDR(remaining)}. Jika sudah senggang bisa ditransfer yaa. Terima kasih! 🙏`
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`
+
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <div className="min-w-0 flex-1">
@@ -146,25 +150,39 @@ function DebtRow({ debt }: { debt: DebtLite }) {
         {formatIDR(debt.amount)}
       </span>
       {!debt.isPaid && (
-              <>
-              <button
-                type="button"
-                onClick={() => onSettle()}
-                disabled={pending}
-                aria-label={`Tandai lunas ${debt.personName}`}
-                className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer disabled:opacity-50"
-              >
-                <Check className="h-3.5 w-3.5" />
-              </button>
-        <button
-          type="button"
-          onClick={() => setPayOpen(true)}
-          disabled={pending}
-          aria-label={`Bayar sebagian ${debt.personName}`}
-          className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer disabled:opacity-50"
-        >
-          <Wallet className="h-3.5 w-3.5" />
-        </button>
+        <>
+          {debt.direction === 'piutang' && (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Kirim pengingat WhatsApp ke ${debt.personName}`}
+              title="Kirim pengingat via WhatsApp"
+              className="rounded-lg p-1.5 text-accent-income bg-accent-income/10 ring-1 ring-accent-income/30 transition hover:bg-accent-income/20 active:scale-90"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => onSettle()}
+            disabled={pending}
+            aria-label={`Tandai lunas ${debt.personName}`}
+            title="Tandai lunas"
+            className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer transition hover:text-text-primary active:scale-90 disabled:opacity-50"
+          >
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setPayOpen(true)}
+            disabled={pending}
+            aria-label={`Bayar sebagian ${debt.personName}`}
+            title="Bayar sebagian"
+            className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer transition hover:text-text-primary active:scale-90 disabled:opacity-50"
+          >
+            <Wallet className="h-3.5 w-3.5" />
+          </button>
         </>
       )}
       <button

@@ -7,6 +7,7 @@ import { QuickLogButton } from '@/components/QuickLogSheet'
 import { EmptyState } from '@/components/EmptyState'
 import { LogoutButton } from '@/components/LogoutButton'
 import { HomeFeed } from '@/components/HomeFeed'
+import { PrivacyToggle } from '@/components/PrivacyToggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +34,7 @@ export default async function HomePage() {
           <p className="text-xs uppercase tracking-[0.08em] text-text-secondary">
             Total Saldo
           </p>
-          <div className="flex items-center gap-2"><Link href="/settings" aria-label="Pengaturan" className="grid h-11 w-11 place-items-center rounded-xl border border-border-outer bg-surface text-text-secondary transition hover:text-text-primary"><Settings className="h-4 w-4" aria-hidden /></Link><LogoutButton /></div>
+          <div className="flex items-center gap-2"><PrivacyToggle /><Link href="/settings" aria-label="Pengaturan" className="grid h-11 w-11 place-items-center rounded-xl border border-border-outer bg-surface text-text-secondary transition hover:text-text-primary active:scale-95"><Settings className="h-4 w-4" aria-hidden /></Link><LogoutButton /></div>
         </div>
         <h1 className="font-mono text-4xl font-semibold tabular-nums text-text-primary">
           {formatIDR(dash.totalBalance)}
