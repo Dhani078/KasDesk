@@ -34,7 +34,7 @@ export function QuickLogSheet({ wallets }: { wallets: WalletLite[] }) {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Catat transaksi"
-          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-text-primary text-canvas shadow-lg"
+          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-text-primary text-canvas shadow-lg transition-transform active:scale-90 active:opacity-85"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M12 5v14M5 12h14" />
