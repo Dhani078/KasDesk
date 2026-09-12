@@ -1,0 +1,13 @@
+# KASDESK
+
+> PWA keuangan pribadi mobile-first untuk mencatat pengeluaran harian, kelola dompet, tabungan, dan utang.
+
+## Fitur Utama
+- [Beranda & Dashboard](https://kas-desk.vercel.app/)
+- [Kelola Dompet](https://kas-desk.vercel.app/wallets)
+- [Celengan Tabungan (Vaults)](https://kas-desk.vercel.app/vaults)
+- [Pencatatan Utang & Piutang](https://kas-desk.vercel.app/debts)
+- [Laporan Keuangan & Analisis 7 Hari](https://kas-desk.vercel.app/insights)
+- [Perencanaan Anggaran](https://kas-desk.vercel.app/planning)
+- [Kebijakan Privasi](https://kas-desk.vercel.app/privacy)
+- [Ketentuan Layanan](https://kas-desk.vercel.app/terms)

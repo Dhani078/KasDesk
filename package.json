@@ -75,5 +75,9 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "tsx": "^4.23.13"
-  }
+  },
+  "browserslist": [
+    "defaults and fully supports es6-module",
+    "maintained node versions"
+  ]
 }

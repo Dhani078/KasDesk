@@ -3,9 +3,13 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://kas-desk.vercel.app'),
   title: 'KASDESK',
   description: "PWA keuangan pribadi mobile-first: catat pengeluaran harian, kelola dompet, tabungan, dan utang.",
   manifest: "/manifest.json",
+  alternates: {
+    canonical: '/',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
