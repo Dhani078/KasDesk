@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, ChevronRight, X, Loader2, Archive, ArchiveRestore } from 'lucide-react'
+import { Plus, ChevronRight, X, Loader2, Archive, ArchiveRestore, Target } from 'lucide-react'
 
 import { createWallet, archiveWallet } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
@@ -50,6 +50,24 @@ export function WalletsClient({
         >
           <Plus className="h-3.5 w-3.5" /> Dompet
         </button>
+      </div>
+
+      <div className="mb-5 flex items-center justify-between rounded-2xl border border-border-outer bg-surface/80 p-3.5 shadow-sm transition hover:border-accent/35">
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent/15 text-accent">
+            <Target className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold text-text-primary">Target Tabungan</p>
+            <p className="text-[11px] text-text-secondary">Kelola impian & celengan tabungan</p>
+          </div>
+        </div>
+        <Link
+          href="/vaults"
+          className="flex items-center gap-1 rounded-xl bg-accent-solid px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
+        >
+          Buka <ChevronRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
 
       {wallets.length === 0 ? (
