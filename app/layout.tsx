@@ -34,7 +34,15 @@ export default function RootLayout({
     <html
       lang="id"
       className="dark antialiased"
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{if(localStorage.getItem('kasdesk:theme')==='light'){document.documentElement.dataset.theme='light'}}catch(e){}",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-canvas text-text-primary">
         {children}
       </body>

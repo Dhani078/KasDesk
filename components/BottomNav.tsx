@@ -19,7 +19,7 @@ export function BottomNav() {
       <ul className="mx-auto flex max-w-xl items-stretch px-1 sm:px-3">
         {LINKS.map(({ href, label, Icon }) => {
           const active = href === '/'
-            ? pathname === '/' || pathname.startsWith('/transactions') || pathname.startsWith('/settings')
+            ? pathname === '/' || pathname.startsWith('/transactions')
             : href === '/insights'
               ? pathname.startsWith('/insights') || pathname.startsWith('/planning')
               : pathname.startsWith(href)
