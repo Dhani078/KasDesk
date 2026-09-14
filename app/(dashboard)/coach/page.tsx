@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft, Lightbulb, PiggyBank, ShieldAlert, TrendingDown } from 'lucide-react'
-import { getDashboardSummary, getSpendingFlowSummary, getTopCategorySummary } from '@/lib/analytics/actions'
+import { getSpendingFlow, getTopCategories } from '@/lib/actions'
+import { getDashboardSummary } from '@/lib/analytics/actions'
 import { formatIDR } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -20,14 +21,14 @@ function buildAdvice(input: Awaited<ReturnType<typeof getDashboardSummary>> & { 
 }
 
 export default async function CoachPage() {
-  const [dash, flow, top] = await Promise.all([getDashboardSummary(), getSpendingFlowSummary(), getTopCategorySummary(5)])
+  const [dash, flow, top] = await Promise.all([getDashboardSummary(), getSpendingFlow(), getTopCategories(5)])
   const weeklyTotal = flow.reduce((sum, row) => sum + row.total, 0)
   const advice = buildAdvice({ ...dash, weeklyTotal, topCategory: top[0]?.category, topAmount: top[0]?.amount })
   const nextBestAction = dash.walletCount === 0 ? 'Buat dompet pertama' : dash.monthlyIncome === 0 ? 'Catat pemasukan utama' : dash.vaultAllocations === 0 ? 'Buat target tabungan' : dash.upcomingDebts > 0 ? 'Review utang/piutang' : 'Review budget mingguan'
 
   return (
     <main className="page-shell max-w-3xl">
-      <Link href="/insights" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Laporan</Link>
+      <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Beranda</Link>
       <header className="page-header"><div><p className="eyebrow">Coach</p><h1>Asisten keuangan</h1><p>Saran praktis dari pola saldo, pengeluaran, tabungan, dan kewajibanmu.</p></div><span className="icon-tile"><Lightbulb className="h-5 w-5" aria-hidden /></span></header>
 
       <section className="surface-card mb-6 rounded-3xl p-5 sm:p-6">

@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { BarChart3, CalendarDays, Landmark, ShieldCheck, TrendingDown } from 'lucide-react'
-import { getDebts } from '@/lib/actions'
-import { getDashboardSummary, getSpendingFlowSummary, getTopCategorySummary } from '@/lib/analytics/actions'
+import { getDebts, getSpendingFlow, getTopCategories } from '@/lib/actions'
+import { getDashboardSummary } from '@/lib/analytics/actions'
 import { formatIDR, formatDateShort } from '@/lib/format'
 import { EmptyState } from '@/components/EmptyState'
 
 export const dynamic = 'force-dynamic'
 
 export default async function InsightsPage() {
-  const [dash, flow, top, debts] = await Promise.all([getDashboardSummary(), getSpendingFlowSummary(), getTopCategorySummary(7), getDebts()])
+  const [dash, flow, top, debts] = await Promise.all([getDashboardSummary(), getSpendingFlow(), getTopCategories(7), getDebts()])
   const weeklyTotal = flow.reduce((sum, item) => sum + item.total, 0)
   const activeDays = flow.filter((item) => item.total > 0).length
   const dailyAverage = activeDays ? Math.round(weeklyTotal / activeDays) : 0
@@ -27,10 +27,7 @@ export default async function InsightsPage() {
 
       <section className="surface-card mb-6 rounded-2xl p-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex gap-3">
-            <span className="icon-tile"><ShieldCheck className="h-5 w-5" aria-hidden /></span>
-            <div><p className="text-xs uppercase tracking-[0.08em] text-text-secondary">Financial health</p><h2 className="mt-1 text-xl font-semibold">{dash.healthLabel} · {dash.healthScore}/100</h2></div>
-          </div>
+          <div className="flex gap-3"><span className="icon-tile"><ShieldCheck className="h-5 w-5" aria-hidden /></span><div><p className="text-xs uppercase tracking-[0.08em] text-text-secondary">Financial health</p><h2 className="mt-1 text-xl font-semibold">{dash.healthLabel} · {dash.healthScore}/100</h2></div></div>
           <span className="status-pill">Savings {dash.savingsRate}%</span>
         </div>
         <ul className="mt-4 grid gap-2 text-sm text-text-secondary sm:grid-cols-3">
