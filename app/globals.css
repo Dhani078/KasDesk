@@ -6,95 +6,41 @@
   --color-border-outer: rgba(255, 255, 255, 0.07);
   --color-border-inner: rgba(255, 255, 255, 0.04);
   --color-border: rgba(255, 255, 255, 0.07);
-
-  /*
-   * Text colours are contrast-checked against BOTH canvas and surface.
-   * text-secondary was #7E7E87 = 4.49:1 on surface, just under the WCAG
-   * 2.2 AA threshold of 4.5:1. #909099 gives 5.71:1 on surface and
-   * 6.13:1 on canvas, so it passes everywhere it is used.
-   */
   --color-text-primary: #F0F0F3;
   --color-text-secondary: #909099;
-
   --color-accent-income: #5EBA7D;
   --color-accent-expense: #E05A47;
   --color-accent-transfer: #8A92A0;
-
-  /*
-   * Two accent values on purpose:
-   *   --color-accent        for text/icons ON the dark background
-   *   --color-accent-solid  for filled buttons carrying WHITE text
-   * They cannot be the same value: #4F7FE8 reads 4.76:1 as text on
-   * surface (fine), but white-on-#4F7FE8 is only 3.80:1 — below AA for
-   * the button labels. Darkening the single token to fix the button
-   * would drop the text use to 3.46:1. So the button gets its own token.
-   */
   --color-accent: #4F7FE8;
   --color-accent-solid: #3D68C9;
-
   --color-danger: #E05A47;
-
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
-html {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+body { background-color: var(--color-canvas); color: var(--color-text-primary); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+button, a, input, select, textarea { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; }
 
-body {
-  background-color: var(--color-canvas);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@utility pb-safe { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
 
-button, a, input, select, textarea {
-  touch-action: manipulation;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-/*
- * Safe-area bottom padding for the fixed bottom navigation on notched
- * iPhones. Tailwind v4 needs a custom utility registered via @utility;
- * without it, `pb-safe` in the markup compiles to nothing (0 matches in
- * the built CSS) and the nav sits under the home indicator.
- */
-@utility pb-safe {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-}
-
-/* Respect users who ask for less motion. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
-
 
 :root { color-scheme: dark; }
 html { background: #0D0D0F; scroll-behavior: smooth; }
 body { min-height: 100dvh; background: radial-gradient(900px 520px at 50% -180px, rgba(79,127,232,.16), transparent 68%), var(--color-canvas); }
 ::selection { background: rgba(79,127,232,.34); color: #fff; }
-button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 input, select, textarea { font-size: 16px; }
 .surface-card { border: 1px solid var(--color-border-outer); background: linear-gradient(180deg, rgba(255,255,255,.025), transparent), var(--color-surface); box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 12px 32px rgba(0,0,0,.12); }
 
-button{min-height:44px;min-width:44px}.privacy-mode .font-mono{filter:blur(7px);user-select:none}html[data-theme="light"]{color-scheme:light;--color-canvas:#F5F7FB;--color-surface:#FFFFFF;--color-border-outer:rgba(20,31,55,.13);--color-border-inner:rgba(20,31,55,.08);--color-border:rgba(20,31,55,.13);--color-text-primary:#152038;--color-text-secondary:#526078;--color-accent:#315FC8;--color-accent-solid:#315FC8;--color-accent-income:#247A4B;--color-accent-expense:#B43B2C}
+button { min-height:44px; min-width:44px; }
+.privacy-mode .font-mono { filter:none; -webkit-text-security: disc; user-select:none; letter-spacing:.08em; }
+html[data-theme="light"]{color-scheme:light;--color-canvas:#F5F7FB;--color-surface:#FFFFFF;--color-border-outer:rgba(20,31,55,.13);--color-border-inner:rgba(20,31,55,.08);--color-border:rgba(20,31,55,.13);--color-text-primary:#152038;--color-text-secondary:#526078;--color-accent:#315FC8;--color-accent-solid:#315FC8;--color-accent-income:#247A4B;--color-accent-expense:#B43B2C}
 
-
-/* Product UI primitives — consistent rhythm, targets, and hierarchy. */
 .page-shell { margin-inline:auto; min-height:100dvh; width:100%; padding:2rem 1.25rem 8rem; }
 @media (min-width:640px){.page-shell{padding:3rem 2rem 8rem}}
 .page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin:1.5rem 0 2rem; }

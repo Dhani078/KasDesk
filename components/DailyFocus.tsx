@@ -15,11 +15,11 @@ type FocusInput = {
 
 function pickFocus(dash: FocusInput) {
   if (dash.walletCount === 0) return { href: '/wallets', label: 'Buat dompet', title: 'Mulai dari dompet pertama', body: 'Tambahkan cash, bank, atau e-wallet agar semua fitur aktif.', Icon: Wallet }
-  if (dash.monthlyIncome === 0) return { href: '/', label: 'Catat pemasukan', title: 'Catat pemasukan utama', body: 'Aman Harian jadi lebih akurat kalau pemasukan bulan ini tercatat.', Icon: CalendarClock }
+  if (dash.monthlyIncome === 0) return { href: '/transactions', label: 'Catat pemasukan', title: 'Catat pemasukan utama', body: 'Aman Harian jadi lebih akurat kalau pemasukan bulan ini tercatat.', Icon: CalendarClock }
   if (dash.monthlyExpense > dash.monthlyIncome) return { href: '/insights', label: 'Cek laporan', title: 'Pengeluaran perlu direm', body: 'Bulan ini pengeluaran melewati pemasukan. Lihat kategori terbesar dulu.', Icon: Lightbulb }
   if (dash.vaultAllocations === 0) return { href: '/vaults', label: 'Buat target', title: 'Sisihkan uang sebelum terpakai', body: 'Buat target tabungan agar saldo tidak tercampur uang belanja.', Icon: Target }
   if (dash.upcomingDebts > 0) return { href: '/debts', label: 'Review utang', title: 'Pantau kewajiban aktif', body: 'Cek utang/piutang berjalan agar tidak mengganggu cashflow.', Icon: CalendarClock }
-  return { href: '/coach', label: 'Buka coach', title: 'Pertahankan ritme sehat', body: 'Keuanganmu mulai rapi. Review mingguan cukup untuk menjaga arah.', Icon: Lightbulb }
+  return { href: '/insights', label: 'Buka laporan', title: 'Pertahankan ritme sehat', body: 'Keuanganmu mulai rapi. Review mingguan cukup untuk menjaga arah.', Icon: Lightbulb }
 }
 
 export function DailyFocus({ dash }: { dash: FocusInput }) {
