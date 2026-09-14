@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Image as ImageIcon, Loader2, X } from 'lucide-react'
 
 export type ScanResult = {
   merchant_name: string
@@ -30,9 +30,11 @@ export function ScanReceiptButton({
   onResult: (r: ScanResult) => void
   onUnavailable?: (reason: string) => void
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [configured, setConfigured] = useState(true)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -85,27 +87,101 @@ export function ScanReceiptButton({
 
   return (
     <>
+      {/* Direct Camera Input */}
       <input
-        ref={inputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
         onChange={onPick}
         className="hidden"
       />
+
+      {/* Gallery / File Picker Input (No capture constraint: allows picking from photo gallery) */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        onChange={onPick}
+        className="hidden"
+      />
+
       <button
         type="button"
-        onClick={() => inputRef.current?.click()}
+        onClick={() => setMenuOpen(true)}
         disabled={busy}
         aria-label="Pindai struk"
-        className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-text-primary shadow-lg ring-1 ring-border-outer disabled:opacity-60"
+        className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-text-primary shadow-lg ring-1 ring-border-outer disabled:opacity-60 transition active:scale-95 hover:border-accent/40"
       >
         {busy ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin text-accent" />
         ) : (
           <Camera className="h-4 w-4" />
         )}
       </button>
+
+      {menuOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setMenuOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pilih sumber foto struk"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xs rounded-3xl border border-border-outer bg-surface p-5 shadow-2xl space-y-3"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-border-inner">
+              <h3 className="text-sm font-semibold text-text-primary">Scan Struk Belanja</h3>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                className="text-text-secondary hover:text-text-primary p-1 rounded-lg"
+                aria-label="Tutup"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false)
+                  cameraInputRef.current?.click()
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl border border-border-outer bg-white/[0.03] p-3 text-left transition hover:border-accent/40 hover:bg-white/[0.06] active:scale-95"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
+                  <Camera className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-text-primary">Ambil Foto Langsung</p>
+                  <p className="text-[11px] text-text-secondary">Gunakan kamera HP sekarang</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false)
+                  galleryInputRef.current?.click()
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl border border-border-outer bg-white/[0.03] p-3 text-left transition hover:border-accent/40 hover:bg-white/[0.06] active:scale-95"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-income/15 text-accent-income">
+                  <ImageIcon className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-text-primary">Pilih dari Galeri / File</p>
+                  <p className="text-[11px] text-text-secondary">Pilih foto nota yang sudah tersimpan</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
