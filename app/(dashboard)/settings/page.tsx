@@ -1,12 +1,11 @@
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Download, FileSpreadsheet, FileText, KeyRound, Lightbulb, Settings2, ShieldCheck, Smartphone, Target } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Download, FileSpreadsheet, FileText, KeyRound, Settings2, ShieldCheck, Smartphone, Target } from 'lucide-react'
 import { PrivacyToggle } from '@/components/PrivacyToggle'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DeleteAccountForm } from '@/components/DeleteAccountForm'
 import { ChangePasswordForm } from '@/components/ChangePasswordForm'
 
 const rows = [
-  { href: '/coach', Icon: Lightbulb, title: 'Coach keuangan', body: 'Saran otomatis dari pola uangmu.' },
   { href: '/planning', Icon: Target, title: 'Budget & pengingat', body: 'Atur batas kategori dan transaksi rutin.' },
   { href: '/install', Icon: Smartphone, title: 'Instal aplikasi', body: 'Pasang di iPhone, Android, atau laptop.' },
 ]
@@ -16,7 +15,7 @@ export default function SettingsPage() {
     <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard</Link>
     <header className="page-header"><div><p className="eyebrow">Kontrol</p><h1>Pengaturan</h1><p>Atur tampilan, privasi, keamanan, dan data akunmu.</p></div><span className="icon-tile"><Settings2 className="h-5 w-5" aria-hidden /></span></header>
 
-    <section className="mb-8"><h2 className="section-title mb-3">Tampilan & privasi</h2><div className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl"><div className="setting-row"><PrivacyToggle /><div><p className="font-medium">Sembunyikan nominal</p><p className="text-sm text-text-secondary">Nyaman digunakan di tempat umum.</p></div></div><div className="setting-row"><ThemeToggle /><div><p className="font-medium">Tema aplikasi</p><p className="text-sm text-text-secondary">Beralih antara terang dan gelap.</p></div></div></div></section>
+    <section className="mb-8"><h2 className="section-title mb-3">Tampilan & privasi</h2><div className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl"><div className="setting-row"><PrivacyToggle /><div><p className="font-medium">Sembunyikan nominal</p><p className="text-sm text-text-secondary">Nominal berubah jadi bintang-bintang saat mode privasi aktif.</p></div></div><div className="setting-row"><ThemeToggle /><div><p className="font-medium">Tema aplikasi</p><p className="text-sm text-text-secondary">Beralih antara terang dan gelap.</p></div></div></div></section>
 
     <section className="mb-8"><h2 className="section-title mb-3">Aplikasi & data</h2><div className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">{rows.map(({href,Icon,title,body}) => <Link key={href} href={href} className="setting-row group"><span className="icon-tile"><Icon className="h-5 w-5" aria-hidden /></span><span className="min-w-0 flex-1"><b className="block font-medium">{title}</b><span className="text-sm text-text-secondary">{body}</span></span><ChevronRight className="h-4 w-4 text-text-secondary transition group-hover:translate-x-0.5" aria-hidden /></Link>)}<a href="/api/export" download className="setting-row group"><span className="icon-tile"><Download className="h-5 w-5" aria-hidden /></span><span className="min-w-0 flex-1"><b className="block font-medium">Export lengkap JSON</b><span className="text-sm text-text-secondary">Unduh seluruh data akun.</span></span><ChevronRight className="h-4 w-4 text-text-secondary" aria-hidden /></a><a href="/api/export/csv" download className="setting-row group"><span className="icon-tile"><FileSpreadsheet className="h-5 w-5" aria-hidden /></span><span className="min-w-0 flex-1"><b className="block font-medium">Export transaksi CSV</b><span className="text-sm text-text-secondary">Siap dibuka di Excel/Sheets.</span></span><ChevronRight className="h-4 w-4 text-text-secondary" aria-hidden /></a></div></section>
 
