@@ -24,7 +24,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | Fitur Unggulan | Manfaat Utama |
 | :--- | :--- |
 | ⚡ **QuickLog 2-Tap** | Catat pengeluaran harian dalam 2 ketukan via Bottom Sheet & chip kategori pintar. |
-| 🔐 **Kunci PIN & Biometrik** | Perlindungan layar penuh dengan PIN 4-digit atau FaceID / Sidik Jari (WebAuthn). |
+| 🔐 **Kunci PIN & Biometrik** | Perlindungan layar penuh dengan PIN 6-digit atau FaceID / Sidik Jari (WebAuthn). |
 | 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini AI otomatis mendeteksi nominal & tanggal transaksi. |
 | 🛡️ **Aman Harian & Health Score** | Menghitung sisa uang yang aman dibelanjakan hari ini agar tidak boncos sebelum gajian. |
 | 🎯 **Target Tabungan (Vault)** | Tabungan target dengan proyeksi waktu real-time yang terpisah dari uang belanja. |

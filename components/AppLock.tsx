@@ -65,13 +65,13 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   }
 
   const handleKeyPress = async (num: string) => {
-    if (pin.length >= 4) return
+    if (pin.length >= 6) return
     triggerVibrate(15)
     setErrorMsg('')
     const next = pin + num
     setPin(next)
 
-    if (next.length === 4) {
+    if (next.length === 6) {
       const ok = await verifyEnteredPin(next)
       if (ok) {
         triggerVibrate([20, 30])
@@ -142,11 +142,11 @@ export function AppLock({ children }: { children: React.ReactNode }) {
           <Lock className="h-8 w-8 text-accent" />
         </div>
         <h1 className="mt-5 text-xl font-bold tracking-tight sm:text-2xl">KASDESK</h1>
-        <p className="mt-1 text-xs text-text-secondary">Masukkan 4 digit PIN untuk membuka</p>
+        <p className="mt-1 text-xs text-text-secondary">Masukkan 6 digit PIN untuk membuka</p>
 
-        {/* 4 PIN Dots */}
-        <div className={`mt-8 flex items-center gap-5 ${isShaking ? 'animate-bounce text-danger' : ''}`}>
-          {[0, 1, 2, 3].map((idx) => {
+        {/* 6 PIN Dots */}
+        <div className={`mt-8 flex items-center gap-3.5 sm:gap-4 ${isShaking ? 'animate-bounce text-danger' : ''}`}>
+          {[0, 1, 2, 3, 4, 5].map((idx) => {
             const filled = pin.length > idx
             return (
               <div
