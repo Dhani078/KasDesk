@@ -24,9 +24,14 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | Fitur Unggulan | Manfaat Utama |
 | :--- | :--- |
 | ⚡ **QuickLog 2-Tap** | Catat pengeluaran harian dalam 2 ketukan via Bottom Sheet & chip kategori pintar. |
+| 🧮 **Kalkulator di Kolom Nominal** | Hitung matematika langsung di input (`15000+5000` = `20.000`) dengan operator instan & live preview. |
 | 🔐 **Kunci PIN & Biometrik** | Perlindungan layar penuh dengan PIN 6-digit atau FaceID / Sidik Jari (WebAuthn). |
+| 🔄 **Pengingat Langganan Rutin** | Pantau tagihan/langganan berkala dengan badge hitung mundur (*H-3*) dan tombol **Catat Sekarang** 1-klik. |
+| 🏷️ **Multi-Tag & Filter Label** | Kelompokkan mutasi dengan tag `#Liburan`, `#Kondangan`, `#Proyek` dan pantau total pengeluaran per-event. |
+| 📄 **Rekap Bulanan & WhatsApp Share** | Buat ringkasan bulanan estetik, bagikan 1-klik ke WhatsApp atau cetak / simpan ke PDF. |
+| 🏆 **Gamifikasi Health Score** | Tingkatkan level kesehatan finansialmu dari *Bronze*, *Silver*, *Gold*, hingga *Diamond Tier*. |
 | 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini AI otomatis mendeteksi nominal & tanggal transaksi. |
-| 🛡️ **Aman Harian & Health Score** | Menghitung sisa uang yang aman dibelanjakan hari ini agar tidak boncos sebelum gajian. |
+| 🛡️ **Aman Harian (Safe-to-Spend)** | Menghitung sisa uang yang aman dibelanjakan hari ini agar tidak boncos sebelum gajian. |
 | 🎯 **Target Tabungan (Vault)** | Tabungan target dengan proyeksi waktu real-time yang terpisah dari uang belanja. |
 | 🤝 **Utang & Piutang** | Pantau kewajiban aktif lengkap dengan pembayaran penuh maupun cicilan bertahap. |
 | 📶 **100% Offline-First** | Transaksi diantrekan secara lokal via IndexedDB saat sinyal hilang dan otomatis sinkron saat online. |
@@ -39,17 +44,21 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 ```
 [ Beranda / Dashboard ]
    ├── 💰 Total Saldo (Multi-Dompet: Cash, Bank, E-Wallet)
-   ├── 🛡️ Skor Kesehatan Finansial & Tips Cerdas
+   ├── 🏆 Gamifikasi Financial Health (Diamond 💎 / Gold 🥇 / Silver 🥈 / Bronze 🥉)
    ├── 🎯 Aman Harian (Batas belanja aman hari ini)
-   └── ⚡ Tombol (+) QuickLog Sheet
-         └── 🤖 Scan Struk Kamera / Galeri
+   ├── ⚡ Tombol (+) QuickLog Sheet
+   │     ├── 🧮 Inline Calculator (+, −, ×, ÷, =)
+   │     ├── 🏷️ Tag Cepat (#Liburan, #Proyek, dll.)
+   │     └── 🤖 Scan Struk Kamera / Galeri via Gemini OCR
+   └── 🔄 Notifikasi Tagihan Rutin Mendekati Jatuh Tempo
 
 [ Navigasi Utama ]
    ├── 💳 Dompet    → Kelola saldo tiap akun, transfer antar-dompet, arsip
    ├── 🎯 Target    → Tabungan tujuan (Vault) dengan auto-proyeksi waktu
    ├── 🏛️ Utang     → Catatan utang & piutang aktif + cicilan
-   ├── 📊 Laporan   → Grafik 7 hari, kategori terbesar, tren mingguan
-   └── ⚙️ Pengaturan→ Kunci PIN, Mode Privasi, Ganti Tema, Export Data
+   ├── 📊 Laporan   → Grafik 7 hari, kategori terbesar, tren, & Rekap WhatsApp/PDF
+   ├── 📅 Rencana   → Budget bulanan, Pengingat Langganan & tombol Catat 1-Klik
+   └── ⚙️ Pengaturan→ Kunci PIN 6-digit, Biometrik, Mode Privasi, Ganti Tema
 ```
 
 ---
@@ -118,12 +127,16 @@ Buka **[http://localhost:3000](http://localhost:3000)** di browser Anda! 🚀
 
 * **Framework**: [Next.js 16 (App Router)](https://nextjs.org/) dengan Webpack & Turbopack support.
 * **Bahasa**: [TypeScript 5](https://www.typescriptlang.org/) dengan *strict mode* penuh.
-* **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) dengan CSS Variables adaptif (Dark/Light).
+* **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) dengan CSS Variables adaptif (Dark/Light) & `@media print` layout.
 * **Database & ORM**: [TiDB Cloud (MySQL)](https://tidbcloud.com/) + [Drizzle ORM](https://orm.drizzle.team/) untuk query tipe aman.
 * **Autentikasi**: [Auth.js (NextAuth v5)](https://authjs.dev/) dengan proteksi CSRF, password hashing, dan rate limiting.
 * **Keamanan Tambahan**:
   * PIN Hashing via Web Crypto API (`SHA-256` + unik salt acak).
   * WebAuthn Biometric API (TouchID, FaceID, Windows Hello).
+* **Fitur Cerdas**:
+  * Parser Aritmatika Aman (`lib/calculator.ts`) tanpa `eval()` berbahaya.
+  * Parser Tag Multibahasa (`lib/tags.ts`) dengan ekstraksi regex Unicode.
+  * Generator Ringkasan WhatsApp & PDF Print View (`components/MonthlyRecapModal.tsx`).
 * **AI Vision**: [Google Gemini 2.5 Flash](https://ai.google.dev/) untuk ekstraksi cepat data nota belanja.
 * **PWA Engine**: Service Worker berbasis Workbox dengan caching cerdas dan antrean mutasi offline.
 
@@ -136,7 +149,7 @@ Buka **[http://localhost:3000](http://localhost:3000)** di browser Anda! 🚀
 KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
-# Menjalankan seluruh Unit Tests
+# Menjalankan seluruh Unit Tests (Rate Limit, QuickLog, Optimistic, Features)
 npm run test:unit
 
 # Pengecekan Type Safety TypeScript
@@ -145,11 +158,11 @@ npm run typecheck
 # Pengecekan Standar Kode Linter
 npm run lint
 
+# Verifikasi Lengkap (Typecheck + Lint + Build)
+npm run check
+
 # Verifikasi Keamanan Dependensi
 npm audit --omit=dev --audit-level=high
-
-# Build Bundle Produksi
-npm run build
 ```
 
 ---
@@ -159,15 +172,22 @@ npm run build
 ```
 KasDesk/
 ├── app/                  # Rute Next.js App Router
-│   ├── (dashboard)/      # Halaman terautentikasi (Home, Wallets, Insights, dll.)
+│   ├── (dashboard)/      # Halaman terautentikasi (Home, Wallets, Insights, Planning, dll.)
 │   ├── (public)/         # Halaman publik (Welcome, Login, Register, Terms)
 │   ├── api/              # API Endpoints (Health, OCR Scan, Export, Auth)
-│   └── globals.css       # Token warna tema & utility CSS
-├── components/           # Komponen UI Reusable (AppLock, BottomNav, Feed, dll.)
+│   └── globals.css       # Token warna tema, utility CSS, & print layout
+├── components/           # Komponen UI Reusable
+│   ├── AppLock.tsx               # Gerbang lock screen PIN & Sidik Jari
+│   ├── FinancialHealthScoreCard  # Kartu gamifikasi skor & checklist level
+│   ├── MonthlyRecapModal.tsx     # Modal rekap bulanan WhatsApp & cetak PDF
+│   ├── QuickLogSheet.tsx         # Input cepat transaksi + kalkulator & tag
+│   └── EditTransactionButton.tsx # Edit transaksi + kalkulator & tag
 ├── lib/                  # Logika Bisnis & Helper
 │   ├── db/               # Skema Drizzle ORM & konfigurasi pool database
 │   ├── auth/             # Sesi, validasi rate limit, dan password hashing
 │   ├── analytics/        # Kalkulasi Skor Kesehatan, Aman Harian, dan Ringkasan
+│   ├── calculator.ts     # Parser aritmatika aman untuk input nominal
+│   ├── tags.ts           # Helper ekstraksi dan toggle tag (#Tag)
 │   ├── offline/          # Antrean sinkronisasi IndexedDB saat offline
 │   └── app-lock.ts       # Logika kriptografi kunci PIN & biometrik
 ├── public/               # Aset statis PWA (Icons, Manifest, Robots, Service Worker)

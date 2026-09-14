@@ -1,11 +1,12 @@
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Search, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Search, SlidersHorizontal, Tag as TagIcon, X } from 'lucide-react'
 import { and, desc, eq, gte, like, lt, lte, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { transactions, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR, formatDateShort } from '@/lib/format'
+import { extractTags } from '@/lib/tags'
 
 export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 30
@@ -47,11 +48,14 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   if (from) filters.push(gte(transactions.occurredAt, from))
   if (to) filters.push(lte(transactions.occurredAt, to))
   if (cursor) filters.push(or(lt(transactions.occurredAt, cursor.date), and(eq(transactions.occurredAt, cursor.date), lt(transactions.id, cursor.id)))!)
-  const fetched = await db.select({ id: transactions.id, walletId: transactions.walletId, type: transactions.type, amount: transactions.amount, title: transactions.title, categoryTag: transactions.categoryTag, occurredAt: transactions.occurredAt }).from(transactions).where(and(...filters)).orderBy(desc(transactions.occurredAt), desc(transactions.id)).limit(PAGE_SIZE + 1)
+  const fetched = await db.select({ id: transactions.id, walletId: transactions.walletId, type: transactions.type, amount: transactions.amount, title: transactions.title, categoryTag: transactions.categoryTag, occurredAt: transactions.occurredAt, note: transactions.note }).from(transactions).where(and(...filters)).orderBy(desc(transactions.occurredAt), desc(transactions.id)).limit(PAGE_SIZE + 1)
   const hasMore = fetched.length > PAGE_SIZE
   const rows = fetched.slice(0, PAGE_SIZE)
   const names = Object.fromEntries(walletRows.map((item) => [item.id, item.name]))
   const filtered = Boolean(q.search || type || category || wallet || q.from || q.to)
+  const allTags = Array.from(new Set(rows.flatMap((r) => [...extractTags(r.note), ...extractTags(r.title)])))
+  const activeTag = q.search?.trim().startsWith('#') ? q.search.trim() : null
+  const tagExpenseTotal = activeTag ? rows.filter((r) => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0) : null
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(q)) if (value && key !== 'cursor') params.set(key, value)
   const last = rows.at(-1)
@@ -68,9 +72,69 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
       <label className="field-label">Mulai<input name="from" type="date" defaultValue={from ? q.from : ''} /></label>
       <label className="field-label">Sampai<input name="to" type="date" defaultValue={to ? q.to : ''} /></label>
       <button className="primary-button sm:self-end">Terapkan filter</button>
-    </div></form>
+    </div>
+    {allTags.length > 0 && (
+      <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-border-inner pt-3">
+        <span className="flex items-center gap-1 text-xs text-text-secondary"><TagIcon className="h-3 w-3 text-accent" /> Filter Label:</span>
+        {allTags.map((tag) => {
+          const isActive = q.search === tag
+          const tagParams = new URLSearchParams()
+          if (!isActive) tagParams.set('search', tag)
+          return (
+            <Link
+              key={tag}
+              href={`/transactions?${tagParams.toString()}`}
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                isActive
+                  ? 'bg-accent-solid text-white'
+                  : 'bg-white/[0.04] text-text-secondary ring-1 ring-border-outer hover:text-text-primary'
+              }`}
+            >
+              {tag}
+            </Link>
+          )
+        })}
+      </div>
+    )}
+    </form>
+
+    {activeTag && (
+      <div className="mt-4 flex items-center justify-between rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm">
+        <span className="font-medium text-accent">Filter Label: {activeTag}</span>
+        {tagExpenseTotal !== null && (
+          <span className="text-xs text-text-secondary">
+            Pengeluaran: <strong className="font-mono text-text-primary">{formatIDR(tagExpenseTotal)}</strong>
+          </span>
+        )}
+      </div>
+    )}
+
     <div className="mb-3 mt-7 flex items-center justify-between"><h2 className="section-title">Hasil</h2><span className="status-pill">{rows.length}{hasMore ? '+' : ''} transaksi</span></div>
-    {rows.length ? <ul className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">{rows.map((transaction) => <li key={transaction.id} className="transaction-row"><div className={`transaction-dot ${transaction.type}`} aria-hidden /><div className="min-w-0 flex-1"><p className="truncate font-medium">{transaction.title}</p><p className="mt-1 text-xs text-text-secondary">{names[transaction.walletId] ?? 'Dompet'} · {transaction.categoryTag ?? 'LAINNYA'} · {formatDateShort(transaction.occurredAt)}</p></div><span className={`font-mono text-sm font-semibold ${transaction.type === 'income' ? 'text-accent-income' : transaction.type === 'expense' ? 'text-accent-expense' : 'text-accent'}`}>{transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '−' : '↔'}{formatIDR(transaction.amount)}</span></li>)}</ul> : <div className="empty-panel"><Search className="h-6 w-6 text-accent" aria-hidden /><h2>Tidak ada transaksi</h2><p>Coba ubah kata pencarian atau rentang tanggal.</p></div>}
+    {rows.length ? <ul className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">{rows.map((transaction) => {
+      const rowTags = [...extractTags(transaction.note), ...extractTags(transaction.title)]
+      return (
+        <li key={transaction.id} className="transaction-row">
+          <div className={`transaction-dot ${transaction.type}`} aria-hidden />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="truncate font-medium">{transaction.title}</p>
+              {rowTags.map((tag) => (
+                <span key={tag} className="shrink-0 rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-text-secondary">
+              {names[transaction.walletId] ?? 'Dompet'} · {transaction.categoryTag ?? 'LAINNYA'} · {formatDateShort(transaction.occurredAt)}
+              {transaction.note ? ` · "${transaction.note}"` : ''}
+            </p>
+          </div>
+          <span className={`font-mono text-sm font-semibold ${transaction.type === 'income' ? 'text-accent-income' : transaction.type === 'expense' ? 'text-accent-expense' : 'text-accent'}`}>
+            {transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '−' : '↔'}{formatIDR(transaction.amount)}
+          </span>
+        </li>
+      )
+    })}</ul> : <div className="empty-panel"><Search className="h-6 w-6 text-accent" aria-hidden /><h2>Tidak ada transaksi</h2><p>Coba ubah kata pencarian atau rentang tanggal.</p></div>}
     {hasMore && <Link href={`/transactions?${params.toString()}`} className="secondary-button mt-5 w-full">Muat transaksi berikutnya <ChevronRight className="h-4 w-4" aria-hidden /></Link>}
   </main>
 }

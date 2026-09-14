@@ -1,10 +1,10 @@
 'use server'
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/lib/db'
-import { budgets, recurringRules } from '@/lib/db/schema'
+import { budgets, recurringRules, transactions, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 
@@ -55,4 +55,66 @@ export async function toggleRecurring(formData: FormData) {
   if (!rule) return
   await db.update(recurringRules).set({ isActive: rule.active ? 0 : 1 }).where(and(eq(recurringRules.id, id), eq(recurringRules.userId, userId)))
   revalidatePath('/planning')
+}
+
+export async function executeRecurringAction(formData: FormData) {
+  const userId = await requireUserId()
+  const id = String(formData.get('id') ?? '')
+  const walletId = String(formData.get('walletId') ?? '')
+  if (!userId || !id) return
+
+  const [rule] = await db
+    .select()
+    .from(recurringRules)
+    .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, userId)))
+    .limit(1)
+  if (!rule) return
+
+  let targetWalletId = walletId
+  if (!targetWalletId) {
+    const [w] = await db
+      .select({ id: wallets.id })
+      .from(wallets)
+      .where(and(eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
+      .limit(1)
+    targetWalletId = w?.id ?? ''
+  }
+  if (!targetWalletId) return
+
+  await db.transaction(async (tx) => {
+    await tx.insert(transactions).values({
+      userId,
+      walletId: targetWalletId,
+      type: rule.type,
+      amount: rule.amount,
+      title: rule.title,
+      categoryTag: rule.categoryTag ?? 'TAGIHAN',
+      note: `Transaksi rutin otomatis (${rule.frequency === 'monthly' ? 'Bulanan' : 'Mingguan'})`,
+      occurredAt: new Date(),
+    })
+
+    const balanceDelta = rule.type === 'income' ? rule.amount : -rule.amount
+    await tx
+      .update(wallets)
+      .set({ balance: sql`${wallets.balance} + ${balanceDelta}` })
+      .where(and(eq(wallets.id, targetWalletId), eq(wallets.userId, userId)))
+
+    const currentNext = new Date(rule.nextRunAt)
+    const nextDate = new Date(currentNext)
+    if (rule.frequency === 'weekly') {
+      nextDate.setDate(nextDate.getDate() + 7)
+    } else {
+      nextDate.setMonth(nextDate.getMonth() + 1)
+    }
+
+    await tx
+      .update(recurringRules)
+      .set({ nextRunAt: nextDate })
+      .where(and(eq(recurringRules.id, id), eq(recurringRules.userId, userId)))
+  })
+
+  revalidatePath('/planning')
+  revalidatePath('/')
+  revalidatePath('/insights')
+  revalidatePath('/transactions')
 }

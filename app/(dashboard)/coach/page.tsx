@@ -34,7 +34,9 @@ export default async function CoachPage() {
       <section className="surface-card mb-6 rounded-3xl p-5 sm:p-6">
         <p className="text-xs uppercase tracking-[0.12em] text-text-secondary">Langkah terbaik berikutnya</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight">{nextBestAction}</h2>
-        <p className="mt-2 text-sm leading-6 text-text-secondary">Skor kesehatan {dash.healthScore}/100 · Aman Harian {formatIDR(dash.safeDailySpend)} · 7 hari terakhir {formatIDR(weeklyTotal)}</p>
+        <p className="mt-2 text-sm leading-6 text-text-secondary">
+          Level {dash.healthScore >= 85 ? 'Diamond 💎' : dash.healthScore >= 70 ? 'Gold 🥇' : dash.healthScore >= 55 ? 'Silver 🥈' : 'Bronze 🥉'} · Skor {dash.healthScore}/100 · Aman Harian {formatIDR(dash.safeDailySpend)} · 7 hari terakhir {formatIDR(weeklyTotal)}
+        </p>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2">
