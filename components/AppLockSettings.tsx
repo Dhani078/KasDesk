@@ -76,12 +76,12 @@ export function AppLockSettings() {
   }
 
   const handleKeyTap = async (num: string) => {
-    if (inputPin.length >= 4) return
+    if (inputPin.length >= 6) return
     setErrorMsg('')
     const next = inputPin + num
     setInputPin(next)
 
-    if (next.length === 4) {
+    if (next.length === 6) {
       if (modalMode === 'disable') {
         const ok = await verifyEnteredPin(next)
         if (ok) {
@@ -203,7 +203,7 @@ export function AppLockSettings() {
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center gap-2.5 text-sm">
               <KeyRound className="h-4 w-4 text-accent" />
-              <span>Ganti PIN 4 Digit</span>
+              <span>Ganti PIN 6 Digit</span>
             </div>
             <button
               type="button"
@@ -261,7 +261,7 @@ export function AppLockSettings() {
                   ? 'Konfirmasi Matikan Kunci'
                   : modalMode === 'setup'
                   ? step === 'enter-new'
-                    ? 'Buat 4 Digit PIN'
+                    ? 'Buat 6 Digit PIN'
                     : 'Konfirmasi PIN'
                   : step === 'enter-current'
                   ? 'Masukkan PIN Lama'
@@ -282,13 +282,13 @@ export function AppLockSettings() {
               {step === 'enter-current'
                 ? 'Ketikkan PIN saat ini untuk verifikasi.'
                 : step === 'enter-new'
-                ? 'Pilih 4 angka rahasia yang mudah Anda ingat.'
-                : 'Ketik ulang 4 digit PIN yang sama.'}
+                ? 'Pilih 6 angka rahasia yang mudah Anda ingat.'
+                : 'Ketik ulang 6 digit PIN yang sama.'}
             </p>
 
             {/* PIN Dots */}
-            <div className="my-6 flex justify-center gap-4">
-              {[0, 1, 2, 3].map((idx) => (
+            <div className="my-6 flex justify-center gap-3.5">
+              {[0, 1, 2, 3, 4, 5].map((idx) => (
                 <div
                   key={idx}
                   className={`h-3.5 w-3.5 rounded-full transition-all ${
