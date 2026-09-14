@@ -5,6 +5,7 @@ import { Target, Plus, X, Loader2, ArrowDownToLine, ArrowUpFromLine } from 'luci
 
 import { createVault, depositToVault, withdrawFromVault } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
+import { projectVault } from '@/lib/vaults/projection'
 import { EmptyState } from '@/components/EmptyState'
 
 export type VaultLite = {
@@ -16,6 +17,13 @@ export type VaultLite = {
   targetDate: string | Date | null
 }
 export type WalletLite = { id: string; name: string; balance: number }
+
+function ProjectionText({ vault }: { vault: VaultLite }) {
+  const projection = projectVault(vault.targetAmount, vault.currentAmount, vault.targetDate)
+  if (projection.status === 'completed') return <p className="mt-2 text-xs text-accent-income">Target sudah tercapai. Mantap.</p>
+  if (!projection.requiredDaily || !projection.requiredWeekly) return <p className="mt-2 text-xs text-text-secondary">Tambahkan tanggal target untuk melihat rencana setoran harian.</p>
+  return <p className="mt-2 text-xs leading-5 text-text-secondary">Butuh sekitar <b className="text-text-primary">{formatIDR(projection.requiredDaily)}/hari</b> atau <b className="text-text-primary">{formatIDR(projection.requiredWeekly)}/minggu</b> selama {projection.daysLeft} hari.</p>
+}
 
 export function VaultsClient({
   vaults,
@@ -96,6 +104,7 @@ export function VaultsClient({
                     Target {formatDate(v.targetDate)}
                   </p>
                 )}
+                <ProjectionText vault={v} />
 
                 <div className="mt-3 flex gap-2">
                   <button
@@ -157,22 +166,13 @@ function NewVaultSheet({ onClose }: { onClose: () => void }) {
     <Sheet onClose={onClose} title="Target Baru">
       <form onSubmit={onSubmit} className="space-y-3">
         <Field label="Nama target" htmlFor="v-name">
-          <input
-            id="v-name" name="name" required maxLength={80} placeholder="Dana Darurat"
-            className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
-          />
+          <input id="v-name" name="name" required maxLength={80} placeholder="Dana Darurat" className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent" />
         </Field>
         <Field label="Jumlah target (Rp)" htmlFor="v-amt">
-          <input
-            id="v-amt" name="target_amount" inputMode="numeric" required placeholder="5000000"
-            className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
-          />
+          <input id="v-amt" name="target_amount" inputMode="numeric" required placeholder="5000000" className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent" />
         </Field>
         <Field label="Target tercapai pada (opsional)" htmlFor="v-date">
-          <input
-            id="v-date" name="target_date" type="date"
-            className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
-          />
+          <input id="v-date" name="target_date" type="date" className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent" />
         </Field>
         {error && <p role="alert" className="text-xs text-danger">{error}</p>}
         <Submit pending={pending} label="Simpan" />
@@ -181,14 +181,7 @@ function NewVaultSheet({ onClose }: { onClose: () => void }) {
   )
 }
 
-function MoveSheet({
-  vault, dir, wallets, onClose,
-}: {
-  vault: VaultLite
-  dir: 'in' | 'out'
-  wallets: WalletLite[]
-  onClose: () => void
-}) {
+function MoveSheet({ vault, dir, wallets, onClose }: { vault: VaultLite; dir: 'in' | 'out'; wallets: WalletLite[]; onClose: () => void }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const remaining = Number(vault.targetAmount) - Number(vault.currentAmount)
@@ -199,9 +192,7 @@ function MoveSheet({
     const fd = new FormData(e.currentTarget)
     const walletId = String(fd.get('wallet_id') ?? '')
     const amount = Number(String(fd.get('amount') ?? '0').replace(/[^\d]/g, ''))
-    const r = dir === 'in'
-      ? await depositToVault(vault.id, walletId, amount)
-      : await withdrawFromVault(vault.id, walletId, amount)
+    const r = dir === 'in' ? await depositToVault(vault.id, walletId, amount) : await withdrawFromVault(vault.id, walletId, amount)
     setPending(false)
     if (!r.success) { setError(r.error.message); return }
     onClose()
@@ -211,29 +202,14 @@ function MoveSheet({
     <Sheet onClose={onClose} title={dir === 'in' ? `Setor ke ${vault.name}` : `Tarik dari ${vault.name}`}>
       <form onSubmit={onSubmit} className="space-y-3">
         <Field label="Dompet" htmlFor="m-wallet">
-          <select
-            id="m-wallet" name="wallet_id" required defaultValue={wallets[0]?.id ?? ''}
-            className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
-          >
-            {wallets.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name} — {formatIDR(w.balance)}
-              </option>
-            ))}
+          <select id="m-wallet" name="wallet_id" required defaultValue={wallets[0]?.id ?? ''} className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent">
+            {wallets.map((w) => <option key={w.id} value={w.id}>{w.name} — {formatIDR(w.balance)}</option>)}
           </select>
         </Field>
         <Field label="Jumlah (Rp)" htmlFor="m-amt">
-          <input
-            id="m-amt" name="amount" inputMode="numeric" required
-            defaultValue={dir === 'in' ? Math.max(0, remaining) : Number(vault.currentAmount)}
-            className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
-          />
+          <input id="m-amt" name="amount" inputMode="numeric" required defaultValue={dir === 'in' ? Math.max(0, remaining) : Number(vault.currentAmount)} className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent" />
         </Field>
-        {dir === 'in' && remaining > 0 && (
-          <p className="text-xs text-text-secondary">
-            Kurang {formatIDR(remaining)} lagi untuk mencapai target.
-          </p>
-        )}
+        {dir === 'in' && remaining > 0 && <p className="text-xs text-text-secondary">Kurang {formatIDR(remaining)} lagi untuk mencapai target.</p>}
         {error && <p role="alert" className="text-xs text-danger">{error}</p>}
         <Submit pending={pending} label={dir === 'in' ? 'Setor' : 'Tarik'} />
       </form>
@@ -241,58 +217,14 @@ function MoveSheet({
   )
 }
 
-function Sheet({
-  title, children, onClose,
-}: {
-  title: string
-  children: React.ReactNode
-  onClose: () => void
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog" aria-modal="true" aria-label={title}
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="truncate pr-2 text-base font-semibold text-text-primary">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Tutup" className="text-text-secondary">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
+function Sheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}><div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"><div className="mb-4 flex items-center justify-between"><h2 className="truncate pr-2 text-base font-semibold text-text-primary">{title}</h2><button type="button" onClick={onClose} aria-label="Tutup" className="text-text-secondary"><X className="h-5 w-5" /></button></div>{children}</div></div>
 }
 
-function Field({
-  label, htmlFor, children,
-}: {
-  label: string
-  htmlFor: string
-  children: React.ReactNode
-}) {
-  return (
-    <div>
-      <label htmlFor={htmlFor} className="mb-1 block text-xs text-text-secondary">{label}</label>
-      {children}
-    </div>
-  )
+function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
+  return <div><label htmlFor={htmlFor} className="mb-1 block text-xs text-text-secondary">{label}</label>{children}</div>
 }
 
 function Submit({ pending, label }: { pending: boolean; label: string }) {
-  return (
-    <button
-      type="submit" disabled={pending}
-      className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-solid px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
-    >
-      {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-      {pending ? 'Memproses…' : label}
-    </button>
-  )
+  return <button type="submit" disabled={pending} className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-solid px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">{pending && <Loader2 className="h-4 w-4 animate-spin" />}{pending ? 'Memproses…' : label}</button>
 }
