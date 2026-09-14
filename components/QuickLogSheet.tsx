@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { X, Loader2 } from 'lucide-react'
 
@@ -9,7 +9,7 @@ import { usePendingTx } from '@/components/pending-tx'
 import { enqueueOp } from '@/lib/offline/queue'
 import type { ScanResult } from '@/components/ScanReceiptButton'
 
-const ScanReceiptButton = dynamic(() => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton), { loading: () => <span className="h-14 w-14 animate-pulse rounded-2xl bg-surface" aria-hidden /> })
+const ScanReceiptButton = dynamic(() => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton), { loading: () => <span className="h-6 w-20 animate-pulse rounded-full bg-surface" aria-hidden /> })
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
@@ -21,44 +21,65 @@ type WalletLite = { id: string; name: string; balance: number }
 /**
  * Bottom sheet for logging a transaction quickly.
  *
- * Wired to the centre FAB, which previously had no onClick at all
- * (PRD §11 defect). Amount is entered in whole rupiah and validated
- * server-side by Zod (`.int().positive()`).
+ * Wired to the ShopeePay-style centre action button in BottomNav.
+ * Amount is entered in whole rupiah and validated server-side by Zod (`.int().positive()`).
  */
-export function QuickLogSheet({ wallets }: { wallets: WalletLite[] }) {
-  const [open, setOpen] = useState(false)
+export function QuickLogSheet({
+  wallets: initialWallets = [],
+  isOpen,
+  onClose,
+}: {
+  wallets?: WalletLite[]
+  isOpen?: boolean
+  onClose?: () => void
+}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const [syncedWallets, setSyncedWallets] = useState<WalletLite[]>([])
   const [scanned, setScanned] = useState<ScanResult | null>(null)
+
+  const wallets = initialWallets.length > 0 ? initialWallets : syncedWallets
+
+  useEffect(() => {
+    const handleOpen = () => setInternalOpen(true)
+    const handleSync = (e: Event) => {
+      const custom = e as CustomEvent<WalletLite[]>
+      if (custom.detail?.length) setSyncedWallets(custom.detail)
+    }
+    window.addEventListener('kasdesk:open-quicklog', handleOpen)
+    window.addEventListener('kasdesk:sync-wallets', handleSync)
+    return () => {
+      window.removeEventListener('kasdesk:open-quicklog', handleOpen)
+      window.removeEventListener('kasdesk:sync-wallets', handleSync)
+    }
+  }, [])
+
+  const open = isOpen !== undefined ? isOpen : internalOpen
+  const handleClose = () => {
+    if (onClose) onClose()
+    setInternalOpen(false)
+    setScanned(null)
+  }
 
   return (
     <>
-      <div className="fixed bottom-20 left-1/2 z-40 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-border-outer bg-surface/95 p-1.5 shadow-[0_16px_36px_rgba(0,0,0,0.4)] backdrop-blur-xl ring-1 ring-white/10">
-        <ScanReceiptButton onResult={(r) => { setScanned(r); setOpen(true) }} variant="pill" />
-        <div className="h-5 w-px bg-border-outer/80 mx-0.5" aria-hidden />
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Catat transaksi"
-          className="flex items-center gap-1.5 rounded-full bg-accent-solid px-4 py-2 text-xs font-semibold text-white shadow-md shadow-accent/25 transition-all hover:brightness-110 active:scale-95"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          <span>Catat</span>
-        </button>
-      </div>
       {open && (
         <Sheet
           wallets={wallets}
           prefill={scanned}
-          onClose={() => { setOpen(false); setScanned(null) }}
+          onClose={handleClose}
         />
       )}
     </>
   )
 }
 
-export function QuickLogButton({ wallets }: { wallets: WalletLite[] }) {
-  return <QuickLogSheet wallets={wallets} />
+export function QuickLogButton({ wallets }: { wallets?: WalletLite[] }) {
+  useEffect(() => {
+    if (wallets?.length && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('kasdesk:sync-wallets', { detail: wallets }))
+    }
+  }, [wallets])
+  return null
 }
 
 function Sheet({
@@ -72,6 +93,7 @@ function Sheet({
 }) {
   const { addPending, resolvePending } = usePendingTx()
   const [pending, setPending] = useState(false)
+  const [activeScan, setActiveScan] = useState<ScanResult | null>(prefill)
   // FR-LOG-7: default to the last-used wallet, fall back to the first one.
   // FR-LOG-3: amount as formatted IDR text ("12.000"); parsed by stripping
   // non-digits on submit. State instead of DOM read so the format masks live.
@@ -220,21 +242,43 @@ function Sheet({
         onClick={(e) => e.stopPropagation()}
         className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-text-primary">Catat Transaksi</h2>
-          <button type="button" onClick={onClose} aria-label="Tutup" className="text-text-secondary">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-text-primary">Catat Transaksi</h2>
+            <ScanReceiptButton
+              variant="compact"
+              onResult={(r) => {
+                setActiveScan(r)
+                if (r.detected_total) {
+                  onAmountChange(String(r.detected_total))
+                }
+                if (r.merchant_name && r.merchant_name !== 'UNKNOWN') {
+                  setTitleText(r.merchant_name)
+                }
+                if (r.detected_category) {
+                  pickCat(r.detected_category)
+                }
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup"
+            className="rounded-xl p-1 text-text-secondary transition hover:bg-white/[0.08] hover:text-text-primary active:scale-95"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {prefill?.needs_confirmation && (
+        {(activeScan?.needs_confirmation ?? prefill?.needs_confirmation) && (
           <p
             role="status"
             className="mb-3 rounded-xl bg-white/[0.04] px-3 py-2 text-xs leading-relaxed text-text-secondary"
           >
             Hasil scan kurang pasti
-            {prefill.confidence_score > 0
-              ? ` (${Math.round(prefill.confidence_score * 100)}%)`
+            {(activeScan?.confidence_score ?? prefill?.confidence_score ?? 0) > 0
+              ? ` (${Math.round((activeScan?.confidence_score ?? prefill?.confidence_score ?? 0) * 100)}%)`
               : ''}
             . Periksa nominal sebelum menyimpan.
           </p>

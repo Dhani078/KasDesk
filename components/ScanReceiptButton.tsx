@@ -26,11 +26,11 @@ const MAX_BYTES = 10 * 1024 * 1024
 export function ScanReceiptButton({
   onResult,
   onUnavailable,
-  variant = 'pill',
+  variant = 'compact',
 }: {
   onResult: (r: ScanResult) => void
   onUnavailable?: (reason: string) => void
-  variant?: 'pill' | 'icon'
+  variant?: 'pill' | 'icon' | 'compact'
 }) {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -114,16 +114,19 @@ export function ScanReceiptButton({
         disabled={busy}
         aria-label="Pindai struk"
         className={
-          variant === 'pill'
-            ? 'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-text-primary transition hover:bg-white/[0.08] active:scale-95 disabled:opacity-60'
-            : 'flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-text-primary shadow-lg ring-1 ring-border-outer disabled:opacity-60 transition active:scale-95 hover:border-accent/40'
+          variant === 'compact'
+            ? 'inline-flex items-center gap-1.5 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent shadow-sm transition hover:bg-accent/20 active:scale-95 disabled:opacity-60'
+            : variant === 'pill'
+              ? 'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-text-primary transition hover:bg-white/[0.08] active:scale-95 disabled:opacity-60'
+              : 'flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-text-primary shadow-lg ring-1 ring-border-outer disabled:opacity-60 transition active:scale-95 hover:border-accent/40'
         }
       >
         {busy ? (
-          <Loader2 className="h-4 w-4 animate-spin text-accent" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
         ) : (
-          <Camera className="h-4 w-4 text-accent" />
+          <Camera className="h-3.5 w-3.5 text-accent" />
         )}
+        {variant === 'compact' && <span>Scan Struk</span>}
         {variant === 'pill' && <span>Scan</span>}
       </button>
 
