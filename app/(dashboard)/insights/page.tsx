@@ -1,14 +1,26 @@
 import Link from 'next/link'
-import { BarChart3, CalendarDays, Landmark, ShieldCheck, TrendingDown } from 'lucide-react'
+import { BarChart3, CalendarDays, Landmark, TrendingDown } from 'lucide-react'
+import { auth } from '@/auth'
 import { getDebts, getSpendingFlow, getTopCategories } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
 import { formatIDR, formatDateShort } from '@/lib/format'
 import { EmptyState } from '@/components/EmptyState'
+import { getMonthWindow } from '@/lib/timezone'
+import { MonthlyRecapModal } from '@/components/MonthlyRecapModal'
+import { FinancialHealthScoreCard } from '@/components/FinancialHealthScoreCard'
 
 export const dynamic = 'force-dynamic'
 
 export default async function InsightsPage() {
-  const [dash, flow, top, debts] = await Promise.all([getDashboardSummary(), getSpendingFlow(), getTopCategories(7), getDebts()])
+  const [session, dash, flow, top, debts] = await Promise.all([
+    auth(),
+    getDashboardSummary(),
+    getSpendingFlow(),
+    getTopCategories(7),
+    getDebts(),
+  ])
+  const { month } = getMonthWindow()
+  const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Kawan'
   const weeklyTotal = flow.reduce((sum, item) => sum + item.total, 0)
   const activeDays = flow.filter((item) => item.total > 0).length
   const dailyAverage = activeDays ? Math.round(weeklyTotal / activeDays) : 0
@@ -16,24 +28,37 @@ export default async function InsightsPage() {
   const openDebts = debts.filter((debt) => !debt.isPaid)
   const debtTotal = openDebts.reduce((sum, debt) => sum + Math.max(0, Number(debt.amount) - Number(debt.paidAmount)), 0)
 
+  const recapData = {
+    monthName: month,
+    userName,
+    monthlyIncome: dash.monthlyIncome,
+    monthlyExpense: dash.monthlyExpense,
+    netSavings: dash.monthlyIncome - dash.monthlyExpense,
+    savingsRate: dash.savingsRate,
+    healthScore: dash.healthScore,
+    healthLabel: dash.healthLabel,
+    safeDailySpend: dash.safeDailySpend,
+    topCategories: top,
+    debtTotal,
+  }
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 pb-32 pt-8 sm:px-8 sm:pt-12">
-      <header className="mb-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Analisis</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">Laporan keuangan</h1>
-        <p className="mt-2 text-sm leading-6 text-text-secondary">Ringkasan yang membantu melihat pola, bukan sekadar angka.</p>
-        <Link href="/planning" className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-border-outer px-4 text-sm text-accent">Atur budget & pengingat</Link>
+      <header className="mb-7 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Analisis</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">Laporan keuangan</h1>
+          <p className="mt-2 text-sm leading-6 text-text-secondary">Ringkasan yang membantu melihat pola, bukan sekadar angka.</p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Link href="/planning" className="inline-flex min-h-11 items-center rounded-xl border border-border-outer px-4 text-sm text-accent transition hover:border-accent/40">
+              Atur budget & pengingat
+            </Link>
+            <MonthlyRecapModal data={recapData} />
+          </div>
+        </div>
       </header>
 
-      <section className="surface-card mb-6 rounded-2xl p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex gap-3"><span className="icon-tile"><ShieldCheck className="h-5 w-5" aria-hidden /></span><div><p className="text-xs uppercase tracking-[0.08em] text-text-secondary">Financial health</p><h2 className="mt-1 text-xl font-semibold">{dash.healthLabel} · {dash.healthScore}/100</h2></div></div>
-          <span className="status-pill">Savings {dash.savingsRate}%</span>
-        </div>
-        <ul className="mt-4 grid gap-2 text-sm text-text-secondary sm:grid-cols-3">
-          {(dash.healthTips.length ? dash.healthTips : ['Pertahankan catatan harian.', 'Review budget setiap minggu.', 'Naikkan target tabungan bertahap.']).map((tip) => <li key={tip} className="rounded-xl bg-white/[0.035] p-3">{tip}</li>)}
-        </ul>
-      </section>
+      <FinancialHealthScoreCard dash={dash} />
 
       <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Ringkasan laporan">
         <article className="surface-card rounded-2xl p-4"><TrendingDown className="h-4 w-4 text-accent-expense" aria-hidden /><p className="mt-3 text-xs text-text-secondary">7 hari</p><p className="mt-1 font-mono text-base font-semibold sm:text-lg">{formatIDR(weeklyTotal)}</p></article>

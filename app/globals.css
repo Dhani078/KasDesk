@@ -79,3 +79,13 @@ html[data-theme="light"]{color-scheme:light;--color-canvas:#F5F7FB;--color-surfa
 .empty-panel h2,.empty-panel h3 { font-weight:650; }
 .empty-panel p { max-width:24rem; color:var(--color-text-secondary); font-size:.875rem; line-height:1.5; }
 button:active,a:active { transform:scale(.985); }
+
+@media print {
+  body { background: #ffffff !important; color: #111827 !important; }
+  nav, .back-link, header, button, .icon-tile, .primary-button, .secondary-button { display: none !important; }
+  #recap-printable { border: 1px solid #e5e7eb !important; background: #ffffff !important; color: #111827 !important; margin: 0 !important; padding: 24px !important; box-shadow: none !important; display: block !important; border-radius: 12px !important; }
+  #recap-printable * { color: #111827 !important; }
+  #recap-printable .text-accent-income { color: #16a34a !important; }
+  #recap-printable .text-accent-expense { color: #dc2626 !important; }
+  #recap-printable .text-accent { color: #2563eb !important; }
+}

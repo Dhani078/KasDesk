@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Pencil, Loader2, X } from 'lucide-react'
+import { Pencil, Loader2, X, Calculator } from 'lucide-react'
 
 import { updateTransaction } from '@/lib/actions'
 import { CATEGORY_ENUM } from '@/lib/schemas'
+import { formatIDR } from '@/lib/format'
+import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
+import { POPULAR_TAGS, toggleTagInNote } from '@/lib/tags'
 
 export type TxnRow = {
   id: string
@@ -57,12 +60,27 @@ export function EditTransactionButton({
     setOpen(true)
   }
 
+  const mathLiveResult = hasMathOperator(amount) ? evaluateMathExpression(amount) : null
+
+  function applyCalc() {
+    if (mathLiveResult !== null) {
+      setAmount(String(mathLiveResult))
+    }
+  }
+
   function onSave() {
     setError(null)
+    let parsedAmt = Number(amount.replace(/\D/g, ''))
+    if (hasMathOperator(amount)) {
+      const calcResult = evaluateMathExpression(amount)
+      if (calcResult !== null && calcResult > 0) {
+        parsedAmt = calcResult
+      }
+    }
     const parsed = {
       wallet_id: isTransfer ? (txn.walletId ?? '') : walletId,
       type: txn.type,
-      amount: Number(amount.replace(/\D/g, '')),
+      amount: parsedAmt,
       title: title.trim(),
       category_tag: cat,
       note: note.trim() || undefined,
@@ -129,9 +147,31 @@ export function EditTransactionButton({
                   id="e-amount"
                   inputMode="numeric"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (/[+\-*/xX×÷]/.test(val)) {
+                      setAmount(val)
+                    } else {
+                      setAmount(val.replace(/\D/g, ''))
+                    }
+                  }}
                   className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
                 />
+                {mathLiveResult !== null && (
+                  <div className="mt-1.5 flex items-center justify-between rounded-xl border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs text-accent">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Calculator className="h-3.5 w-3.5" />
+                      Hasil: = {formatIDR(mathLiveResult)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={applyCalc}
+                      className="rounded-lg bg-accent px-2 py-0.5 text-[11px] font-semibold text-white transition hover:opacity-90 active:scale-95"
+                    >
+                      Gunakan
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -192,16 +232,33 @@ export function EditTransactionButton({
 
               <div>
                 <label htmlFor="e-note" className="mb-1 block text-xs text-text-secondary">
-                  Catatan (opsional)
+                  Catatan (opsional) & Tag
                 </label>
                 <input
                   id="e-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   maxLength={500}
-                  placeholder="Tambah catatan…"
+                  placeholder="Tambah catatan atau #Tag…"
                   className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
                 />
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] text-text-secondary">Tag:</span>
+                  {POPULAR_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setNote((prev) => toggleTagInNote(prev, tag))}
+                      className={`rounded-lg px-2 py-0.5 text-[11px] font-medium transition active:scale-95 ${
+                        note.toLowerCase().includes(tag.toLowerCase())
+                          ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
+                          : 'border border-border-outer bg-white/[0.03] text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <p className="text-xs leading-relaxed text-text-secondary">
