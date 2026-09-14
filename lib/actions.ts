@@ -152,6 +152,7 @@ export async function createTransaction(
 
     revalidatePath('/')
     revalidatePath('/wallets')
+    revalidatePath('/insights')
       // Detail pages for both legs of a transfer must refresh too, or the
       // balances shown there go stale.
       revalidatePath(`/wallets/${data.wallet_id}`)
@@ -249,6 +250,7 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
 
     revalidatePath('/')
     revalidatePath('/wallets')
+    revalidatePath('/insights')
     // The delete button lives on the wallet detail page, so that route must
     // be revalidated too — otherwise the row stays visible after deletion.
     if (affectedWalletId) revalidatePath(`/wallets/${affectedWalletId}`)
@@ -389,6 +391,7 @@ export async function updateTransaction(
 
     revalidatePath('/')
     revalidatePath('/wallets')
+    revalidatePath('/insights')
     if (affectedWalletId) revalidatePath(`/wallets/${affectedWalletId}`)
     if (affectedToWalletId) revalidatePath(`/wallets/${affectedToWalletId}`)
     return { success: true, data: null }
@@ -702,6 +705,7 @@ export async function createDebt(raw: unknown): Promise<ActionResponse<{ id: str
 
   revalidatePath('/debts')
   revalidatePath('/')
+  revalidatePath('/insights')
   return { success: true, data: { id } }
 }
 
@@ -750,6 +754,7 @@ export async function settleDebt(id: string, amount?: number): Promise<ActionRes
 
     revalidatePath('/debts')
     revalidatePath('/')
+    revalidatePath('/insights')
     return { success: true, data: null }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'UNKNOWN'
@@ -777,6 +782,7 @@ export async function deleteDebt(id: string): Promise<ActionResponse<null>> {
 
   revalidatePath('/debts')
   revalidatePath('/')
+  revalidatePath('/insights')
   return { success: true, data: null }
 }
 
