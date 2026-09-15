@@ -7,7 +7,7 @@ import { updateTransaction } from '@/lib/actions'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
-import { POPULAR_TAGS, toggleTagInNote } from '@/lib/tags'
+import { NoteWithTags } from '@/components/quicklog/NoteWithTags'
 
 export type TxnRow = {
   id: string
@@ -230,36 +230,7 @@ export function EditTransactionButton({
                 <input id="e-date" type="datetime-local" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent" />
               </div>
 
-              <div>
-                <label htmlFor="e-note" className="mb-1 block text-xs text-text-secondary">
-                  Catatan (opsional) & Tag
-                </label>
-                <input
-                  id="e-note"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  maxLength={500}
-                  placeholder="Tambah catatan atau #Tag…"
-                  className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
-                />
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11px] text-text-secondary">Tag:</span>
-                  {POPULAR_TAGS.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => setNote((prev) => toggleTagInNote(prev, tag))}
-                      className={`rounded-lg px-2 py-0.5 text-[11px] font-medium transition active:scale-95 ${
-                        note.toLowerCase().includes(tag.toLowerCase())
-                          ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
-                          : 'border border-border-outer bg-white/[0.03] text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <NoteWithTags noteText={note} setNoteText={setNote} />
 
               <p className="text-xs leading-relaxed text-text-secondary">
                 {isTransfer
