@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, Calculator, Calendar, Sparkles } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
 import { usePendingTx } from '@/components/pending-tx'
@@ -14,7 +14,6 @@ import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
 import { POPULAR_TAGS, toggleTagInNote } from '@/lib/tags'
-import { Calculator } from 'lucide-react'
 
 type WalletLite = { id: string; name: string; balance: number }
 
@@ -82,6 +81,19 @@ export function QuickLogButton({ wallets }: { wallets?: WalletLite[] }) {
   return null
 }
 
+function getLocalDateString(d: Date = new Date()): string {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function getYesterdayDateString(): string {
+  const yest = new Date()
+  yest.setDate(yest.getDate() - 1)
+  return getLocalDateString(yest)
+}
+
 function Sheet({
   wallets,
   prefill,
@@ -94,6 +106,12 @@ function Sheet({
   const { addPending, resolvePending } = usePendingTx()
   const [pending, setPending] = useState(false)
   const [activeScan, setActiveScan] = useState<ScanResult | null>(prefill)
+  const [todayStr] = useState(() => getLocalDateString())
+  const [yesterdayStr] = useState(() => getYesterdayDateString())
+  const [dateText, setDateText] = useState(() => {
+    if (prefill?.detected_date) return prefill.detected_date
+    return getLocalDateString()
+  })
   // FR-LOG-7: default to the last-used wallet, fall back to the first one.
   // FR-LOG-3: amount as formatted IDR text ("12.000"); parsed by stripping
   // non-digits on submit. State instead of DOM read so the format masks live.
@@ -180,6 +198,15 @@ function Sheet({
     const evaluatedAmt = hasMathOperator(amountText) ? evaluateMathExpression(amountText) : null
     const finalAmount = evaluatedAmt !== null && evaluatedAmt > 0 ? evaluatedAmt : parsedAmt
 
+    const [year, month, day] = dateText.split('-').map(Number)
+    const isToday = dateText === todayStr
+    const now = new Date()
+    const hours = isToday ? now.getHours() : 12
+    const minutes = isToday ? now.getMinutes() : 0
+    const seconds = isToday ? now.getSeconds() : 0
+    const occurredDate = new Date(year, (month || 1) - 1, day || 1, hours, minutes, seconds)
+    const occurredAtIso = occurredDate.toISOString()
+
     const payload = {
       client_mutation_id: crypto.randomUUID(),
       wallet_id: String(fd.get('wallet_id') ?? ''),
@@ -188,6 +215,7 @@ function Sheet({
       title: String(fd.get('title') ?? ''),
       category_tag: String(fd.get('category_tag') ?? 'LAINNYA'),
       note: String(fd.get('note') ?? '') || undefined,
+      occurred_at: occurredAtIso,
     }
 
     // FR-OFF-2/6: offline does not mean failure — park the op in the
@@ -215,6 +243,7 @@ function Sheet({
       amount: payload.amount,
       title: payload.title,
       categoryTag: payload.category_tag ?? 'LAINNYA',
+      createdAt: occurredDate,
     })
 
     const res = await createTransaction(payload)
@@ -257,6 +286,9 @@ function Sheet({
                 }
                 if (r.detected_category) {
                   pickCat(r.detected_category)
+                }
+                if (r.detected_date) {
+                  setDateText(r.detected_date)
                 }
               }}
             />
@@ -402,6 +434,56 @@ function Sheet({
                 placeholder="Nasi Goreng"
                 className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
               />
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <label htmlFor="occurred_date" className="text-xs text-text-secondary">
+                  Tanggal Transaksi
+                </label>
+                {activeScan?.detected_date && activeScan.detected_date === dateText && (
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-accent">
+                    <Sparkles className="h-3 w-3" /> Sesuai struk
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
+                  <input
+                    type="date"
+                    id="occurred_date"
+                    name="occurred_date"
+                    value={dateText}
+                    onChange={(e) => setDateText(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-canvas py-2.5 pl-9 pr-3 font-mono text-sm text-text-primary outline-none focus:border-accent"
+                  />
+                </div>
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setDateText(todayStr)}
+                    className={`rounded-xl px-2.5 py-2 text-xs font-medium transition active:scale-95 ${
+                      dateText === todayStr
+                        ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
+                        : 'border border-border-outer bg-white/[0.03] text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    Hari ini
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDateText(yesterdayStr)}
+                    className={`rounded-xl px-2.5 py-2 text-xs font-medium transition active:scale-95 ${
+                      dateText === yesterdayStr
+                        ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
+                        : 'border border-border-outer bg-white/[0.03] text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    Kemarin
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div>
