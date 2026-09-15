@@ -3,10 +3,11 @@
 import { useState, useTransition } from 'react'
 import { Plus, X, Loader2, Check, Wallet, MessageCircle } from 'lucide-react'
 
-import { createDebt, settleDebt, deleteDebt } from '@/lib/actions'
+import { settleDebt, deleteDebt } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
+import { NewDebtSheet } from '@/components/debts/NewDebtSheet'
 
 export type DebtLite = {
   id: string
@@ -103,17 +104,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function DebtRow({ debt }: { debt: DebtLite }) {
   const [pending, start] = useTransition()
-    const [error, setError] = useState<string | null>(null)
-    const [payOpen, setPayOpen] = useState(false)
-    const [payAmount, setPayAmount] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [payOpen, setPayOpen] = useState(false)
+  const [payAmount, setPayAmount] = useState('')
 
-    function onSettle(amount?: number) {
-      start(async () => {
-        const r = await settleDebt(debt.id, amount)
-        if (!r.success) setError(r.error.message)
-        setPayOpen(false)
-      })
-    }
+  function onSettle(amount?: number) {
+    start(async () => {
+      const r = await settleDebt(debt.id, amount)
+      if (!r.success) setError(r.error.message)
+      setPayOpen(false)
+    })
+  }
+
   function onDelete() {
     start(async () => {
       const r = await deleteDebt(debt.id)
@@ -138,18 +140,37 @@ function DebtRow({ debt }: { debt: DebtLite }) {
           {debt.note ? `${debt.note} · ` : ''}
           {debt.dueDate ? (
             <span className={overdue ? 'text-danger' : ''}>
-              {overdue ? 'Jatuh tempo: ' : 'Tempo '}
-              {formatDate(debt.dueDate)}
+              {formatDate(new Date(debt.dueDate))}
+              {overdue ? ' (lewat jatuh tempo)' : ''}
             </span>
           ) : (
-            'Tanpa tempo'
+            'Tanpa jatuh tempo'
           )}
         </p>
-        {error && <p className="text-xs text-danger">{error}</p>}
+        {Number(debt.paidAmount) > 0 && (
+          <p className="mt-0.5 text-[11px] text-accent">
+            Terbayar <PrivacyAmount value={debt.paidAmount} /> · Sisa{' '}
+            <PrivacyAmount value={remaining} />
+          </p>
+        )}
+        {error && <p className="mt-1 text-xs text-danger">{error}</p>}
       </div>
-      <span className="font-mono text-sm tabular-nums text-text-primary">
-        <PrivacyAmount value={debt.amount} />
+
+      <span
+        className={`font-mono text-sm tabular-nums ${
+          debt.isPaid
+            ? 'text-text-secondary line-through'
+            : debt.direction === 'piutang'
+              ? 'text-accent-income'
+              : 'text-text-primary'
+        }`}
+      >
+        <PrivacyAmount
+          value={remaining}
+          sign={debt.direction === 'piutang' ? '+' : '−'}
+        />
       </span>
+
       {!debt.isPaid && (
         <>
           {debt.direction === 'piutang' && (
@@ -157,44 +178,47 @@ function DebtRow({ debt }: { debt: DebtLite }) {
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Kirim pengingat WhatsApp ke ${debt.personName}`}
-              title="Kirim pengingat via WhatsApp"
-              className="rounded-lg p-1.5 text-accent-income bg-accent-income/10 ring-1 ring-accent-income/30 transition hover:bg-accent-income/20 active:scale-90"
+              title="Kirim pengingat WhatsApp"
+              className="rounded-lg p-2 text-text-secondary transition hover:bg-white/[0.04] hover:text-[#25D366]"
             >
-              <MessageCircle className="h-3.5 w-3.5" />
+              <MessageCircle className="h-4 w-4" />
             </a>
           )}
           <button
             type="button"
-            onClick={() => onSettle()}
+            onClick={() => {
+              setPayAmount(String(remaining))
+              setPayOpen(true)
+            }}
             disabled={pending}
-            aria-label={`Tandai lunas ${debt.personName}`}
-            title="Tandai lunas"
-            className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer transition hover:text-text-primary active:scale-90 disabled:opacity-50"
+            title="Bayar cicil / sebagian"
+            className="rounded-lg p-2 text-text-secondary transition hover:bg-white/[0.04] hover:text-accent"
           >
-            <Check className="h-3.5 w-3.5" />
+            <Wallet className="h-4 w-4" />
           </button>
           <button
             type="button"
-            onClick={() => setPayOpen(true)}
+            onClick={() => onSettle()}
             disabled={pending}
-            aria-label={`Bayar sebagian ${debt.personName}`}
-            title="Bayar sebagian"
-            className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer transition hover:text-text-primary active:scale-90 disabled:opacity-50"
+            title="Tandai lunas penuh"
+            className="rounded-lg p-2 text-text-secondary transition hover:bg-white/[0.04] hover:text-accent-income"
           >
-            <Wallet className="h-3.5 w-3.5" />
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           </button>
         </>
       )}
-      <button
-        type="button"
-        onClick={onDelete}
-        disabled={pending}
-        aria-label={`Hapus ${debt.personName}`}
-        className="rounded-lg p-1.5 text-text-secondary ring-1 ring-border-outer disabled:opacity-50"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+
+      {debt.isPaid ? (
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={pending}
+          title="Hapus"
+          className="rounded-lg p-2 text-text-secondary transition hover:bg-white/[0.04] hover:text-danger"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      ) : null}
 
       {payOpen && (
         <div
@@ -204,30 +228,36 @@ function DebtRow({ debt }: { debt: DebtLite }) {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Bayar sebagian"
+            aria-label="Bayar utang"
             onClick={(e) => e.stopPropagation()}
             className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
           >
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-text-primary">Bayar Sebagian</h2>
-              <button type="button" onClick={() => setPayOpen(false)} aria-label="Tutup" className="text-text-secondary">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-text-primary">Bayar / Cicil</h2>
+              <button
+                type="button"
+                onClick={() => setPayOpen(false)}
+                className="text-text-secondary"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <p className="mb-3 text-xs text-text-secondary">
               {debt.personName} · sisa {formatIDR(Math.max(0, Number(debt.amount) - Number(debt.paidAmount)))}
             </p>
-            <input
-              autoFocus
-              type="text"
-              inputMode="numeric"
-              placeholder="Jumlah yang dibayar"
-              value={payAmount}
-              onChange={(e) => setPayAmount(e.target.value.replace(/[^\d]/g, ''))}
-              className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
-            />
-            {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
-            <div className="mt-4 flex gap-2">
+            <div className="mb-4">
+              <label htmlFor="pay-amt" className="mb-1 block text-xs text-text-secondary">
+                Jumlah bayar kali ini (Rp)
+              </label>
+              <input
+                id="pay-amt"
+                inputMode="numeric"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value.replace(/[^\d]/g, ''))}
+                className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
+              />
+            </div>
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setPayOpen(false)}
@@ -247,104 +277,6 @@ function DebtRow({ debt }: { debt: DebtLite }) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function NewDebtSheet({ onClose }: { onClose: () => void }) {
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError(null)
-    setPending(true)
-    const fd = new FormData(e.currentTarget)
-    const due = String(fd.get('due_date') ?? '').trim()
-    const r = await createDebt({
-      direction: String(fd.get('direction') ?? 'utang') as 'utang' | 'piutang',
-      person_name: String(fd.get('person_name') ?? ''),
-      amount: Number(String(fd.get('amount') ?? '0').replace(/[^\d]/g, '')),
-      note: String(fd.get('note') ?? '').trim() || undefined,
-      due_date: due ? new Date(due).toISOString() : undefined,
-    })
-    setPending(false)
-    if (!r.success) { setError(r.error.message); return }
-    onClose()
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Catat utang"
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-text-primary">Catat Utang / Piutang</h2>
-          <button type="button" onClick={onClose} aria-label="Tutup" className="text-text-secondary">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-3">
-          <div>
-            <label htmlFor="d-dir" className="mb-1 block text-xs text-text-secondary">Jenis</label>
-            <select
-              id="d-dir" name="direction" defaultValue="utang"
-              className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
-            >
-              <option value="utang">Utang saya (saya berhutang)</option>
-              <option value="piutang">Piutang saya (orang berhutang)</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="d-person" className="mb-1 block text-xs text-text-secondary">Nama orang</label>
-            <input
-              id="d-person" name="person_name" required maxLength={80} placeholder="Budi"
-              className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
-            />
-          </div>
-          <div>
-            <label htmlFor="d-amount" className="mb-1 block text-xs text-text-secondary">Jumlah (Rp)</label>
-            <input
-              id="d-amount" name="amount" inputMode="numeric" required placeholder="50000"
-              className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
-            />
-          </div>
-          <div>
-            <label htmlFor="d-due" className="mb-1 block text-xs text-text-secondary">
-              Jatuh tempo (opsional)
-            </label>
-            <input
-              id="d-due" name="due_date" type="date"
-              className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
-            />
-          </div>
-          <div>
-            <label htmlFor="d-note" className="mb-1 block text-xs text-text-secondary">Catatan (opsional)</label>
-            <input
-              id="d-note" name="note" maxLength={500} placeholder="Bayar makan siang"
-              className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
-            />
-          </div>
-
-          {error && <p role="alert" className="text-xs text-danger">{error}</p>}
-
-          <button
-            type="submit" disabled={pending}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent-solid px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-            {pending ? 'Menyimpan…' : 'Simpan'}
-          </button>
-        </form>
-      </div>
     </div>
   )
 }

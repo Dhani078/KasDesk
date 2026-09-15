@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2, Calculator, Calendar, Sparkles } from 'lucide-react'
+import { X, Loader2, Calculator } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
 import { usePendingTx } from '@/components/pending-tx'
 import { enqueueOp } from '@/lib/offline/queue'
 import type { ScanResult } from '@/components/ScanReceiptButton'
-
-const ScanReceiptButton = dynamic(() => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton), { loading: () => <span className="h-6 w-20 animate-pulse rounded-full bg-surface" aria-hidden /> })
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
-import { POPULAR_TAGS, toggleTagInNote } from '@/lib/tags'
+import { DateTransactionPicker, getLocalDateString } from '@/components/quicklog/DateTransactionPicker'
+import { NoteWithTags } from '@/components/quicklog/NoteWithTags'
+
+const ScanReceiptButton = dynamic(
+  () => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton),
+  { loading: () => <span className="h-6 w-20 animate-pulse rounded-full bg-surface" aria-hidden /> },
+)
 
 type WalletLite = { id: string; name: string; balance: number }
 
@@ -81,19 +85,6 @@ export function QuickLogButton({ wallets }: { wallets?: WalletLite[] }) {
   return null
 }
 
-function getLocalDateString(d: Date = new Date()): string {
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function getYesterdayDateString(): string {
-  const yest = new Date()
-  yest.setDate(yest.getDate() - 1)
-  return getLocalDateString(yest)
-}
-
 function Sheet({
   wallets,
   prefill,
@@ -106,24 +97,29 @@ function Sheet({
   const { addPending, resolvePending } = usePendingTx()
   const [pending, setPending] = useState(false)
   const [activeScan, setActiveScan] = useState<ScanResult | null>(prefill)
-  const [todayStr] = useState(() => getLocalDateString())
-  const [yesterdayStr] = useState(() => getYesterdayDateString())
   const [dateText, setDateText] = useState(() => {
     if (prefill?.detected_date) return prefill.detected_date
     return getLocalDateString()
   })
+
   // FR-LOG-7: default to the last-used wallet, fall back to the first one.
   // FR-LOG-3: amount as formatted IDR text ("12.000"); parsed by stripping
   // non-digits on submit. State instead of DOM read so the format masks live.
-  const [amountText, setAmountText] = useState(() => prefill?.detected_total ? formatIDR(prefill.detected_total).replace(/^Rp\s?/, '') : '')
+  const [amountText, setAmountText] = useState(() =>
+    prefill?.detected_total ? formatIDR(prefill.detected_total).replace(/^Rp\s?/, '') : '',
+  )
+
   // FR-LOG-5: selected category + last-used ordering (localStorage).
   const [catSel, setCatSel] = useState(() => {
     if (prefill?.detected_category) return prefill.detected_category
     if (typeof window === 'undefined') return 'LAINNYA'
     try {
       return localStorage.getItem('kasdesk:last-category') || 'LAINNYA'
-    } catch { return 'LAINNYA' }
+    } catch {
+      return 'LAINNYA'
+    }
   })
+
   const [catOrder, setCatOrder] = useState<string[]>(() => {
     try {
       const last = localStorage.getItem('kasdesk:last-category')
@@ -133,43 +129,51 @@ function Sheet({
     } catch {}
     return [...CATEGORY_ENUM]
   })
+
   // FR-LOG-3: format "12000" -> "12.000" while typing.
   function onAmountChange(raw: string) {
     if (/[+\-*/xX×÷]/.test(raw)) {
       setAmountText(raw)
       return
     }
-    const digits = raw.replace(/\D/g, '').slice(0, 12)
-    setAmountText(digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '')
+    const clean = raw.replace(/[^\d]/g, '')
+    if (!clean) {
+      setAmountText('')
+      return
+    }
+    setAmountText(clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.'))
   }
 
   function applyOperator(op: string) {
     if (!amountText) return
-    if (/[+\-*/xX×÷]\s*$/.test(amountText)) {
-      setAmountText(amountText.replace(/[+\-*/xX×÷]\s*$/, `${op} `))
+    const trimmed = amountText.trim()
+    if (/[+\-*/]$/.test(trimmed)) {
+      setAmountText(trimmed.slice(0, -1) + op)
     } else {
-      setAmountText(`${amountText} ${op} `)
+      setAmountText(trimmed + op)
     }
   }
 
   function evaluateAndSetAmount() {
+    if (!amountText) return
     const res = evaluateMathExpression(amountText)
-    if (res !== null) {
-      setAmountText(res.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'))
+    if (res !== null && res > 0) {
+      setAmountText(formatIDR(res).replace(/^Rp\s?/, ''))
     }
   }
 
-  const mathLiveResult = hasMathOperator(amountText) ? evaluateMathExpression(amountText) : null
-
   function addQuickAmount(val: number) {
-    const current = Number(amountText.replace(/\D/g, '') || 0)
-    const next = current + val
-    setAmountText(next.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'))
+    const currentNum = Number(amountText.replace(/[^\d]/g, '') || '0')
+    const nextNum = currentNum + val
+    setAmountText(formatIDR(nextNum).replace(/^Rp\s?/, ''))
   }
+
   function pickCat(c: string) {
     setCatSel(c)
-    try { localStorage.setItem('kasdesk:last-category', c) } catch {}
-    setCatOrder([c, ...CATEGORY_ENUM.filter((x) => x !== c)])
+    try {
+      localStorage.setItem('kasdesk:last-category', c)
+    } catch {}
+    setCatOrder((prev) => [c, ...prev.filter((x) => x !== c)])
   }
 
   const [walletSel, setWalletSel] = useState(() => {
@@ -180,26 +184,41 @@ function Sheet({
     } catch {}
     return wallets[0]?.id ?? ''
   })
-  const [error, setError] = useState<string | null>(null)
-  const [ok, setOk] = useState(false)
 
-  const [titleText, setTitleText] = useState(() =>
-    prefill?.merchant_name && prefill.merchant_name !== 'UNKNOWN' ? prefill.merchant_name : '',
-  )
+  const [titleText, setTitleText] = useState(() => prefill?.merchant_name ?? '')
   const [noteText, setNoteText] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  const mathLiveResult = hasMathOperator(amountText)
+    ? evaluateMathExpression(amountText)
+    : null
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
-    setPending(true)
 
+    let finalAmountText = amountText
+    if (mathLiveResult !== null && mathLiveResult > 0) {
+      finalAmountText = String(mathLiveResult)
+    }
+
+    const clean = finalAmountText.replace(/[^\d]/g, '')
+    const amount = Number(clean)
+    if (!clean || !Number.isFinite(amount) || amount <= 0) {
+      setError('Masukkan jumlah yang valid')
+      return
+    }
+
+    setPending(true)
     const fd = new FormData(e.currentTarget)
-    const parsedAmt = Number(String(fd.get('amount') ?? '0').replace(/[^\d]/g, ''))
-    const evaluatedAmt = hasMathOperator(amountText) ? evaluateMathExpression(amountText) : null
-    const finalAmount = evaluatedAmt !== null && evaluatedAmt > 0 ? evaluatedAmt : parsedAmt
+    const title = String(fd.get('title') ?? '').trim()
+    const type = String(fd.get('type') ?? 'expense') as 'income' | 'expense' | 'transfer'
+    const categoryTag = catSel
+    const note = noteText.trim() ? noteText.trim() : undefined
 
     const [year, month, day] = dateText.split('-').map(Number)
-    const isToday = dateText === todayStr
+    const isToday = dateText === getLocalDateString()
     const now = new Date()
     const hours = isToday ? now.getHours() : 12
     const minutes = isToday ? now.getMinutes() : 0
@@ -209,54 +228,66 @@ function Sheet({
 
     const payload = {
       client_mutation_id: crypto.randomUUID(),
-      wallet_id: String(fd.get('wallet_id') ?? ''),
-      type: String(fd.get('type') ?? 'expense'),
-      amount: finalAmount,
-      title: String(fd.get('title') ?? ''),
-      category_tag: String(fd.get('category_tag') ?? 'LAINNYA'),
-      note: String(fd.get('note') ?? '') || undefined,
+      wallet_id: walletSel,
+      type,
+      amount,
+      title: title || 'Transaksi Baru',
+      category_tag: categoryTag,
+      note,
       occurred_at: occurredAtIso,
     }
 
     // FR-OFF-2/6: offline does not mean failure — park the op in the
-    // IndexedDB queue (survives reload) and let OfflineIndicator drain it on
-    // reconnect. The 'offline' state here is the browser's, not the server's
-    // — a queued payment is still visible and still synced, just later.
+    // IndexedDB queue and optimistic-render as usual. When the connection
+    // returns, sync.ts will replay it.
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       try {
         await enqueueOp({ kind: 'create-transaction', payload })
-        setPending(false)
-        setOk(true)
-        setTimeout(onClose, 700)
+        addPending({
+          walletId: payload.wallet_id,
+          type: payload.type,
+          amount: payload.amount,
+          title: payload.title,
+          categoryTag: payload.category_tag ?? 'LAINNYA',
+          createdAt: occurredDate,
+        })
+        onClose()
         return
       } catch {
-        // IndexedDB unavailable (private mode etc.): fall through to the
-        // normal path, which will at least produce an error message.
+        // IndexedDB unavailable: fall through to normal submission and let
+        // the fetch fail with its natural network error.
       }
     }
 
-    // FR-LOG-6: optimistic row appears in the feed immediately (before the
-    // network round-trip); FR-LOG-11: on failure it rolls back.
     const clientId = addPending({
-      walletId: payload.wallet_id,
-      type: payload.type as 'income' | 'expense' | 'transfer',
-      amount: payload.amount,
       title: payload.title,
+      amount: payload.amount,
+      type: payload.type,
+      walletId: payload.wallet_id,
       categoryTag: payload.category_tag ?? 'LAINNYA',
       createdAt: occurredDate,
     })
 
-    const res = await createTransaction(payload)
+    try {
+      const res = await createTransaction(payload)
 
-    setPending(false)
-    if (!res.success) {
+      if (!res.success) {
+        resolvePending(clientId, false)
+        setError(res.error.message)
+        setPending(false)
+        return
+      }
+
+      resolvePending(clientId, true)
+      setSaved(true)
+      setTimeout(() => {
+        onClose()
+      }, 350)
+    } catch {
       resolvePending(clientId, false)
-      setError(res.error.message)
-      return
+      setError('Tidak dapat menyimpan transaksi. Coba lagi.')
+      setPending(false)
     }
-    resolvePending(clientId, true)
-    setOk(true)
-    setTimeout(onClose, 700)
   }
 
   return (
@@ -269,54 +300,48 @@ function Sheet({
         aria-modal="true"
         aria-label="Catat transaksi"
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+        className="max-h-[92dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
       >
-        <div className="mb-4 flex items-center justify-between gap-2">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-text-primary">Catat Transaksi</h2>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-text-primary">Catat Transaksi</h2>
             <ScanReceiptButton
               variant="compact"
               onResult={(r) => {
                 setActiveScan(r)
                 if (r.detected_total) {
-                  onAmountChange(String(r.detected_total))
+                  setAmountText(formatIDR(r.detected_total).replace(/^Rp\s?/, ''))
                 }
-                if (r.merchant_name && r.merchant_name !== 'UNKNOWN') {
-                  setTitleText(r.merchant_name)
-                }
-                if (r.detected_category) {
-                  pickCat(r.detected_category)
-                }
-                if (r.detected_date) {
-                  setDateText(r.detected_date)
-                }
+                if (r.merchant_name) setTitleText(r.merchant_name)
+                if (r.detected_category) pickCat(r.detected_category)
+                if (r.detected_date) setDateText(r.detected_date)
               }}
+              onUnavailable={(reason) => setError(reason)}
             />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup"
+              className="rounded-lg p-1 text-text-secondary hover:text-text-primary"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Tutup"
-            className="rounded-xl p-1 text-text-secondary transition hover:bg-white/[0.08] hover:text-text-primary active:scale-95"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        {(activeScan?.needs_confirmation ?? prefill?.needs_confirmation) && (
-          <p
-            role="status"
-            className="mb-3 rounded-xl bg-white/[0.04] px-3 py-2 text-xs leading-relaxed text-text-secondary"
+        {activeScan && activeScan.needs_confirmation && (
+          <div
+            role="alert"
+            className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200"
           >
-            Hasil scan kurang pasti
-            {(activeScan?.confidence_score ?? prefill?.confidence_score ?? 0) > 0
-              ? ` (${Math.round((activeScan?.confidence_score ?? prefill?.confidence_score ?? 0) * 100)}%)`
-              : ''}
-            . Periksa nominal sebelum menyimpan.
-          </p>
+            <p className="font-semibold">Periksa nominal hasil scan</p>
+            <p className="mt-0.5 text-amber-200/80">
+              {activeScan.reason ?? 'AI membaca struk dengan kepastian rendah.'}
+            </p>
+          </div>
         )}
 
-        {ok ? (
+        {saved ? (
           <p className="py-8 text-center text-sm text-accent-income">Tersimpan ✓</p>
         ) : wallets.length === 0 ? (
           <p className="py-6 text-center text-sm text-text-secondary">
@@ -327,7 +352,13 @@ function Sheet({
             <div className="grid grid-cols-3 gap-2">
               {(['expense', 'income', 'transfer'] as const).map((t) => (
                 <label key={t} className="cursor-pointer">
-                  <input type="radio" name="type" value={t} defaultChecked={t === 'expense'} className="peer sr-only" />
+                  <input
+                    type="radio"
+                    name="type"
+                    value={t}
+                    defaultChecked={t === 'expense'}
+                    className="peer sr-only"
+                  />
                   <span className="block rounded-xl border border-border-outer px-2 py-2 text-center text-xs capitalize text-text-secondary peer-checked:border-accent peer-checked:text-text-primary">
                     {t === 'expense' ? 'Keluar' : t === 'income' ? 'Masuk' : 'Transfer'}
                   </span>
@@ -436,87 +467,16 @@ function Sheet({
               />
             </div>
 
-            <div>
-              <div className="mb-1 flex items-center justify-between">
-                <label htmlFor="occurred_date" className="text-xs text-text-secondary">
-                  Tanggal Transaksi
-                </label>
-                {activeScan?.detected_date && activeScan.detected_date === dateText && (
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-accent">
-                    <Sparkles className="h-3 w-3" /> Sesuai struk
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
-                  <input
-                    type="date"
-                    id="occurred_date"
-                    name="occurred_date"
-                    value={dateText}
-                    onChange={(e) => setDateText(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-canvas py-2.5 pl-9 pr-3 font-mono text-sm text-text-primary outline-none focus:border-accent"
-                  />
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setDateText(todayStr)}
-                    className={`rounded-xl px-2.5 py-2 text-xs font-medium transition active:scale-95 ${
-                      dateText === todayStr
-                        ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
-                        : 'border border-border-outer bg-white/[0.03] text-text-secondary hover:text-text-primary'
-                    }`}
-                  >
-                    Hari ini
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDateText(yesterdayStr)}
-                    className={`rounded-xl px-2.5 py-2 text-xs font-medium transition active:scale-95 ${
-                      dateText === yesterdayStr
-                        ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
-                        : 'border border-border-outer bg-white/[0.03] text-text-secondary hover:text-text-primary'
-                    }`}
-                  >
-                    Kemarin
-                  </button>
-                </div>
-              </div>
-            </div>
+            <DateTransactionPicker
+              dateText={dateText}
+              setDateText={setDateText}
+              isReceiptDate={Boolean(activeScan?.detected_date && activeScan.detected_date === dateText)}
+            />
 
-            <div>
-              <label htmlFor="note" className="mb-1 block text-xs text-text-secondary">
-                Catatan & Label (#Tag)
-              </label>
-              <input
-                id="note"
-                name="note"
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                maxLength={500}
-                placeholder="Contoh: Makan malam #Liburan #Keluarga"
-                className="w-full rounded-xl border border-border bg-canvas px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
-              />
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] text-text-secondary">Tag:</span>
-                {POPULAR_TAGS.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => setNoteText((prev) => toggleTagInNote(prev, tag))}
-                    className={`rounded-lg px-2 py-0.5 text-[11px] font-medium transition active:scale-95 ${
-                      noteText.toLowerCase().includes(tag.toLowerCase())
-                        ? 'bg-accent/20 text-accent ring-1 ring-accent/40'
-                        : 'border border-border-outer bg-white/[0.03] text-text-secondary hover:text-text-primary'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <NoteWithTags
+              noteText={noteText}
+              setNoteText={setNoteText}
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -529,7 +489,9 @@ function Sheet({
                   value={walletSel}
                   onChange={(e) => {
                     setWalletSel(e.target.value)
-                    try { localStorage.setItem('kasdesk:last-wallet', e.target.value) } catch {}
+                    try {
+                      localStorage.setItem('kasdesk:last-wallet', e.target.value)
+                    } catch {}
                   }}
                   required
                   className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
@@ -572,7 +534,9 @@ function Sheet({
             </div>
 
             {error && (
-              <p role="alert" className="text-xs text-danger">{error}</p>
+              <p role="alert" className="text-xs text-danger">
+                {error}
+              </p>
             )}
 
             <button
