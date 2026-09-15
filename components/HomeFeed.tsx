@@ -1,7 +1,8 @@
 'use client'
 
 import { usePendingTx, type PendingTx } from './pending-tx'
-import { formatIDR, formatDayGroup, formatTime, toDateKey } from '@/lib/format'
+import { formatDayGroup, formatTime, toDateKey } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 
 type TxRow = {
   id: string
@@ -92,8 +93,7 @@ export function HomeFeed({
                         isIncome ? 'text-accent-income' : 'text-text-primary'
                       }`}
                     >
-                      {isIncome ? '+' : '−'}
-                      {formatIDR(Math.abs(t.amount))}
+                      <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : '−'} />
                     </span>
                   </div>
                 )
@@ -114,8 +114,7 @@ export function HomeFeed({
                       isIncome ? 'text-accent-income' : 'text-text-primary'
                     }`}
                   >
-                    {isIncome ? '+' : '−'}
-                    {formatIDR(Math.abs(t.amount))}
+                    <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : '−'} />
                   </span>
                 </div>
               )

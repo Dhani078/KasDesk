@@ -35,6 +35,7 @@ type ScanResult = {
   detected_total: number
   confidence_score: number
   detected_category: string
+  detected_date?: string | null
   /** True when the user must confirm before saving (spec §6.2 / §6.3). */
   needs_confirmation: boolean
   reason?: string
@@ -198,12 +199,25 @@ export async function POST(req: Request) {
     }
   }
 
+  // Extract and sanitize detected_date if provided in YYYY-MM-DD format
+  let detectedDate: string | null = null
+  if (d.detected_date && typeof d.detected_date === 'string') {
+    const trimmed = d.detected_date.trim()
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const parsedD = new Date(trimmed)
+      if (!isNaN(parsedD.getTime())) {
+        detectedDate = trimmed
+      }
+    }
+  }
+
   const result: ScanResult = {
     merchant_name: d.merchant_name,
     items: d.items,
     detected_total: total,
     confidence_score: d.confidence_score,
     detected_category: category,
+    detected_date: detectedDate,
     needs_confirmation: needsConfirmation,
     reason,
   }

@@ -5,6 +5,7 @@ import { Target, Plus, X, Loader2, ArrowDownToLine, ArrowUpFromLine } from 'luci
 
 import { createVault, depositToVault, withdrawFromVault } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { projectVault } from '@/lib/vaults/projection'
 import { EmptyState } from '@/components/EmptyState'
 
@@ -22,7 +23,7 @@ function ProjectionText({ vault }: { vault: VaultLite }) {
   const projection = projectVault(vault.targetAmount, vault.currentAmount, vault.targetDate)
   if (projection.status === 'completed') return <p className="mt-2 text-xs text-accent-income">Target sudah tercapai. Mantap.</p>
   if (!projection.requiredDaily || !projection.requiredWeekly) return <p className="mt-2 text-xs text-text-secondary">Tambahkan tanggal target untuk melihat rencana setoran harian.</p>
-  return <p className="mt-2 text-xs leading-5 text-text-secondary">Butuh sekitar <b className="text-text-primary">{formatIDR(projection.requiredDaily)}/hari</b> atau <b className="text-text-primary">{formatIDR(projection.requiredWeekly)}/minggu</b> selama {projection.daysLeft} hari.</p>
+  return <p className="mt-2 text-xs leading-5 text-text-secondary">Butuh sekitar <b className="text-text-primary"><PrivacyAmount value={projection.requiredDaily} />/hari</b> atau <b className="text-text-primary"><PrivacyAmount value={projection.requiredWeekly} />/minggu</b> selama {projection.daysLeft} hari.</p>
 }
 
 export function VaultsClient({
@@ -43,7 +44,7 @@ export function VaultsClient({
         <div>
           <h1 className="text-xl font-semibold text-text-primary">Target Tabungan</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-text-secondary">
-            Terkumpul {formatIDR(total)}
+            Terkumpul <PrivacyAmount value={total} />
           </p>
         </div>
         <button
@@ -92,10 +93,10 @@ export function VaultsClient({
 
                 <div className="flex items-baseline justify-between">
                   <span className="font-mono text-sm tabular-nums text-text-primary">
-                    {formatIDR(cur)}
+                    <PrivacyAmount value={cur} />
                   </span>
                   <span className="font-mono text-xs tabular-nums text-text-secondary">
-                    / {formatIDR(tgt)}
+                    / <PrivacyAmount value={tgt} />
                   </span>
                 </div>
 

@@ -5,6 +5,7 @@ import { Plus, X, Loader2, Check, Wallet, MessageCircle } from 'lucide-react'
 
 import { createDebt, settleDebt, deleteDebt } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 
 export type DebtLite = {
@@ -33,7 +34,7 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
         <div>
           <h1 className="text-xl font-semibold text-text-primary">Utang &amp; Piutang</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-text-secondary">
-            Belum lunas {formatIDR(totalOpen)}
+            Belum lunas <PrivacyAmount value={totalOpen} />
           </p>
         </div>
         <button
@@ -147,7 +148,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
         {error && <p className="text-xs text-danger">{error}</p>}
       </div>
       <span className="font-mono text-sm tabular-nums text-text-primary">
-        {formatIDR(debt.amount)}
+        <PrivacyAmount value={debt.amount} />
       </span>
       {!debt.isPaid && (
         <>

@@ -9,6 +9,7 @@ export type ScanResult = {
   detected_total: number
   confidence_score: number
   detected_category: string
+  detected_date?: string | null
   needs_confirmation: boolean
   reason?: string
 }

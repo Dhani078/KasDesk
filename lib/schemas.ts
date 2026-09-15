@@ -99,6 +99,7 @@ export const GeminiOCRResponseSchema = z.object({
   detected_total: z.number(),
   confidence_score: z.number().min(0).max(1),
   detected_category: z.enum(CATEGORY_ENUM).catch('LAINNYA'),
+  detected_date: z.string().nullable().optional(),
 })
 
 export type GeminiOCRResponse = z.infer<typeof GeminiOCRResponseSchema>

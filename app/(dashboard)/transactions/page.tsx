@@ -5,7 +5,8 @@ import { db } from '@/lib/db'
 import { transactions, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { CATEGORY_ENUM } from '@/lib/schemas'
-import { formatIDR, formatDateShort } from '@/lib/format'
+import { formatDateShort } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { extractTags } from '@/lib/tags'
 
 export const dynamic = 'force-dynamic'
@@ -103,7 +104,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         <span className="font-medium text-accent">Filter Label: {activeTag}</span>
         {tagExpenseTotal !== null && (
           <span className="text-xs text-text-secondary">
-            Pengeluaran: <strong className="font-mono text-text-primary">{formatIDR(tagExpenseTotal)}</strong>
+            Pengeluaran: <strong className="font-mono text-text-primary"><PrivacyAmount value={tagExpenseTotal} /></strong>
           </span>
         )}
       </div>
@@ -130,7 +131,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
             </p>
           </div>
           <span className={`font-mono text-sm font-semibold ${transaction.type === 'income' ? 'text-accent-income' : transaction.type === 'expense' ? 'text-accent-expense' : 'text-accent'}`}>
-            {transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '−' : '↔'}{formatIDR(transaction.amount)}
+            <PrivacyAmount value={transaction.amount} sign={transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '−' : '↔'} />
           </span>
         </li>
       )

@@ -28,7 +28,7 @@ export type PendingTx = {
 
 type PendingCtx = {
   pending: PendingTx[]
-  addPending: (tx: Omit<PendingTx, 'clientId' | 'createdAt'> & { categoryTag?: string }) => string
+  addPending: (tx: Omit<PendingTx, 'clientId' | 'createdAt'> & { categoryTag?: string; createdAt?: Date }) => string
   resolvePending: (clientId: string, ok: boolean) => void
   clearPending: (clientId: string) => void
 }
@@ -38,14 +38,14 @@ const Ctx = createContext<PendingCtx | null>(null)
 export function PendingTxProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<PendingTx[]>([])
 
-  const addPending = useCallback((tx: Omit<PendingTx, 'clientId' | 'createdAt'> & { categoryTag?: string }) => {
+  const addPending = useCallback((tx: Omit<PendingTx, 'clientId' | 'createdAt'> & { categoryTag?: string; createdAt?: Date }) => {
     const clientId = crypto.randomUUID()
     setPending((prev) => [
       {
         ...tx,
         clientId,
         categoryTag: tx.categoryTag ?? 'LAINNYA',
-        createdAt: new Date(),
+        createdAt: tx.createdAt ?? new Date(),
       },
       ...prev,
     ])

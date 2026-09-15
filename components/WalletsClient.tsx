@@ -6,6 +6,7 @@ import { Plus, ChevronRight, X, Loader2, Archive, ArchiveRestore, Target } from 
 
 import { createWallet, archiveWallet } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 
 type WalletLite = {
@@ -40,7 +41,7 @@ export function WalletsClient({
         <div>
           <h1 className="text-xl font-semibold text-text-primary">Dompet</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-text-secondary">
-            Total {formatIDR(total)}
+            Total <PrivacyAmount value={total} />
           </p>
         </div>
         <button
@@ -90,7 +91,7 @@ export function WalletsClient({
                   </p>
                 </div>
                 <span className="font-mono text-sm tabular-nums text-text-primary">
-                  {formatIDR(w.balance)}
+                  <PrivacyAmount value={w.balance} />
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-text-secondary" />
               </Link>
@@ -116,7 +117,7 @@ export function WalletsClient({
                     </p>
                   </div>
                   <span className="font-mono text-sm tabular-nums text-text-secondary">
-                    {formatIDR(w.balance)}
+                    <PrivacyAmount value={w.balance} />
                   </span>
                 </div>
                 <RestoreButton id={w.id} name={w.name} />
