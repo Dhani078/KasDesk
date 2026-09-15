@@ -62,7 +62,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
-      "connect-src 'self'",
+      "connect-src 'self' https://vitals.vercel-insights.com",
       "font-src 'self' data:",
       "object-src 'none'",
       "worker-src 'self' blob:",

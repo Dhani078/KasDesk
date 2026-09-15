@@ -40,7 +40,8 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: "try{if(localStorage.getItem('kasdesk:theme')==='light'){document.documentElement.dataset.theme='light'}if(localStorage.getItem('kasdesk:privacy')==='hidden'){document.documentElement.classList.add('privacy-mode')}}catch(e){}",
+            __html:
+              "try{if(localStorage.getItem('kasdesk:theme')==='light'){document.documentElement.dataset.theme='light'}if(localStorage.getItem('kasdesk:privacy')==='hidden'){document.documentElement.classList.add('privacy-mode')}if(localStorage.getItem('kasdesk:lock_enabled')==='true'&&sessionStorage.getItem('kasdesk:unlocked')!=='true'){document.documentElement.classList.add('app-locked')}}catch(e){}",
           }}
         />
       </head>

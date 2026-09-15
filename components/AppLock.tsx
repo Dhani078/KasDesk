@@ -14,7 +14,6 @@ import { logoutAction } from '@/lib/auth/actions'
 import { clearOfflineData } from '@/lib/offline/queue'
 
 export function AppLock({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
   const [pin, setPin] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
@@ -23,19 +22,33 @@ export function AppLock({ children }: { children: React.ReactNode }) {
   const [bioAvailable, setBioAvailable] = useState(false)
   const [isPendingLogout, startLogout] = useTransition()
 
+  const unlockApp = () => {
+    setIsLocked(false)
+    setPin('')
+    setErrorMsg('')
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('app-locked')
+    }
+  }
+
   const checkLockState = useCallback(() => {
     if (!isAppLockConfigured()) {
       setIsLocked(false)
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('app-locked')
+      }
       return
     }
     const unlocked = isAppSessionUnlocked()
     setIsLocked(!unlocked)
+    if (unlocked && typeof document !== 'undefined') {
+      document.documentElement.classList.remove('app-locked')
+    }
     setBioAvailable(isBiometricsEnabled())
   }, [])
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
-      setMounted(true)
       checkLockState()
     })
     return () => cancelAnimationFrame(frame)
@@ -46,9 +59,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     if (isLocked && isBiometricsEnabled()) {
       authenticateBiometrics().then((success) => {
         if (success) {
-          setIsLocked(false)
-          setPin('')
-          setErrorMsg('')
+          unlockApp()
         }
       })
     }
@@ -75,9 +86,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
       const ok = await verifyEnteredPin(next)
       if (ok) {
         triggerVibrate([20, 30])
-        setIsLocked(false)
-        setPin('')
-        setErrorMsg('')
+        unlockApp()
       } else {
         triggerVibrate([50, 50, 50])
         setIsShaking(true)
@@ -102,8 +111,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     setErrorMsg('')
     const ok = await authenticateBiometrics()
     if (ok) {
-      setIsLocked(false)
-      setPin('')
+      unlockApp()
     } else {
       setErrorMsg('Autentikasi sidik jari/FaceID gagal.')
     }
@@ -125,17 +133,12 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     })
   }
 
-  // Before client mounts, if app lock is configured, avoid flashing unauthenticated dashboard
-  if (!mounted) {
-    return <div className="min-h-screen bg-canvas" />
-  }
-
-  if (!isLocked) {
-    return <>{children}</>
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-canvas px-6 py-10 text-text-primary">
+    <>
+      <div className="app-shell-content">{children}</div>
+
+      {isLocked && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-canvas px-6 py-10 text-text-primary">
       {/* Top Branding */}
       <div className="flex flex-col items-center pt-8 text-center">
         <div className="grid h-16 w-16 place-items-center rounded-2xl border border-border-outer bg-surface shadow-lg">
@@ -266,5 +269,7 @@ export function AppLock({ children }: { children: React.ReactNode }) {
         </div>
       )}
     </div>
-  )
+  )}
+</>
+)
 }
