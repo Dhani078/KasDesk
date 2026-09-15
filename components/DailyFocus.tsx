@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { CalendarClock, Lightbulb, Target, Wallet } from 'lucide-react'
-import { formatIDR } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 
 type FocusInput = {
   walletCount: number
@@ -35,7 +35,7 @@ export function DailyFocus({ dash }: { dash: FocusInput }) {
           <p className="mt-1 text-sm leading-6 text-text-secondary">{focus.body}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <Link href={focus.href} className="primary-button min-h-10 px-3 py-2 text-xs">{focus.label}</Link>
-            <span className="status-pill">Aman Harian {formatIDR(dash.safeDailySpend)}</span>
+            <span className="status-pill">Aman Harian <PrivacyAmount value={dash.safeDailySpend} /></span>
             <span className="status-pill">{dash.healthLabel} {dash.healthScore}</span>
           </div>
         </div>

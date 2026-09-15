@@ -2,18 +2,18 @@ import Link from 'next/link'
 import { ArrowLeft, Lightbulb, PiggyBank, ShieldAlert, TrendingDown } from 'lucide-react'
 import { getSpendingFlow, getTopCategories } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
-import { formatIDR } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 
 export const dynamic = 'force-dynamic'
 
-type Advice = { title: string; body: string; tone: 'good' | 'warn' | 'info' }
+type Advice = { title: string; body: React.ReactNode; tone: 'good' | 'warn' | 'info' }
 
 function buildAdvice(input: Awaited<ReturnType<typeof getDashboardSummary>> & { weeklyTotal: number; topCategory?: string; topAmount?: number }): Advice[] {
   const advice: Advice[] = []
   if (input.healthScore >= 85) advice.push({ title: 'Keuanganmu sangat sehat', body: 'Pertahankan kebiasaan catat transaksi dan tambah target tabungan bertahap.', tone: 'good' })
   if (input.safeDailySpend <= 0) advice.push({ title: 'Mode hemat dulu', body: 'Aman Harian sedang nol. Tunda belanja non-penting sampai pemasukan berikutnya.', tone: 'warn' })
   if (input.monthlyExpense > input.monthlyIncome && input.monthlyIncome > 0) advice.push({ title: 'Pengeluaran melewati pemasukan', body: 'Review transaksi bulan ini dan kurangi kategori paling besar.', tone: 'warn' })
-  if (input.topCategory && input.topAmount) advice.push({ title: `Kategori terbesar: ${input.topCategory}`, body: `${formatIDR(input.topAmount)} bulan ini. Pasang budget khusus agar tidak bocor halus.`, tone: 'info' })
+  if (input.topCategory && input.topAmount) advice.push({ title: `Kategori terbesar: ${input.topCategory}`, body: <><PrivacyAmount value={input.topAmount} /> bulan ini. Pasang budget khusus agar tidak bocor halus.</>, tone: 'info' })
   if (input.vaultAllocations <= 0) advice.push({ title: 'Belum ada dana tujuan', body: 'Buat vault dana darurat atau target besar agar saldo tidak tercampur uang belanja.', tone: 'info' })
   if (input.upcomingDebts > input.totalBalance * 0.35 && input.upcomingDebts > 0) advice.push({ title: 'Kewajiban cukup besar', body: 'Prioritaskan pelunasan utang jatuh tempo sebelum menambah pengeluaran besar.', tone: 'warn' })
   if (advice.length === 0) advice.push({ title: 'Mulai dari data kecil', body: 'Catat dompet, pemasukan, dan 3 transaksi pertama agar coach bisa memberi saran lebih tajam.', tone: 'info' })
@@ -35,7 +35,7 @@ export default async function CoachPage() {
         <p className="text-xs uppercase tracking-[0.12em] text-text-secondary">Langkah terbaik berikutnya</p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight">{nextBestAction}</h2>
         <p className="mt-2 text-sm leading-6 text-text-secondary">
-          Level {dash.healthScore >= 85 ? 'Diamond 💎' : dash.healthScore >= 70 ? 'Gold 🥇' : dash.healthScore >= 55 ? 'Silver 🥈' : 'Bronze 🥉'} · Skor {dash.healthScore}/100 · Aman Harian {formatIDR(dash.safeDailySpend)} · 7 hari terakhir {formatIDR(weeklyTotal)}
+          Level {dash.healthScore >= 85 ? 'Diamond 💎' : dash.healthScore >= 70 ? 'Gold 🥇' : dash.healthScore >= 55 ? 'Silver 🥈' : 'Bronze 🥉'} · Skor {dash.healthScore}/100 · Aman Harian <PrivacyAmount value={dash.safeDailySpend} /> · 7 hari terakhir <PrivacyAmount value={weeklyTotal} />
         </p>
       </section>
 

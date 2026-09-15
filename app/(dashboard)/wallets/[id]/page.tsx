@@ -7,7 +7,8 @@ import { db } from '@/lib/db'
 import { wallets, transactions } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { getWallets } from '@/lib/actions'
-import { formatIDR, formatDayGroup, toDateKey, formatTime } from '@/lib/format'
+import { formatDayGroup, toDateKey, formatTime } from '@/lib/format'
+import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 import { DeleteTransactionButton } from '@/components/DeleteTransactionButton'
 import { EditTransactionButton } from '@/components/EditTransactionButton'
@@ -55,7 +56,7 @@ export default async function WalletDetailPage({
       <header className="mb-6">
         <p className="text-xs uppercase tracking-[0.08em] text-text-secondary">Saldo</p>
         <h1 className="font-mono text-3xl font-semibold tabular-nums text-text-primary">
-          {formatIDR(wallet.balance)}
+          <PrivacyAmount value={wallet.balance} />
         </h1>
         <p className="mt-1 text-sm text-text-secondary">{wallet.name}</p>
       </header>
@@ -78,14 +79,13 @@ export default async function WalletDetailPage({
                         {t.categoryTag ?? 'LAINNYA'} · {formatTime(t.occurredAt)}
                       </p>
                     </div>
-                    <span
+                    <PrivacyAmount
+                      value={t.amount}
+                      sign={t.type === 'income' ? '+' : '−'}
                       className={`font-mono text-sm tabular-nums ${
                         t.type === 'income' ? 'text-accent-income' : 'text-text-primary'
                       }`}
-                    >
-                      {t.type === 'income' ? '+' : '−'}
-                      {formatIDR(t.amount)}
-                    </span>
+                    />
                     <EditTransactionButton
                       txn={{
                         id: t.id,
