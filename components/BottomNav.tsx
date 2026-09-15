@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { BarChart3, Home, Landmark, Plus, Wallet } from 'lucide-react'
-import { QuickLogSheet } from '@/components/QuickLogSheet'
 import { getWallets } from '@/lib/actions'
+
+const QuickLogSheet = dynamic(
+  () => import('@/components/QuickLogSheet').then((m) => m.QuickLogSheet),
+  { ssr: false }
+)
 
 type WalletLite = { id: string; name: string; balance: number }
 

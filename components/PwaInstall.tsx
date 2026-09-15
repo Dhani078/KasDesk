@@ -23,6 +23,7 @@ export function PwaInstall() {
       setInstalled(isStandalone())
       setIos(/iphone|ipad|ipod/i.test(navigator.userAgent))
     })
+
     const onPrompt = (event: Event) => {
       event.preventDefault()
       setPrompt(event as InstallPromptEvent)
