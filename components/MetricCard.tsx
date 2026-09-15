@@ -19,8 +19,11 @@ export function MetricCard({
       if (!match) return value
       return (
         <>
-          <span className="privacy-prefix">{match[1]}</span>
-          <span className="privacy-val">{match[2]}</span>
+          <span className="privacy-prefix select-none">{match[1]}</span>
+          <span className="privacy-val font-mono">
+            <span className="privacy-real">{match[2]}</span>
+            <span className="privacy-mask select-none" aria-hidden="true">••••••</span>
+          </span>
         </>
       )
     })()

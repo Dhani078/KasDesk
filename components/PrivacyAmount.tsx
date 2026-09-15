@@ -37,7 +37,10 @@ export function PrivacyAmount({
     <span className={className}>
       {prefix && <span>{prefix}</span>}
       <span className="privacy-prefix select-none">{currencyPrefix}</span>
-      <span className="privacy-val font-mono">{numStr}</span>
+      <span className="privacy-val font-mono">
+        <span className="privacy-real">{numStr}</span>
+        <span className="privacy-mask select-none" aria-hidden="true">••••••</span>
+      </span>
       {suffix && <span>{suffix}</span>}
     </span>
   )
