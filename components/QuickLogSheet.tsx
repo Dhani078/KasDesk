@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2, Calculator } from 'lucide-react'
+import { X, Loader2, Calculator, ArrowRightLeft, ArrowLeftRight } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
 import { usePendingTx } from '@/components/pending-tx'
@@ -176,6 +176,7 @@ function Sheet({
     setCatOrder((prev) => [c, ...prev.filter((x) => x !== c)])
   }
 
+  const [txType, setTxType] = useState<'income' | 'expense' | 'transfer'>('expense')
   const [walletSel, setWalletSel] = useState(() => {
     if (typeof window === 'undefined') return wallets[0]?.id ?? ''
     try {
@@ -184,6 +185,36 @@ function Sheet({
     } catch {}
     return wallets[0]?.id ?? ''
   })
+  const [toWalletSel, setToWalletSel] = useState(() => {
+    const initialFrom = typeof window !== 'undefined'
+      ? (localStorage.getItem('kasdesk:last-wallet') || wallets[0]?.id || '')
+      : (wallets[0]?.id || '')
+    const other = wallets.find((w) => w.id !== initialFrom)
+    return other?.id ?? ''
+  })
+
+  const handleWalletChange = (newWalletId: string) => {
+    setWalletSel(newWalletId)
+    if (newWalletId === toWalletSel) {
+      const alt = wallets.find((w) => w.id !== newWalletId)
+      if (alt) setToWalletSel(alt.id)
+    }
+    try {
+      localStorage.setItem('kasdesk:last-wallet', newWalletId)
+    } catch {}
+  }
+
+  const effectiveToWallet =
+    toWalletSel && toWalletSel !== walletSel
+      ? toWalletSel
+      : (wallets.find((w) => w.id !== walletSel)?.id ?? '')
+
+  const handleSwapWallets = () => {
+    if (!effectiveToWallet || walletSel === effectiveToWallet) return
+    const temp = walletSel
+    setWalletSel(effectiveToWallet)
+    setToWalletSel(temp)
+  }
 
   const [titleText, setTitleText] = useState(() => prefill?.merchant_name ?? '')
   const [noteText, setNoteText] = useState('')
@@ -210,10 +241,25 @@ function Sheet({
       return
     }
 
+    if (txType === 'transfer') {
+      if (wallets.length < 2) {
+        setError('Dibutuhkan minimal 2 dompet untuk transfer saldo.')
+        return
+      }
+      if (!effectiveToWallet || walletSel === effectiveToWallet) {
+        setError('Dompet asal dan tujuan tidak boleh sama.')
+        return
+      }
+    }
+
     setPending(true)
     const fd = new FormData(e.currentTarget)
-    const title = String(fd.get('title') ?? '').trim()
-    const type = String(fd.get('type') ?? 'expense') as 'income' | 'expense' | 'transfer'
+    const type = String(fd.get('type') ?? txType) as 'income' | 'expense' | 'transfer'
+    const sourceName = wallets.find((w) => w.id === walletSel)?.name ?? 'Dompet Asal'
+    const toName = wallets.find((w) => w.id === effectiveToWallet)?.name ?? 'Dompet Tujuan'
+    const defaultTitle = type === 'transfer' ? `Transfer: ${sourceName} ke ${toName}` : 'Transaksi Baru'
+    const rawTitle = String(fd.get('title') ?? '').trim()
+    const title = rawTitle || defaultTitle
     const categoryTag = catSel
     const note = noteText.trim() ? noteText.trim() : undefined
 
@@ -229,10 +275,11 @@ function Sheet({
     const payload = {
       client_mutation_id: crypto.randomUUID(),
       wallet_id: walletSel,
+      to_wallet_id: type === 'transfer' ? effectiveToWallet : undefined,
       type,
       amount,
-      title: title || 'Transaksi Baru',
-      category_tag: categoryTag,
+      title,
+      category_tag: type === 'transfer' ? 'LAINNYA' : categoryTag,
       note,
       occurred_at: occurredAtIso,
     }
@@ -356,10 +403,17 @@ function Sheet({
                     type="radio"
                     name="type"
                     value={t}
-                    defaultChecked={t === 'expense'}
+                    checked={txType === t}
+                    onChange={() => setTxType(t)}
                     className="peer sr-only"
                   />
-                  <span className="block rounded-xl border border-border-outer px-2 py-2 text-center text-xs capitalize text-text-secondary peer-checked:border-accent peer-checked:text-text-primary">
+                  <span
+                    className={`block rounded-xl border px-2 py-2 text-center text-xs capitalize transition ${
+                      txType === t
+                        ? 'border-accent bg-accent/15 font-semibold text-accent'
+                        : 'border-border-outer text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
                     {t === 'expense' ? 'Keluar' : t === 'income' ? 'Masuk' : 'Transfer'}
                   </span>
                 </label>
@@ -460,9 +514,13 @@ function Sheet({
                 name="title"
                 value={titleText}
                 onChange={(e) => setTitleText(e.target.value)}
-                required
+                required={txType !== 'transfer'}
                 maxLength={120}
-                placeholder="Nasi Goreng"
+                placeholder={
+                  txType === 'transfer'
+                    ? `Transfer: ${wallets.find((w) => w.id === walletSel)?.name ?? 'Tunai'} ke ${wallets.find((w) => w.id === toWalletSel)?.name ?? 'SeaBank'}`
+                    : 'Nasi Goreng'
+                }
                 className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
               />
             </div>
@@ -478,60 +536,134 @@ function Sheet({
               setNoteText={setNoteText}
             />
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="wallet_id" className="mb-1 block text-xs text-text-secondary">
-                  Dompet
-                </label>
-                <select
-                  id="wallet_id"
-                  name="wallet_id"
-                  value={walletSel}
-                  onChange={(e) => {
-                    setWalletSel(e.target.value)
-                    try {
-                      localStorage.setItem('kasdesk:last-wallet', e.target.value)
-                    } catch {}
-                  }}
-                  required
-                  className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
-                >
-                  {wallets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name} · {formatIDR(w.balance)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="category_tag" className="mb-1 block text-xs text-text-secondary">
-                  Kategori
-                </label>
-                <input type="hidden" name="category_tag" value={catSel} />
-                <div
-                  role="radiogroup"
-                  aria-label="Kategori"
-                  className="flex flex-wrap gap-1.5"
-                >
-                  {catOrder.map((c) => (
+            {txType === 'transfer' ? (
+              <div className="space-y-3 rounded-2xl border border-border-outer bg-white/[0.02] p-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-accent">
+                    <ArrowRightLeft className="h-3.5 w-3.5" /> Transfer Antar Dompet
+                  </span>
+                  {wallets.length >= 2 && (
                     <button
                       type="button"
-                      key={c}
-                      role="radio"
-                      aria-checked={catSel === c}
-                      onClick={() => pickCat(c)}
-                      className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
-                        catSel === c
-                          ? 'bg-accent-solid text-white'
-                          : 'bg-white/[0.04] text-text-secondary ring-1 ring-border-outer'
-                      }`}
+                      onClick={handleSwapWallets}
+                      className="!min-h-0 !min-w-0 flex items-center gap-1 rounded-lg border border-border-outer bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 transition"
+                      title="Tukar dompet asal dan tujuan"
                     >
-                      {c}
+                      <ArrowLeftRight className="h-3 w-3" /> Tukar Posisi
                     </button>
-                  ))}
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="wallet_id" className="mb-1 block text-xs text-text-secondary">
+                      Dari Dompet (Asal)
+                    </label>
+                    <select
+                      id="wallet_id"
+                      name="wallet_id"
+                      value={walletSel}
+                      onChange={(e) => handleWalletChange(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                    >
+                      {wallets.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name} · {formatIDR(w.balance)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="to_wallet_id" className="mb-1 block text-xs text-text-secondary">
+                      Ke Dompet (Tujuan)
+                    </label>
+                    <select
+                      id="to_wallet_id"
+                      name="to_wallet_id"
+                      value={effectiveToWallet}
+                      onChange={(e) => setToWalletSel(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
+                    >
+                      {wallets.map((w) => (
+                        <option key={w.id} value={w.id} disabled={w.id === walletSel}>
+                          {w.name} · {formatIDR(w.balance)} {w.id === walletSel ? '(Dompet Asal)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {wallets.length < 2 && (
+                  <p className="text-xs font-medium text-amber-500">
+                    Dibutuhkan minimal 2 dompet untuk transfer saldo. Buat dompet baru di menu Dompet.
+                  </p>
+                )}
+                {walletSel === effectiveToWallet && wallets.length >= 2 && (
+                  <p className="text-xs font-medium text-danger">
+                    Dompet asal dan tujuan tidak boleh sama. Silakan pilih dompet tujuan yang berbeda.
+                  </p>
+                )}
+                <input type="hidden" name="category_tag" value={catSel} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="wallet_id" className="mb-1 block text-xs text-text-secondary">
+                    Dompet
+                  </label>
+                  <select
+                    id="wallet_id"
+                    name="wallet_id"
+                    value={walletSel}
+                    onChange={(e) => {
+                      setWalletSel(e.target.value)
+                      try {
+                        localStorage.setItem('kasdesk:last-wallet', e.target.value)
+                      } catch {}
+                    }}
+                    required
+                    className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
+                  >
+                    {wallets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name} · {formatIDR(w.balance)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="category_tag" className="mb-1 block text-xs text-text-secondary">
+                    Kategori
+                  </label>
+                  <input type="hidden" name="category_tag" value={catSel} />
+                  <div
+                    role="radiogroup"
+                    aria-label="Kategori"
+                    className="flex flex-wrap gap-1.5"
+                  >
+                    {catOrder.map((c) => (
+                      <button
+                        type="button"
+                        key={c}
+                        role="radio"
+                        aria-checked={catSel === c}
+                        onClick={() => pickCat(c)}
+                        className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
+                          catSel === c
+                            ? 'bg-accent-solid text-white'
+                            : 'bg-white/[0.04] text-text-secondary ring-1 ring-border-outer'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {error && (
               <p role="alert" className="text-xs text-danger">
