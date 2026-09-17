@@ -82,7 +82,7 @@ try {
 
   console.log('\n=== NAV ==')
   check('bottom nav present on home',
-    home.includes('>Home<') && home.includes('>Dompet<') && home.includes('>Utang<'))
+    home.includes('>Home<') && home.includes('>Dompet<') && (home.includes('>Riwayat<') || home.includes('>Akun<') || home.includes('>Utang<')))
   check('bottom nav hidden on /login',
     !body(`${BASE}/login`).includes('>Home<'))
 

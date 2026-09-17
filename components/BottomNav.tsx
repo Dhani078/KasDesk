@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { BarChart3, Home, Landmark, Plus, Wallet } from 'lucide-react'
+import { Clock, Home, Plus, User, Wallet } from 'lucide-react'
 import { getWallets } from '@/lib/actions'
 
 const QuickLogSheet = dynamic(
@@ -20,8 +20,8 @@ const LEFT_LINKS = [
 ]
 
 const RIGHT_LINKS = [
-  { href: '/debts', label: 'Utang', Icon: Landmark },
-  { href: '/insights', label: 'Laporan', Icon: BarChart3 },
+  { href: '/transactions', label: 'Riwayat', Icon: Clock },
+  { href: '/settings', label: 'Akun', Icon: User },
 ]
 
 export function BottomNav() {
@@ -52,9 +52,7 @@ export function BottomNav() {
       >
         <ul className="mx-auto flex max-w-xl items-center px-1 sm:px-3 pt-1">
           {LEFT_LINKS.map(({ href, label, Icon }) => {
-            const active = href === '/'
-              ? pathname === '/' || pathname.startsWith('/transactions')
-              : pathname.startsWith(href)
+            const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
             return (
               <li key={href} className="min-w-0 flex-1">
                 <Link
@@ -88,8 +86,8 @@ export function BottomNav() {
           </li>
 
           {RIGHT_LINKS.map(({ href, label, Icon }) => {
-            const active = href === '/insights'
-              ? pathname.startsWith('/insights') || pathname.startsWith('/planning')
+            const active = href === '/settings'
+              ? ['/settings', '/insights', '/debts', '/planning', '/vaults', '/coach', '/install', '/privacy', '/terms'].some((p) => pathname.startsWith(p))
               : pathname.startsWith(href)
             return (
               <li key={href} className="min-w-0 flex-1">
