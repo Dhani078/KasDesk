@@ -138,6 +138,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
   const waUrl = `https://wa.me/?text=${encodeURIComponent(waMessage)}`
 
   return (
+    <>
     <div className="flex items-center gap-3 px-4 py-3">
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm ${debt.isPaid ? 'text-text-secondary line-through' : 'text-text-primary'}`}>
@@ -228,6 +229,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
       >
         <X className="h-4 w-4" />
       </button>
+    </div>
 
       {payOpen && (
         <div
@@ -256,7 +258,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
             </p>
             <div className="mb-4">
               <div className="mb-1 flex items-center justify-between">
-                <label htmlFor="pay-amt" className="text-xs text-text-secondary">
+                <label htmlFor={`pay-amt-${debt.id}`} className="text-xs text-text-secondary">
                   Jumlah bayar kali ini (Rp)
                 </label>
                 <div className="flex items-center gap-1.5">
@@ -277,7 +279,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
                 </div>
               </div>
               <input
-                id="pay-amt"
+                id={`pay-amt-${debt.id}`}
                 inputMode="numeric"
                 value={payAmount}
                 onChange={(e) => setPayAmount(formatWithDots(e.target.value))}
@@ -304,6 +306,6 @@ function DebtRow({ debt }: { debt: DebtLite }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
