@@ -15,7 +15,8 @@ const recurringSchema = z.object({ title: z.string().trim().min(1).max(120), typ
 export async function saveBudgetAction(_state: PlanningState, formData: FormData): Promise<PlanningState> {
   const userId = await requireUserId()
   if (!userId) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
-  const parsed = budgetSchema.safeParse({ month: formData.get('month'), category: formData.get('category'), amount: formData.get('amount') })
+  const cleanAmount = String(formData.get('amount') ?? '').replace(/[^\d]/g, '')
+  const parsed = budgetSchema.safeParse({ month: formData.get('month'), category: formData.get('category'), amount: cleanAmount })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Budget tidak valid.' }
   try {
     await db.insert(budgets).values({ userId, month: parsed.data.month, categoryTag: parsed.data.category, amount: parsed.data.amount }).onDuplicateKeyUpdate({ set: { amount: parsed.data.amount } })
@@ -27,7 +28,8 @@ export async function saveBudgetAction(_state: PlanningState, formData: FormData
 export async function createRecurringAction(_state: PlanningState, formData: FormData): Promise<PlanningState> {
   const userId = await requireUserId()
   if (!userId) return { error: 'Sesi berakhir. Silakan masuk kembali.' }
-  const parsed = recurringSchema.safeParse({ title: formData.get('title'), type: formData.get('type'), amount: formData.get('amount'), category: formData.get('category'), frequency: formData.get('frequency'), nextRunAt: formData.get('nextRunAt') })
+  const cleanAmount = String(formData.get('amount') ?? '').replace(/[^\d]/g, '')
+  const parsed = recurringSchema.safeParse({ title: formData.get('title'), type: formData.get('type'), amount: cleanAmount, category: formData.get('category'), frequency: formData.get('frequency'), nextRunAt: formData.get('nextRunAt') })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Pengingat tidak valid.' }
   try {
     await db.insert(recurringRules).values({ userId, title: parsed.data.title, type: parsed.data.type, amount: parsed.data.amount, categoryTag: parsed.data.category, frequency: parsed.data.frequency, nextRunAt: parsed.data.nextRunAt })

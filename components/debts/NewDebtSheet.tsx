@@ -7,6 +7,17 @@ import { createDebt } from '@/lib/actions'
 export function NewDebtSheet({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [amount, setAmount] = useState('')
+
+  function onAmountChange(v: string) {
+    const digits = v.replace(/[^\d]/g, '')
+    if (!digits) {
+      setAmount('')
+      return
+    }
+    const clean = digits.replace(/^0+(?=\d)/, '')
+    setAmount(clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.'))
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -79,7 +90,9 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
               name="amount"
               inputMode="numeric"
               required
-              placeholder="50000"
+              value={amount}
+              onChange={(e) => onAmountChange(e.target.value)}
+              placeholder="Contoh: 50.000"
               className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
             />
           </div>
