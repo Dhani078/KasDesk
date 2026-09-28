@@ -119,11 +119,24 @@ export function FinancialHealthScoreCard({ dash }: { dash: DashboardSummary }) {
             {tier.nextText}
           </p>
         </div>
-        <div className="text-right shrink-0">
-          <span className="font-mono text-4xl sm:text-5xl font-extrabold tracking-tight text-text-primary">
-            {score}
-          </span>
-          <span className="text-sm font-semibold text-text-secondary">/100</span>
+        <div className="text-right shrink-0 relative">
+          <svg className="h-20 w-20 sm:h-24 sm:w-24 -rotate-90" viewBox="0 0 100 100" aria-hidden>
+            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+            <circle
+              cx="50" cy="50" r="42" fill="none"
+              strokeWidth="6" strokeLinecap="round"
+              className={score >= 85 ? 'stroke-cyan-400' : score >= 70 ? 'stroke-amber-400' : score >= 55 ? 'stroke-slate-300' : 'stroke-orange-400'}
+              strokeDasharray={`${2 * Math.PI * 42}`}
+              strokeDashoffset={`${2 * Math.PI * 42 * (1 - score / 100)}`}
+              style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-mono text-2xl sm:text-3xl font-extrabold tracking-tight text-text-primary">
+              {score}
+            </span>
+            <span className="text-[10px] font-semibold text-text-secondary">/100</span>
+          </div>
         </div>
       </div>
 
@@ -159,12 +172,13 @@ export function FinancialHealthScoreCard({ dash }: { dash: DashboardSummary }) {
 
         {expanded && (
           <div className="mt-3 space-y-2.5 pt-1">
-            {criteria.map((item) => (
+            {criteria.map((item, i) => (
               <div
                 key={item.title}
-                className={`flex items-start justify-between gap-3 rounded-xl p-2.5 text-xs transition ${
+                className={`flex items-start justify-between gap-3 rounded-xl p-2.5 text-xs transition animate-fade-in-up ${
                   item.ok ? 'bg-accent-income/10 border border-accent-income/20' : 'bg-white/[0.03] border border-border-outer'
                 }`}
+                style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="flex items-start gap-2 min-w-0">
                   {item.ok ? (
