@@ -55,6 +55,17 @@ export default function WelcomePage() {
         <section className="grid gap-3 border-t border-border-outer py-12 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map(({Icon,title,body})=><article key={title} className="rounded-2xl border border-border-outer bg-surface/60 p-5"><Icon className="h-5 w-5 text-accent" aria-hidden /><h2 className="mt-4 font-semibold">{title}</h2><p className="mt-2 text-sm leading-6 text-text-secondary">{body}</p></article>)}
         </section>
+
+        <footer className="border-t border-border-inner py-8 text-center sm:flex sm:items-center sm:justify-between sm:text-left text-xs text-text-secondary">
+          <p>© {new Date().getFullYear()} KASDESK. Keuangan pribadi mobile-first, tanpa ribet.</p>
+          <div className="mt-4 flex items-center justify-center gap-4 sm:mt-0">
+            <Link href="/privacy" className="hover:text-text-primary transition">Kebijakan Privasi</Link>
+            <span>·</span>
+            <Link href="/terms" className="hover:text-text-primary transition">Ketentuan Layanan</Link>
+            <span>·</span>
+            <Link href="/install" className="hover:text-text-primary transition">Instal PWA</Link>
+          </div>
+        </footer>
       </div>
     </main>
   )
