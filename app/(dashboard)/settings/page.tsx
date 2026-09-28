@@ -17,8 +17,7 @@ import {
 
 import { auth } from '@/auth'
 import { getDashboardSummary } from '@/lib/analytics/actions'
-import { PrivacyToggle } from '@/components/PrivacyToggle'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { SettingsAppearance } from '@/components/SettingsAppearance'
 import { DeleteAccountForm } from '@/components/DeleteAccountForm'
 import { ChangePasswordForm } from '@/components/ChangePasswordForm'
 import { AppLockSettings } from '@/components/AppLockSettings'
@@ -186,22 +185,7 @@ export default async function SettingsPage() {
       {/* 2. Tampilan & Privasi */}
       <section className="mb-8">
         <h2 className="section-title mb-3">Tampilan & Privasi</h2>
-        <div className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">
-          <div className="setting-row">
-            <PrivacyToggle />
-            <div>
-              <p className="font-medium">Sembunyikan nominal (Mode Privasi)</p>
-              <p className="text-xs text-text-secondary">Nominal disamarkan menjadi Rp •••••• agar aman di tempat umum.</p>
-            </div>
-          </div>
-          <div className="setting-row">
-            <ThemeToggle />
-            <div>
-              <p className="font-medium">Tema aplikasi</p>
-              <p className="text-xs text-text-secondary">Beralih antara mode gelap (default) dan mode terang.</p>
-            </div>
-          </div>
-        </div>
+        <SettingsAppearance />
       </section>
 
       {/* 3. Keamanan Aplikasi */}

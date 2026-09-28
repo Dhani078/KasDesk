@@ -102,6 +102,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+function formatWithDots(raw: string) {
+  const digits = raw.replace(/[^\d]/g, '')
+  if (!digits) return ''
+  const clean = digits.replace(/^0+(?=\d)/, '')
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
 function DebtRow({ debt }: { debt: DebtLite }) {
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -187,7 +194,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
           <button
             type="button"
             onClick={() => {
-              setPayAmount(String(remaining))
+              setPayAmount(formatWithDots(String(remaining)))
               setPayOpen(true)
             }}
             disabled={pending}
@@ -248,14 +255,32 @@ function DebtRow({ debt }: { debt: DebtLite }) {
               {debt.personName} · sisa {formatIDR(Math.max(0, Number(debt.amount) - Number(debt.paidAmount)))}
             </p>
             <div className="mb-4">
-              <label htmlFor="pay-amt" className="mb-1 block text-xs text-text-secondary">
-                Jumlah bayar kali ini (Rp)
-              </label>
+              <div className="mb-1 flex items-center justify-between">
+                <label htmlFor="pay-amt" className="text-xs text-text-secondary">
+                  Jumlah bayar kali ini (Rp)
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPayAmount(formatWithDots(String(Math.round(remaining / 2))))}
+                    className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
+                  >
+                    50%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPayAmount(formatWithDots(String(remaining)))}
+                    className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
+                  >
+                    100%
+                  </button>
+                </div>
+              </div>
               <input
                 id="pay-amt"
                 inputMode="numeric"
                 value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value.replace(/[^\d]/g, ''))}
+                onChange={(e) => setPayAmount(formatWithDots(e.target.value))}
                 className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
               />
             </div>
@@ -269,7 +294,7 @@ function DebtRow({ debt }: { debt: DebtLite }) {
               </button>
               <button
                 type="button"
-                onClick={() => onSettle(Number(payAmount || '0'))}
+                onClick={() => onSettle(Number(payAmount.replace(/[^\d]/g, '') || '0'))}
                 disabled={pending || !payAmount}
                 className="flex-1 rounded-xl bg-accent-solid px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
               >
