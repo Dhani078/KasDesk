@@ -92,7 +92,7 @@ export function HomeFeed({
                     </div>
                     <span
                       className={`font-mono text-sm font-medium tabular-nums ${
-                        isIncome ? 'text-accent-income' : isTransfer ? 'text-accent' : 'text-text-primary'
+                        isIncome ? 'text-accent-income' : isTransfer ? 'text-accent' : 'text-accent-expense'
                       }`}
                     >
                       <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : isTransfer ? '↔' : '−'} />
@@ -116,7 +116,7 @@ export function HomeFeed({
                   </div>
                   <span
                     className={`font-mono text-sm font-medium tabular-nums ${
-                      isIncome ? 'text-accent-income' : isTransfer ? 'text-accent' : 'text-text-primary'
+                      isIncome ? 'text-accent-income' : isTransfer ? 'text-accent' : 'text-accent-expense'
                     }`}
                   >
                     <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : isTransfer ? '↔' : '−'} />
