@@ -74,15 +74,43 @@ export function PwaInstall() {
   }
 
   return (
-    <div className="rounded-xl border border-border-outer bg-white/[0.025] p-4 text-sm text-text-secondary">
-      <div className="mb-2 flex items-center gap-2 font-medium text-text-primary">
-        {ios ? <Share2 className="h-4 w-4 text-accent" aria-hidden /> : <MonitorSmartphone className="h-4 w-4 text-accent" aria-hidden />}
-        {ios ? 'Pasang di iPhone atau iPad' : 'Pasang dari browser'}
+    <div className="rounded-2xl border border-border-outer bg-white/[0.025] p-5 text-sm text-text-secondary">
+      <div className="mb-3 flex items-center gap-2.5 font-semibold text-text-primary">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent/10 text-accent">
+          {ios ? <Share2 className="h-4 w-4" aria-hidden /> : <MonitorSmartphone className="h-4 w-4" aria-hidden />}
+        </span>
+        {ios ? 'Petunjuk Pasang di iPhone / iPad' : 'Petunjuk Pasang di Browser'}
       </div>
       {ios ? (
-        <p>Di Safari, tekan <b className="text-text-primary">Bagikan</b>, lalu pilih <b className="text-text-primary">Tambahkan ke Layar Utama</b>.</p>
+        <ol className="space-y-2 text-xs leading-relaxed">
+          <li className="flex items-start gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">1</span>
+            <span>Buka situs ini di browser <b className="text-text-primary">Safari</b>.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">2</span>
+            <span>Tekan tombol <b className="text-text-primary">Bagikan (Share)</b> di menu bar bawah.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">3</span>
+            <span>Gulir ke bawah dan pilih <b className="text-text-primary">Tambahkan ke Layar Utama</b>.</span>
+          </li>
+        </ol>
       ) : (
-        <p>Buka menu browser dan pilih <b className="text-text-primary">Instal aplikasi</b> atau <b className="text-text-primary">Tambahkan ke layar utama</b>.</p>
+        <ol className="space-y-2 text-xs leading-relaxed">
+          <li className="flex items-start gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">1</span>
+            <span>Buka menu titik tiga <b className="text-text-primary">(⋮)</b> di pojok browser (Chrome / Edge).</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">2</span>
+            <span>Pilih menu <b className="text-text-primary">Instal aplikasi</b> atau <b className="text-text-primary">Tambahkan ke layar utama</b>.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">3</span>
+            <span>Tekan <b className="text-text-primary">Instal</b> untuk konfirmasi. Ikon KASDESK akan muncul di layar utama!</span>
+          </li>
+        </ol>
       )}
     </div>
   )
