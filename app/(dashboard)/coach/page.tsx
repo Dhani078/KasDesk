@@ -41,7 +41,7 @@ export default async function CoachPage() {
 
   return (
     <main className="page-shell max-w-3xl">
-      <Link href="/settings" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Akun &amp; Pengaturan</Link>
+      <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard</Link>
       <header className="page-header"><div><p className="eyebrow">Coach</p><h1>Asisten keuangan</h1><p>Saran praktis dari pola saldo, pengeluaran, tabungan, dan kewajibanmu.</p></div><span className="icon-tile"><Lightbulb className="h-5 w-5" aria-hidden /></span></header>
 
       <section className="surface-card mb-6 rounded-3xl p-5 sm:p-6">
@@ -58,10 +58,10 @@ export default async function CoachPage() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2">
-        {advice.map((item) => {
+        {advice.map((item, i) => {
           const Icon = item.tone === 'good' ? PiggyBank : item.tone === 'warn' ? ShieldAlert : TrendingDown
           return (
-            <article key={item.title} className="surface-card flex flex-col justify-between rounded-3xl p-5">
+            <article key={item.title} className="surface-card flex flex-col justify-between rounded-3xl p-5 animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
               <div>
                 <span className={`icon-tile ${item.tone === 'warn' ? 'text-danger' : ''}`}><Icon className="h-5 w-5" aria-hidden /></span>
                 <h2 className="mt-4 font-semibold">{item.title}</h2>

@@ -45,8 +45,8 @@ export default async function InsightsPage() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 pb-32 pt-8 sm:px-8 sm:pt-12">
-      <Link href="/settings" className="back-link mb-5 inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition">
-        <ArrowLeft className="h-4 w-4" aria-hidden /> Akun & Pengaturan
+      <Link href="/" className="back-link">
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard
       </Link>
       <header className="mb-7 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -74,7 +74,7 @@ export default async function InsightsPage() {
       <section className="surface-card mb-6 rounded-2xl p-5">
         <div className="flex items-end justify-between gap-4"><div><h2 className="text-sm font-semibold">7 Hari Terakhir</h2><p className="mt-1 text-xs text-text-secondary">Sentuh batang untuk melihat nominal</p></div><p className="font-mono text-lg font-semibold"><PrivacyAmount value={weeklyTotal} /></p></div>
         <div className="mt-6 flex h-40 items-end gap-2" role="img" aria-label="Grafik pengeluaran tujuh hari terakhir">
-          {flow.map((item) => <div key={item.day.toISOString()} className="flex min-w-0 flex-1 flex-col items-center gap-2"><div className="flex h-28 w-full items-end rounded-lg bg-white/[0.025] p-1"><div className="w-full rounded-md bg-gradient-to-t from-accent-solid to-accent transition-opacity hover:opacity-80" style={{ height: `${Math.max(4, (item.total / maxFlow) * 100)}%` }} title={`${formatDateShort(item.day)}: ${formatIDR(item.total)}`} /></div><span className="text-xs text-text-secondary">{formatDateShort(item.day).split(' ')[0]}</span></div>)}
+          {flow.map((item, i) => <div key={item.day.toISOString()} className="flex min-w-0 flex-1 flex-col items-center gap-2 animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}><div className="flex h-28 w-full items-end rounded-lg bg-white/[0.025] p-1"><div className="group/bar relative w-full cursor-pointer rounded-md bg-gradient-to-t from-accent-solid to-accent transition-all duration-300 hover:brightness-125 hover:shadow-[0_0_16px_rgba(79,127,232,.35)] active:scale-x-110" style={{ height: `${Math.max(4, (item.total / maxFlow) * 100)}%` }} title={`${formatDateShort(item.day)}: ${formatIDR(item.total)}`}><span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-surface px-1.5 py-0.5 text-[10px] font-mono text-accent opacity-0 shadow-md transition-opacity group-hover/bar:opacity-100 border border-border-outer">{formatIDR(item.total)}</span></div></div><span className="text-xs text-text-secondary">{formatDateShort(item.day).split(' ')[0]}</span></div>)}
         </div>
         <details className="mt-5 border-t border-border-inner pt-4"><summary className="cursor-pointer rounded-lg text-sm font-medium text-accent">Lihat data sebagai daftar</summary><ul className="mt-3 divide-y divide-border-inner text-sm">{flow.map((item)=><li key={`detail-${item.day.toISOString()}`} className="flex justify-between gap-4 py-3"><span>{formatDateShort(item.day)}</span><span className="font-mono text-text-secondary"><PrivacyAmount value={item.total} /></span></li>)}</ul></details>
       </section>
