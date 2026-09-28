@@ -117,7 +117,7 @@ export default async function SettingsPage() {
       </Link>
 
       {/* Header Profile Card */}
-      <section className="surface-card mb-8 overflow-hidden rounded-3xl p-5 sm:p-6 border border-border-outer bg-surface">
+      <section className="surface-card mb-8 overflow-hidden rounded-3xl p-5 sm:p-6 border border-border-outer bg-surface animate-fade-in-up">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-accent-solid text-lg font-bold text-white shadow-md">
@@ -156,7 +156,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* 1. Fitur Finansial & Laporan Hub */}
-      <section className="mb-8">
+      <section className="mb-8 animate-fade-in-up" style={{ animationDelay: '60ms' }}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="section-title">Fitur & Laporan Keuangan</h2>
           <span className="text-xs text-text-secondary">Hub finansial</span>
@@ -183,16 +183,18 @@ export default async function SettingsPage() {
       </section>
 
       {/* 2. Tampilan & Privasi */}
-      <section className="mb-8">
+      <section className="mb-8 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
         <h2 className="section-title mb-3">Tampilan & Privasi</h2>
         <SettingsAppearance />
       </section>
 
       {/* 3. Keamanan Aplikasi */}
-      <AppLockSettings />
+      <div className="animate-fade-in-up" style={{ animationDelay: '180ms' }}>
+        <AppLockSettings />
+      </div>
 
       {/* 4. Aplikasi & Ekspor Data */}
-      <section className="mb-8">
+      <section className="mb-8 animate-fade-in-up" style={{ animationDelay: '240ms' }}>
         <h2 className="section-title mb-3">Aplikasi & Ekspor Data</h2>
         <div className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">
           {appRows.map(({ href, Icon, title, body }) => (
@@ -223,7 +225,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* 5. Dokumen Legal */}
-      <section className="mb-8">
+      <section className="mb-8 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
         <h2 className="section-title mb-3">Dokumen</h2>
         <div className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">
           {legalRows.map(({ href, Icon, title }) => (
@@ -237,7 +239,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* 6. Ubah Password */}
-      <section className="surface-card mb-6 rounded-3xl p-5 sm:p-6">
+      <section className="surface-card mb-6 rounded-3xl p-5 sm:p-6 animate-fade-in-up" style={{ animationDelay: '360ms' }}>
         <div className="flex items-center gap-3">
           <span className="icon-tile">
             <KeyRound className="h-5 w-5" aria-hidden />
@@ -251,7 +253,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* 7. Zona Berbahaya */}
-      <section className="mb-6 rounded-3xl border border-danger/30 bg-danger/5 p-5 sm:p-6">
+      <section className="mb-6 rounded-3xl border border-danger/30 bg-danger/5 p-5 sm:p-6 animate-fade-in-up" style={{ animationDelay: '420ms' }}>
         <h2 className="font-semibold text-danger">Zona Berbahaya</h2>
         <p className="mt-1 text-xs leading-5 text-text-secondary">
           Export data terlebih dahulu jika diperlukan. Penghapusan akun bersifat permanen dan tidak dapat dibatalkan.
@@ -260,7 +262,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* Logout button */}
-      <div className="pt-2 pb-6 flex justify-center">
+      <div className="pt-2 pb-6 flex justify-center animate-fade-in-up" style={{ animationDelay: '480ms' }}>
         <LogoutButton />
       </div>
     </main>
