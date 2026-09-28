@@ -59,8 +59,8 @@ export function OfflineIndicator() {
   if (online && pending === 0 && !syncing) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-40 z-40 flex justify-center px-4">
-      <div className="flex items-center gap-2 rounded-2xl border border-border-outer bg-surface px-4 py-2.5 text-xs shadow-lg">
+    <div className="fixed inset-x-0 bottom-20 sm:bottom-24 z-40 flex justify-center px-4 pointer-events-none">
+      <div className="flex items-center gap-2 rounded-2xl border border-border-outer bg-surface/95 backdrop-blur-md px-4 py-2.5 text-xs shadow-lg pointer-events-auto">
         {syncing ? (
           <>
             <RefreshCw className="h-3.5 w-3.5 animate-spin text-text-secondary" aria-hidden />
