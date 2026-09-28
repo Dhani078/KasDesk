@@ -22,15 +22,20 @@ export function PwaInstall() {
     const frame = requestAnimationFrame(() => {
       setInstalled(isStandalone())
       setIos(/iphone|ipad|ipod/i.test(navigator.userAgent))
+      if (typeof window !== 'undefined' && (window as unknown as { __deferredPwaPrompt?: InstallPromptEvent }).__deferredPwaPrompt) {
+        setPrompt((window as unknown as { __deferredPwaPrompt: InstallPromptEvent }).__deferredPwaPrompt)
+      }
     })
 
     const onPrompt = (event: Event) => {
       event.preventDefault()
+      ;(window as unknown as { __deferredPwaPrompt?: InstallPromptEvent }).__deferredPwaPrompt = event as InstallPromptEvent
       setPrompt(event as InstallPromptEvent)
     }
     const onInstalled = () => {
       setInstalled(true)
       setPrompt(null)
+      ;(window as unknown as { __deferredPwaPrompt?: null }).__deferredPwaPrompt = null
     }
     window.addEventListener('beforeinstallprompt', onPrompt)
     window.addEventListener('appinstalled', onInstalled)
@@ -47,6 +52,7 @@ export function PwaInstall() {
     const choice = await prompt.userChoice
     if (choice.outcome === 'accepted') setInstalled(true)
     setPrompt(null)
+    ;(window as unknown as { __deferredPwaPrompt?: null }).__deferredPwaPrompt = null
   }
 
   if (installed) {

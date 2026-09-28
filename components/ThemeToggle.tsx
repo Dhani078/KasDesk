@@ -7,15 +7,20 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
-    const saved = localStorage.getItem('kasdesk:theme') as 'dark' | 'light' | null
-    // KasDesk defaults to dark mode. Only switch to light if explicitly set by the user.
-    const v = saved === 'light' ? 'light' : 'dark'
-    if (v === 'light') {
-      document.documentElement.dataset.theme = 'light'
-    } else {
-      delete document.documentElement.dataset.theme
+    const applyTheme = () => {
+      const saved = localStorage.getItem('kasdesk:theme') as 'dark' | 'light' | null
+      const v = saved === 'light' ? 'light' : 'dark'
+      if (v === 'light') {
+        document.documentElement.dataset.theme = 'light'
+      } else {
+        delete document.documentElement.dataset.theme
+      }
+      setTheme(v)
     }
-    requestAnimationFrame(() => setTheme(v))
+
+    applyTheme()
+    window.addEventListener('kasdesk:theme-changed', applyTheme)
+    return () => window.removeEventListener('kasdesk:theme-changed', applyTheme)
   }, [])
 
   function toggle() {
@@ -27,6 +32,7 @@ export function ThemeToggle() {
       delete document.documentElement.dataset.theme
     }
     localStorage.setItem('kasdesk:theme', next)
+    window.dispatchEvent(new CustomEvent('kasdesk:theme-changed'))
   }
 
   return (
