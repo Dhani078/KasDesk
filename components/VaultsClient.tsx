@@ -177,9 +177,16 @@ function DeleteVaultButton({ vault }: { vault: VaultLite }) {
   )
 }
 
+function formatWithDots(raw: string) {
+  const digits = raw.replace(/[^\d]/g, '')
+  if (!digits) return ''
+  return digits.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
 function NewVaultSheet({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [targetAmount, setTargetAmount] = useState('')
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -203,7 +210,16 @@ function NewVaultSheet({ onClose }: { onClose: () => void }) {
           <input id="v-name" name="name" required maxLength={80} placeholder="Dana Darurat" className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent" />
         </Field>
         <Field label="Jumlah target (Rp)" htmlFor="v-amt">
-          <input id="v-amt" name="target_amount" inputMode="numeric" required placeholder="5000000" className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent" />
+          <input
+            id="v-amt"
+            name="target_amount"
+            inputMode="numeric"
+            required
+            value={targetAmount}
+            onChange={(e) => setTargetAmount(formatWithDots(e.target.value))}
+            placeholder="Contoh: 5.000.000"
+            className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
+          />
         </Field>
         <Field label="Target tercapai pada (opsional)" htmlFor="v-date">
           <input id="v-date" name="target_date" type="date" className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent" />
@@ -219,14 +235,17 @@ function MoveSheet({ vault, dir, wallets, onClose }: { vault: VaultLite; dir: 'i
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const remaining = Number(vault.targetAmount) - Number(vault.currentAmount)
+  const [amount, setAmount] = useState(
+    formatWithDots(String(dir === 'in' ? Math.max(0, remaining) : Number(vault.currentAmount)))
+  )
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null); setPending(true)
     const fd = new FormData(e.currentTarget)
     const walletId = String(fd.get('wallet_id') ?? '')
-    const amount = Number(String(fd.get('amount') ?? '0').replace(/[^\d]/g, ''))
-    const r = dir === 'in' ? await depositToVault(vault.id, walletId, amount) : await withdrawFromVault(vault.id, walletId, amount)
+    const amt = Number(String(fd.get('amount') ?? '0').replace(/[^\d]/g, ''))
+    const r = dir === 'in' ? await depositToVault(vault.id, walletId, amt) : await withdrawFromVault(vault.id, walletId, amt)
     setPending(false)
     if (!r.success) { setError(r.error.message); return }
     onClose()
@@ -241,7 +260,15 @@ function MoveSheet({ vault, dir, wallets, onClose }: { vault: VaultLite; dir: 'i
           </select>
         </Field>
         <Field label="Jumlah (Rp)" htmlFor="m-amt">
-          <input id="m-amt" name="amount" inputMode="numeric" required defaultValue={dir === 'in' ? Math.max(0, remaining) : Number(vault.currentAmount)} className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent" />
+          <input
+            id="m-amt"
+            name="amount"
+            inputMode="numeric"
+            required
+            value={amount}
+            onChange={(e) => setAmount(formatWithDots(e.target.value))}
+            className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
+          />
         </Field>
         {dir === 'in' && remaining > 0 && <p className="text-xs text-text-secondary">Kurang {formatIDR(remaining)} lagi untuk mencapai target.</p>}
         {error && <p role="alert" className="text-xs text-danger">{error}</p>}

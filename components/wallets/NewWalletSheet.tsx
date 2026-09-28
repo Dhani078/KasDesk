@@ -16,6 +16,17 @@ export const TYPES = ['cash', 'bank', 'e_wallet', 'investment'] as const
 export function NewWalletSheet({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [balance, setBalance] = useState('0')
+
+  function onBalanceChange(v: string) {
+    const digits = v.replace(/[^\d]/g, '')
+    if (!digits) {
+      setBalance('0')
+      return
+    }
+    const clean = digits.replace(/^0+(?=\d)/, '')
+    setBalance(clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') || '0')
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -87,7 +98,8 @@ export function NewWalletSheet({ onClose }: { onClose: () => void }) {
               id="w-balance"
               name="balance"
               inputMode="numeric"
-              defaultValue="0"
+              value={balance}
+              onChange={(e) => onBalanceChange(e.target.value)}
               className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
             />
           </div>
