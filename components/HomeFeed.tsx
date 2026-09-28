@@ -7,6 +7,7 @@ import { PrivacyAmount } from '@/components/PrivacyAmount'
 type TxRow = {
   id: string
   walletId: string | null
+  toWalletId?: string | null
   type: string
   amount: number
   title: string
@@ -72,6 +73,7 @@ export function HomeFeed({
               if (item.isPending) {
                 const t = item.p
                 const isIncome = t.type === 'income'
+                const isTransfer = t.type === 'transfer'
                 return (
                   <div
                     key={item.key}
@@ -90,31 +92,34 @@ export function HomeFeed({
                     </div>
                     <span
                       className={`font-mono text-sm font-medium tabular-nums ${
-                        isIncome ? 'text-accent-income' : 'text-text-primary'
+                        isIncome ? 'text-accent-income' : isTransfer ? 'text-accent' : 'text-text-primary'
                       }`}
                     >
-                      <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : '−'} />
+                      <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : isTransfer ? '↔' : '−'} />
                     </span>
                   </div>
                 )
               }
               const t = item.r
               const isIncome = t.type === 'income'
+              const isTransfer = t.type === 'transfer'
               return (
                 <div key={item.key} className="flex items-center gap-3 px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-text-primary">{t.title}</p>
                     <p className="text-xs text-text-secondary">
-                      {walletName(t.walletId) ? `${walletName(t.walletId)} · ` : ''}
-                      {t.categoryTag ?? 'LAINNYA'} · {formatTime(new Date(t.occurredAt))}
+                      {walletName(t.walletId)
+                        ? `${isTransfer && t.toWalletId ? `${walletName(t.walletId)} → ${walletName(t.toWalletId) ?? 'Tujuan'}` : walletName(t.walletId)} · `
+                        : ''}
+                      {t.categoryTag ?? (isTransfer ? 'TRANSFER' : 'LAINNYA')} · {formatTime(new Date(t.occurredAt))}
                     </p>
                   </div>
                   <span
                     className={`font-mono text-sm font-medium tabular-nums ${
-                      isIncome ? 'text-accent-income' : 'text-text-primary'
+                      isIncome ? 'text-accent-income' : isTransfer ? 'text-accent' : 'text-text-primary'
                     }`}
                   >
-                    <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : '−'} />
+                    <PrivacyAmount value={Math.abs(t.amount)} sign={isIncome ? '+' : isTransfer ? '↔' : '−'} />
                   </span>
                 </div>
               )

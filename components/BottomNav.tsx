@@ -78,11 +78,13 @@ export function BottomNav() {
               type="button"
               onClick={() => setQuickLogOpen(true)}
               aria-label="Catat transaksi"
-              className="group relative -top-3.5 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-accent-solid text-white shadow-[0_8px_22px_rgba(79,127,232,0.4)] ring-[3.5px] ring-surface transition-all duration-200 hover:scale-105 active:scale-90 hover:brightness-110"
+              className="group -mt-3.5 flex flex-col items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer"
             >
-              <Plus className="h-6 w-6 stroke-[2.5] transition-transform duration-200 group-hover:rotate-90" aria-hidden />
+              <span className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-accent-solid text-white shadow-[0_8px_22px_rgba(79,127,232,0.4)] ring-[3.5px] ring-surface transition-all duration-200 group-hover:scale-105 group-active:scale-90 group-hover:brightness-110">
+                <Plus className="h-6 w-6 stroke-[2.5] transition-transform duration-200 group-hover:rotate-90" aria-hidden />
+              </span>
+              <span className="mt-1 text-[11px] font-medium text-text-secondary group-hover:text-text-primary">Catat</span>
             </button>
-            <span className="-mt-2.5 text-[11px] font-medium text-text-secondary">Catat</span>
           </li>
 
           {RIGHT_LINKS.map(({ href, label, Icon }) => {

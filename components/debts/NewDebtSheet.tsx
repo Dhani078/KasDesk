@@ -9,6 +9,8 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
 
+  const [dueDate, setDueDate] = useState('')
+
   function onAmountChange(v: string) {
     const digits = v.replace(/[^\d]/g, '')
     if (!digits) {
@@ -24,7 +26,7 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
     setError(null)
     setPending(true)
     const fd = new FormData(e.currentTarget)
-    const due = String(fd.get('due_date') ?? '').trim()
+    const due = (dueDate || String(fd.get('due_date') ?? '')).trim()
     const r = await createDebt({
       direction: String(fd.get('direction') ?? 'utang') as 'utang' | 'piutang',
       person_name: String(fd.get('person_name') ?? ''),
@@ -97,13 +99,41 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div>
-            <label htmlFor="d-due" className="mb-1 block text-xs text-text-secondary">
-              Jatuh tempo (opsional)
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label htmlFor="d-due" className="text-xs text-text-secondary">
+                Jatuh tempo (opsional)
+              </label>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date()
+                    d.setDate(d.getDate() + 7)
+                    setDueDate(d.toISOString().slice(0, 10))
+                  }}
+                  className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
+                >
+                  +7 hari
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const d = new Date()
+                    d.setDate(d.getDate() + 30)
+                    setDueDate(d.toISOString().slice(0, 10))
+                  }}
+                  className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
+                >
+                  +30 hari
+                </button>
+              </div>
+            </div>
             <input
               id="d-due"
               name="due_date"
               type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
               className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
             />
           </div>

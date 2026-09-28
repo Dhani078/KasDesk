@@ -28,6 +28,11 @@ export type TxnRow = {
  * for income/expense only. Editing recomputes wallet balances atomically via
  * updateTransaction (reverses old effect, applies new one).
  */
+function formatWithDots(raw: string) {
+  const digits = raw.replace(/\D/g, '')
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
 export function EditTransactionButton({
   txn,
   wallets,
@@ -51,7 +56,7 @@ export function EditTransactionButton({
 
   function openModal() {
     setError(null)
-    setAmount(String(txn.amount))
+    setAmount(formatWithDots(String(txn.amount)))
     setTitle(txn.title)
     setCat(txn.categoryTag ?? 'LAINNYA')
     setNote(txn.note ?? '')
@@ -64,7 +69,7 @@ export function EditTransactionButton({
 
   function applyCalc() {
     if (mathLiveResult !== null) {
-      setAmount(String(mathLiveResult))
+      setAmount(formatWithDots(String(mathLiveResult)))
     }
   }
 
@@ -149,10 +154,10 @@ export function EditTransactionButton({
                   value={amount}
                   onChange={(e) => {
                     const val = e.target.value
-                    if (/[+\-*/xX×÷]/.test(val)) {
+                    if (hasMathOperator(val)) {
                       setAmount(val)
                     } else {
-                      setAmount(val.replace(/\D/g, ''))
+                      setAmount(formatWithDots(val))
                     }
                   }}
                   className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
@@ -226,7 +231,40 @@ export function EditTransactionButton({
               </div>
 
               <div>
-                <label htmlFor="e-date" className="mb-1 block text-xs text-text-secondary">Tanggal & waktu</label>
+                <div className="mb-1 flex items-center justify-between">
+                  <label htmlFor="e-date" className="text-xs text-text-secondary">Tanggal & waktu</label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const now = new Date()
+                        const timePart = occurredAt ? occurredAt.slice(11) : now.toTimeString().slice(0, 5)
+                        const yyyy = now.getFullYear()
+                        const mm = String(now.getMonth() + 1).padStart(2, '0')
+                        const dd = String(now.getDate()).padStart(2, '0')
+                        setOccurredAt(`${yyyy}-${mm}-${dd}T${timePart}`)
+                      }}
+                      className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
+                    >
+                      Hari ini
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const yest = new Date()
+                        yest.setDate(yest.getDate() - 1)
+                        const timePart = occurredAt ? occurredAt.slice(11) : yest.toTimeString().slice(0, 5)
+                        const yyyy = yest.getFullYear()
+                        const mm = String(yest.getMonth() + 1).padStart(2, '0')
+                        const dd = String(yest.getDate()).padStart(2, '0')
+                        setOccurredAt(`${yyyy}-${mm}-${dd}T${timePart}`)
+                      }}
+                      className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
+                    >
+                      Kemarin
+                    </button>
+                  </div>
+                </div>
                 <input id="e-date" type="datetime-local" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent" />
               </div>
 
