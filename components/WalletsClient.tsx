@@ -45,23 +45,23 @@ export function WalletsClient({
         </button>
       </div>
 
-      <div className="mb-5 flex items-center justify-between rounded-2xl border border-border-outer bg-surface/80 p-3.5 shadow-sm transition hover:border-accent/35">
+      <Link
+        href="/vaults"
+        className="group mb-5 flex items-center justify-between rounded-2xl border border-border-outer bg-surface/80 p-3.5 shadow-sm transition hover:border-accent/40 active:scale-[0.99]"
+      >
         <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent/15 text-accent">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent/15 text-accent transition-transform group-hover:scale-105">
             <Target className="h-4 w-4" />
           </span>
           <div>
-            <p className="text-xs font-semibold text-text-primary">Target Tabungan</p>
+            <p className="text-xs font-semibold text-text-primary transition-colors group-hover:text-accent">Target Tabungan</p>
             <p className="text-[11px] text-text-secondary">Kelola impian & celengan tabungan</p>
           </div>
         </div>
-        <Link
-          href="/vaults"
-          className="flex items-center gap-1 rounded-xl bg-accent-solid px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
-        >
+        <span className="flex items-center gap-1 rounded-xl bg-accent-solid px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition group-hover:brightness-110">
           Buka <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
-      </div>
+        </span>
+      </Link>
 
       {wallets.length === 0 ? (
         <EmptyState
