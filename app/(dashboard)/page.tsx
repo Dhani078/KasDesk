@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { TrendingUp, TrendingDown, Wallet, Settings, ShieldCheck, Sparkles, PlusCircle, ArrowUpRight, EyeOff, Target } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Settings, ShieldCheck, Sparkles, PlusCircle, EyeOff } from 'lucide-react'
 
 import { auth } from '@/auth'
 import { getRecentTransactions, getWallets } from '@/lib/actions'
@@ -13,6 +13,7 @@ import { PrivacyToggle } from '@/components/PrivacyToggle'
 import { DailyFocus } from '@/components/DailyFocus'
 import { MetricCard } from '@/components/MetricCard'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
+import { DashboardQuickActions } from '@/components/DashboardQuickActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +43,7 @@ export default async function HomePage() {
         <section className="surface-card relative overflow-hidden rounded-[2rem] border border-border-outer p-5 shadow-sm sm:p-6"><div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-accent/15 blur-3xl" aria-hidden /><div className="relative"><div className="mb-4 flex items-center justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.1em] text-text-secondary">Total saldo</p><p className="mt-1 text-xs text-text-secondary">Semua dompet aktif</p></div><span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">{dash.walletCount} Dompet</span></div><h1 className="font-mono text-4xl font-semibold tracking-tight tabular-nums text-text-primary sm:text-5xl"><PrivacyAmount value={dash.totalBalance} /></h1><div className="mt-5 grid grid-cols-2 gap-2"><div className="rounded-2xl bg-white/[0.035] p-3"><p className="text-[11px] uppercase tracking-[0.08em] text-text-secondary">Aman / hari</p><p className="mt-1 font-mono text-sm font-semibold text-accent-income"><PrivacyAmount value={dash.safeDailySpend} /></p></div><div className="rounded-2xl bg-white/[0.035] p-3"><p className="text-[11px] uppercase tracking-[0.08em] text-text-secondary">Bulan ini</p><p className={`mt-1 font-mono text-sm font-semibold ${netMonth >= 0 ? 'text-accent-income' : 'text-accent-expense'}`}><PrivacyAmount value={netMonth} /></p></div></div><p className="mt-4 flex items-start gap-2 text-xs leading-5 text-text-secondary"><EyeOff className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden /> Aktifkan mode privasi kalau sedang di tempat umum.</p></div></section>
       </header>
 
-      <section className="mb-6 grid grid-cols-3 gap-2" aria-label="Aksi cepat"><Link href="/transactions" className="surface-card rounded-2xl p-3 text-center text-xs font-semibold text-text-primary transition hover:border-accent/35 active:scale-95"><PlusCircle className="mx-auto mb-2 h-5 w-5 text-accent" aria-hidden />Catat</Link><Link href="/vaults" className="surface-card rounded-2xl p-3 text-center text-xs font-semibold text-text-primary transition hover:border-accent/35 active:scale-95"><Target className="mx-auto mb-2 h-5 w-5 text-accent" aria-hidden />Target</Link><Link href="/insights" className="surface-card rounded-2xl p-3 text-center text-xs font-semibold text-text-primary transition hover:border-accent/35 active:scale-95"><ArrowUpRight className="mx-auto mb-2 h-5 w-5 text-accent" aria-hidden />Laporan</Link></section>
+      <DashboardQuickActions />
 
       <DailyFocus dash={dash} />
 
@@ -52,7 +53,7 @@ export default async function HomePage() {
 
       <section className="mb-6 grid grid-cols-2 gap-3"><MetricCard label="Masuk" value={formatIDR(dash.monthlyIncome)} tone="good" icon={<TrendingUp className="h-3.5 w-3.5" aria-hidden />} helper="Pemasukan bulan ini" /><MetricCard label="Keluar" value={formatIDR(dash.monthlyExpense)} tone="bad" icon={<TrendingDown className="h-3.5 w-3.5" aria-hidden />} helper="Pengeluaran bulan ini" /></section>
 
-      <section><div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-semibold text-text-primary">Transaksi terbaru</h2><p className="text-xs text-text-secondary">Aktivitas terakhir dari semua dompet.</p></div><Link href="/transactions" className="text-xs font-semibold text-accent hover:underline">Semua</Link></div>{!hasWallets ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada dompet" body="Buat dompet pertama untuk mulai mencatat pemasukan, pengeluaran, dan target tabungan." actionHref="/wallets" actionLabel="Buat dompet" /> : recent.length === 0 ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada transaksi" body="Tekan tombol + di bawah untuk mencatat pemasukan atau pengeluaran pertama." /> : <HomeFeed rows={recent.map((r) => ({ id: r.id, walletId: r.walletId, type: r.type, amount: Number(r.amount ?? 0), title: r.title, categoryTag: r.categoryTag, occurredAt: r.occurredAt }))} walletNames={walletNames} />}</section>
+      <section><div className="mb-3 flex items-center justify-between"><div><h2 className="text-sm font-semibold text-text-primary">Transaksi terbaru</h2><p className="text-xs text-text-secondary">Aktivitas terakhir dari semua dompet.</p></div><Link href="/transactions" className="text-xs font-semibold text-accent hover:underline">Semua</Link></div>{!hasWallets ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada dompet" body="Buat dompet pertama untuk mulai mencatat pemasukan, pengeluaran, dan target tabungan." actionHref="/wallets" actionLabel="Buat dompet" /> : recent.length === 0 ? <EmptyState icon={<Wallet className="w-6 h-6" />} title="Belum ada transaksi" body="Tekan tombol + di bawah untuk mencatat pemasukan atau pengeluaran pertama." /> : <HomeFeed rows={recent.map((r) => ({ id: r.id, walletId: r.walletId, toWalletId: r.toWalletId, type: r.type, amount: Number(r.amount ?? 0), title: r.title, categoryTag: r.categoryTag, occurredAt: r.occurredAt }))} walletNames={walletNames} />}</section>
 
       <QuickLogButton wallets={wallets} />
     </main>

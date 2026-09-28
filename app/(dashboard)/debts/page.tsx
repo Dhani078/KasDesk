@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { DebtsClient } from '@/components/DebtsClient'
 import { getDebts } from '@/lib/actions'
 
@@ -6,7 +8,10 @@ export const dynamic = 'force-dynamic'
 export default async function DebtsPage() {
   const debts = await getDebts()
   return (
-    <main className="min-h-dvh px-5 pb-32 pt-8">
+    <main className="page-shell max-w-3xl pb-32">
+      <Link href="/settings" className="back-link">
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Akun &amp; Pengaturan
+      </Link>
       <DebtsClient
         debts={debts.map((d) => ({
           id: d.id,

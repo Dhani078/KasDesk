@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Target, Plus, X, Loader2, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { Target, Plus, X, Loader2, ArrowDownToLine, ArrowUpFromLine, Trash2 } from 'lucide-react'
 
-import { createVault, depositToVault, withdrawFromVault } from '@/lib/actions'
+import { createVault, depositToVault, withdrawFromVault, deleteVault } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { projectVault } from '@/lib/vaults/projection'
@@ -107,12 +107,12 @@ export function VaultsClient({
                 )}
                 <ProjectionText vault={v} />
 
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setMove({ vault: v, dir: 'in' })}
                     disabled={wallets.length === 0}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer disabled:opacity-40"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-text-primary ring-1 ring-border-outer transition hover:bg-white/[0.04] disabled:opacity-40"
                   >
                     <ArrowDownToLine className="h-3.5 w-3.5" /> Setor
                   </button>
@@ -120,10 +120,11 @@ export function VaultsClient({
                     type="button"
                     onClick={() => setMove({ vault: v, dir: 'out' })}
                     disabled={cur <= 0 || wallets.length === 0}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs text-text-secondary ring-1 ring-border-outer disabled:opacity-40"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-text-secondary ring-1 ring-border-outer transition hover:bg-white/[0.04] disabled:opacity-40"
                   >
                     <ArrowUpFromLine className="h-3.5 w-3.5" /> Tarik
                   </button>
+                  <DeleteVaultButton vault={v} />
                 </div>
               </li>
             )
@@ -141,6 +142,38 @@ export function VaultsClient({
         />
       )}
     </>
+  )
+}
+
+function DeleteVaultButton({ vault }: { vault: VaultLite }) {
+  const [pending, start] = useTransition()
+
+  function onDelete() {
+    if (Number(vault.currentAmount) > 0) {
+      alert('Tarik semua saldo target ke dompet terlebih dahulu sebelum menghapus target ini.')
+      return
+    }
+    if (!window.confirm(`Hapus target tabungan "${vault.name}"?`)) return
+
+    start(async () => {
+      const res = await deleteVault(vault.id)
+      if (!res.success) {
+        alert(res.error.message)
+      }
+    })
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onDelete}
+      disabled={pending}
+      title="Hapus target"
+      aria-label={`Hapus ${vault.name}`}
+      className="shrink-0 rounded-lg p-2 text-text-secondary transition hover:bg-white/[0.04] hover:text-danger disabled:opacity-40"
+    >
+      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+    </button>
   )
 }
 

@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { VaultsClient } from '@/components/VaultsClient'
 import { getVaults, getWallets } from '@/lib/actions'
 
@@ -7,7 +9,10 @@ export default async function VaultsPage() {
   const [vaults, wallets] = await Promise.all([getVaults(), getWallets()])
 
   return (
-    <main className="min-h-dvh px-5 pt-8 pb-32">
+    <main className="page-shell max-w-3xl pb-32">
+      <Link href="/settings" className="back-link">
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Akun &amp; Pengaturan
+      </Link>
       <VaultsClient vaults={vaults} wallets={wallets} />
     </main>
   )

@@ -668,9 +668,40 @@ export async function withdrawFromVault(
         error: { code: 'VALIDATION_ERROR', message: 'Dompet ini sudah diarsipkan dan tidak bisa dipakai.' },
       }
     }
-console.error('[withdrawFromVault]', msg)
+    console.error('[withdrawFromVault]', msg)
     return { success: false, error: { code: 'UNKNOWN', message: 'Terjadi kesalahan. Coba lagi.' } }
   }
+}
+
+/** Delete a vault. Scoped to the owner. Requires currentAmount === 0 to prevent balance loss. */
+export async function deleteVault(id: string): Promise<ActionResponse<null>> {
+  const userId = await requireUserId()
+  if (!userId) {
+    return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
+  }
+
+  const [v] = await db
+    .select({ currentAmount: vaults.currentAmount })
+    .from(vaults)
+    .where(and(eq(vaults.id, id), eq(vaults.userId, userId)))
+    .limit(1)
+
+  if (!v) {
+    return { success: false, error: { code: 'NOT_FOUND', message: 'Target tidak ditemukan.' } }
+  }
+
+  if (Number(v.currentAmount) > 0) {
+    return {
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Tarik sisa saldo target ke dompet sebelum menghapus.' },
+    }
+  }
+
+  await db.delete(vaults).where(and(eq(vaults.id, id), eq(vaults.userId, userId)))
+
+  revalidatePath('/vaults')
+  revalidatePath('/')
+  return { success: true, data: null }
 }
 
 /** Create a debt (utang = I owe, piutang = they owe me). */
