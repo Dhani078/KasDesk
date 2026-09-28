@@ -74,8 +74,9 @@ export function VaultsClient({
                   <p className="min-w-0 truncate text-sm font-medium text-text-primary">
                     {v.name}
                     {v.isCompleted === 1 && (
-                      <span className="ml-2 text-xs uppercase tracking-wider text-accent-income">
-                        Tercapai
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-income">
+                        <svg className="h-3 w-3 animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.09 6.26L20.18 9l-5 4.36L16.55 20 12 16.27 7.45 20l1.37-6.64-5-4.36 6.09-.74z"/></svg>
+                        Tercapai 🎉
                       </span>
                     )}
                   </p>
