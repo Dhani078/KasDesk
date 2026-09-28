@@ -79,7 +79,7 @@ export function DeleteTransactionButton({ txn }: { txn: TxnRow }) {
 
             <p className="mb-1 text-xs text-text-secondary">{txn.title}</p>
             <p className="mb-4 font-mono text-sm tabular-nums text-text-primary">
-              {txn.type === 'income' ? '+' : '−'}
+              {txn.type === 'income' ? '+' : txn.type === 'transfer' ? '↔ ' : '−'}
               {formatIDR(txn.amount)}
             </p>
             <p className="mb-4 text-xs leading-relaxed text-text-secondary">
