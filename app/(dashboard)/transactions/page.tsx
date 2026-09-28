@@ -10,6 +10,8 @@ import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { extractTags } from '@/lib/tags'
 import { EditTransactionButton } from '@/components/EditTransactionButton'
 import { DeleteTransactionButton } from '@/components/DeleteTransactionButton'
+import { TransactionFilter } from '@/components/TransactionFilter'
+import { EmptyState } from '@/components/EmptyState'
 
 export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 30
@@ -70,56 +72,19 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   return <main className="page-shell max-w-3xl">
     <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard</Link>
     <header className="page-header"><div><p className="eyebrow">Riwayat</p><h1>Semua transaksi</h1><p>Cari judul, catatan, kategori, dompet, dan rentang tanggal.</p></div>{filtered && <Link href="/transactions" className="secondary-button"><X className="h-4 w-4" aria-hidden /> Reset</Link>}</header>
-    <form className="surface-card rounded-3xl p-5 sm:p-6"><div className="mb-4 flex items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-accent" aria-hidden /><h2 className="section-title">Filter transaksi</h2></div><div className="grid gap-4 sm:grid-cols-2">
-      <label className="field-label sm:col-span-2">Cari<div className="field-with-icon"><Search className="h-4 w-4" aria-hidden /><input name="search" defaultValue={q.search} placeholder="Judul, catatan, atau kategori" /></div></label>
-      <label className="field-label">Jenis<select name="type" defaultValue={type ?? ''}><option value="">Semua jenis</option><option value="income">Pemasukan</option><option value="expense">Pengeluaran</option><option value="transfer">Transfer</option></select></label>
-      <label className="field-label">Dompet<select name="wallet" defaultValue={wallet ?? ''}><option value="">Semua dompet</option>{walletRows.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-      <label className="field-label">Kategori<select name="category" defaultValue={category ?? ''}><option value="">Semua kategori</option>{CATEGORY_ENUM.map((item) => <option key={item}>{item}</option>)}</select></label>
-      <label className="field-label">Mulai<input name="from" type="date" defaultValue={from ? q.from : ''} /></label>
-      <label className="field-label">Sampai<input name="to" type="date" defaultValue={to ? q.to : ''} /></label>
-      <div className="flex items-center justify-end gap-2 sm:col-span-2 mt-2">
-        {filtered && (
-          <Link href="/transactions" className="secondary-button">
-            <X className="h-4 w-4" aria-hidden /> Reset filter
-          </Link>
-        )}
-        <button type="submit" className="primary-button">
-          Terapkan filter
-        </button>
-      </div>
-    </div>
-    {allTags.length > 0 && (
-      <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-border-inner pt-3">
-        <span className="flex items-center gap-1 text-xs text-text-secondary"><TagIcon className="h-3 w-3 text-accent" /> Filter Label:</span>
-        {allTags.map((tag) => {
-          const isActive = q.search === tag
-          const tagParams = new URLSearchParams()
-          for (const [key, value] of Object.entries(q)) {
-            if (value && key !== 'cursor') tagParams.set(key, value)
-          }
-          if (isActive) {
-            tagParams.delete('search')
-          } else {
-            tagParams.set('search', tag)
-          }
-          const tagHref = tagParams.toString() ? `/transactions?${tagParams.toString()}` : '/transactions'
-          return (
-            <Link
-              key={tag}
-              href={tagHref}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                isActive
-                  ? 'bg-accent-solid text-white shadow-sm'
-                  : 'bg-white/[0.04] text-text-secondary ring-1 ring-border-outer hover:text-text-primary'
-              }`}
-            >
-              {tag}
-            </Link>
-          )
-        })}
-      </div>
-    )}
-    </form>
+    <TransactionFilter
+      walletRows={walletRows}
+      categories={CATEGORY_ENUM}
+      allTags={allTags}
+      initialFilters={{
+        search: q.search,
+        type,
+        wallet,
+        category,
+        from: from ? q.from : undefined,
+        to: to ? q.to : undefined,
+      }}
+    />
 
     {activeTag && (
       <div className="mt-4 flex items-center justify-between rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm">
@@ -187,7 +152,15 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
           </div>
         </li>
       )
-    })}</ul> : <div className="empty-panel"><Search className="h-6 w-6 text-accent" aria-hidden /><h2>Tidak ada transaksi</h2><p>Coba ubah kata pencarian atau rentang tanggal.</p></div>}
+    })}</ul> : (
+      <EmptyState
+        icon={<Search className="h-6 w-6 text-accent" aria-hidden />}
+        title="Tidak ada transaksi"
+        body={filtered ? "Coba ubah filter atau kata kunci pencarian." : "Belum ada transaksi yang tercatat."}
+        actionHref={filtered ? "/transactions" : undefined}
+        actionLabel={filtered ? "Reset Filter" : undefined}
+      />
+    )}
     {(hasMore || cursor) && (
       <div className="mt-5 flex items-center gap-3">
         {cursor && (
