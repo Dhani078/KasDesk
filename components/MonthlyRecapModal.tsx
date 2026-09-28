@@ -85,7 +85,7 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
             aria-modal="true"
             aria-label="Rekap Keuangan Bulanan"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-3xl border border-border-outer bg-surface p-6 shadow-2xl transition-all my-8"
+            className="w-full max-w-lg rounded-3xl border border-border-outer bg-surface p-6 shadow-2xl animate-fade-in-up my-8"
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-border-inner pb-4">
