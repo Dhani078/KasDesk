@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, or } from 'drizzle-orm'
 import { ArrowLeft } from 'lucide-react'
 
 import { db } from '@/lib/db'
@@ -40,7 +40,7 @@ export default async function WalletDetailPage({
   const rows = await db
     .select()
     .from(transactions)
-    .where(and(eq(transactions.walletId, id), eq(transactions.userId, userId)))
+    .where(and(or(eq(transactions.walletId, id), eq(transactions.toWalletId, id)), eq(transactions.userId, userId)))
     .orderBy(desc(transactions.occurredAt))
     .limit(100)
 
@@ -71,21 +71,37 @@ export default async function WalletDetailPage({
                 {formatDayGroup(list[0].occurredAt)}
               </p>
               <div className="divide-y divide-border-inner overflow-hidden rounded-2xl border border-border-outer bg-surface">
-                {list.map((t) => (
-                  <div key={t.id} className="flex items-center gap-3 px-4 py-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-text-primary">{t.title}</p>
-                      <p className="text-xs text-text-secondary">
-                        {t.categoryTag ?? 'LAINNYA'} · {formatTime(t.occurredAt)}
-                      </p>
-                    </div>
-                    <PrivacyAmount
-                      value={t.amount}
-                      sign={t.type === 'income' ? '+' : '−'}
-                      className={`font-mono text-sm tabular-nums ${
-                        t.type === 'income' ? 'text-accent-income' : 'text-text-primary'
-                      }`}
-                    />
+                {list.map((t) => {
+                  const isTransfer = t.type === 'transfer'
+                  const isIncomingTransfer = isTransfer && t.toWalletId === id
+                  const isIncome = t.type === 'income' || isIncomingTransfer
+                  const sign = isIncome ? '+' : isTransfer ? '↔' : '−'
+                  const amountColor = isIncome ? 'text-accent-income' : isTransfer ? 'text-accent' : 'text-text-primary'
+
+                  let subtitle = `${t.categoryTag ?? 'LAINNYA'} · ${formatTime(t.occurredAt)}`
+                  if (isTransfer) {
+                    if (isIncomingTransfer) {
+                      const src = allWallets.find((w) => w.id === t.walletId)?.name ?? 'Dompet Lain'
+                      subtitle = `Transfer masuk dari ${src} · ${formatTime(t.occurredAt)}`
+                    } else {
+                      const dst = allWallets.find((w) => w.id === t.toWalletId)?.name ?? 'Dompet Lain'
+                      subtitle = `Transfer keluar ke ${dst} · ${formatTime(t.occurredAt)}`
+                    }
+                  }
+
+                  return (
+                    <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-text-primary">{t.title}</p>
+                        <p className="text-xs text-text-secondary">
+                          {subtitle}
+                        </p>
+                      </div>
+                      <PrivacyAmount
+                        value={t.amount}
+                        sign={sign}
+                        className={`font-mono text-sm tabular-nums ${amountColor}`}
+                      />
                     <EditTransactionButton
                       txn={{
                         id: t.id,
@@ -111,7 +127,8 @@ export default async function WalletDetailPage({
                       }}
                     />
                   </div>
-                ))}
+                )
+              })}
               </div>
             </li>
           ))}

@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { WalletsClient } from '@/components/WalletsClient'
 import { getWalletsIncludingArchived } from '@/lib/actions'
 
@@ -27,7 +29,10 @@ export default async function WalletsPage() {
     }))
 
   return (
-    <main className="min-h-dvh px-5 pb-32 pt-8">
+    <main className="page-shell max-w-3xl pb-32">
+      <Link href="/" className="back-link">
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard
+      </Link>
       <WalletsClient wallets={wallets} archived={archived} />
     </main>
   )

@@ -27,7 +27,7 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
   const list = debts.filter((d) => d.direction === tab)
   const open_ = list.filter((d) => !d.isPaid)
   const done = list.filter((d) => d.isPaid)
-  const totalOpen = open_.reduce((s, d) => s + Number(d.amount), 0)
+  const totalOpen = open_.reduce((s, d) => s + Math.max(0, Number(d.amount) - Number(d.paidAmount || 0)), 0)
 
   return (
     <>
@@ -208,17 +208,19 @@ function DebtRow({ debt }: { debt: DebtLite }) {
         </>
       )}
 
-      {debt.isPaid ? (
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={pending}
-          title="Hapus"
-          className="rounded-lg p-2 text-text-secondary transition hover:bg-white/[0.04] hover:text-danger"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={() => {
+          if (debt.isPaid || window.confirm(`Hapus catatan ${debt.direction === 'piutang' ? 'piutang' : 'utang'} ${debt.personName}?`)) {
+            onDelete()
+          }
+        }}
+        disabled={pending}
+        title="Hapus"
+        className="rounded-lg p-2 text-text-secondary transition hover:bg-white/[0.04] hover:text-danger"
+      >
+        <X className="h-4 w-4" />
+      </button>
 
       {payOpen && (
         <div

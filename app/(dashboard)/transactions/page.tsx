@@ -8,6 +8,8 @@ import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatDateShort } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { extractTags } from '@/lib/tags'
+import { EditTransactionButton } from '@/components/EditTransactionButton'
+import { DeleteTransactionButton } from '@/components/DeleteTransactionButton'
 
 export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 30
@@ -45,11 +47,11 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   }
   if (type) filters.push(eq(transactions.type, type))
   if (category) filters.push(eq(transactions.categoryTag, category))
-  if (wallet) filters.push(eq(transactions.walletId, wallet))
+  if (wallet) filters.push(or(eq(transactions.walletId, wallet), eq(transactions.toWalletId, wallet))!)
   if (from) filters.push(gte(transactions.occurredAt, from))
   if (to) filters.push(lte(transactions.occurredAt, to))
   if (cursor) filters.push(or(lt(transactions.occurredAt, cursor.date), and(eq(transactions.occurredAt, cursor.date), lt(transactions.id, cursor.id)))!)
-  const fetched = await db.select({ id: transactions.id, walletId: transactions.walletId, type: transactions.type, amount: transactions.amount, title: transactions.title, categoryTag: transactions.categoryTag, occurredAt: transactions.occurredAt, note: transactions.note }).from(transactions).where(and(...filters)).orderBy(desc(transactions.occurredAt), desc(transactions.id)).limit(PAGE_SIZE + 1)
+  const fetched = await db.select({ id: transactions.id, walletId: transactions.walletId, toWalletId: transactions.toWalletId, type: transactions.type, amount: transactions.amount, title: transactions.title, categoryTag: transactions.categoryTag, occurredAt: transactions.occurredAt, note: transactions.note }).from(transactions).where(and(...filters)).orderBy(desc(transactions.occurredAt), desc(transactions.id)).limit(PAGE_SIZE + 1)
   const hasMore = fetched.length > PAGE_SIZE
   const rows = fetched.slice(0, PAGE_SIZE)
   const names = Object.fromEntries(walletRows.map((item) => [item.id, item.name]))
@@ -59,6 +61,9 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const tagExpenseTotal = activeTag ? rows.filter((r) => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0) : null
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(q)) if (value && key !== 'cursor') params.set(key, value)
+  const firstParams = new URLSearchParams()
+  for (const [key, value] of Object.entries(q)) if (value && key !== 'cursor') firstParams.set(key, value)
+  const firstPageHref = firstParams.toString() ? `/transactions?${firstParams.toString()}` : '/transactions'
   const last = rows.at(-1)
   if (hasMore && last) params.set('cursor', Buffer.from(`${last.occurredAt.toISOString()}|${last.id}`).toString('base64url'))
 
@@ -72,7 +77,16 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
       <label className="field-label">Kategori<select name="category" defaultValue={category ?? ''}><option value="">Semua kategori</option>{CATEGORY_ENUM.map((item) => <option key={item}>{item}</option>)}</select></label>
       <label className="field-label">Mulai<input name="from" type="date" defaultValue={from ? q.from : ''} /></label>
       <label className="field-label">Sampai<input name="to" type="date" defaultValue={to ? q.to : ''} /></label>
-      <button className="primary-button sm:self-end">Terapkan filter</button>
+      <div className="flex items-center justify-end gap-2 sm:col-span-2 mt-2">
+        {filtered && (
+          <Link href="/transactions" className="secondary-button">
+            <X className="h-4 w-4" aria-hidden /> Reset filter
+          </Link>
+        )}
+        <button type="submit" className="primary-button">
+          Terapkan filter
+        </button>
+      </div>
     </div>
     {allTags.length > 0 && (
       <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-border-inner pt-3">
@@ -80,14 +94,22 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         {allTags.map((tag) => {
           const isActive = q.search === tag
           const tagParams = new URLSearchParams()
-          if (!isActive) tagParams.set('search', tag)
+          for (const [key, value] of Object.entries(q)) {
+            if (value && key !== 'cursor') tagParams.set(key, value)
+          }
+          if (isActive) {
+            tagParams.delete('search')
+          } else {
+            tagParams.set('search', tag)
+          }
+          const tagHref = tagParams.toString() ? `/transactions?${tagParams.toString()}` : '/transactions'
           return (
             <Link
               key={tag}
-              href={`/transactions?${tagParams.toString()}`}
+              href={tagHref}
               className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
                 isActive
-                  ? 'bg-accent-solid text-white'
+                  ? 'bg-accent-solid text-white shadow-sm'
                   : 'bg-white/[0.04] text-text-secondary ring-1 ring-border-outer hover:text-text-primary'
               }`}
             >
@@ -113,8 +135,9 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     <div className="mb-3 mt-7 flex items-center justify-between"><h2 className="section-title">Hasil</h2><span className="status-pill">{rows.length}{hasMore ? '+' : ''} transaksi</span></div>
     {rows.length ? <ul className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">{rows.map((transaction) => {
       const rowTags = [...extractTags(transaction.note), ...extractTags(transaction.title)]
+      const isTransfer = transaction.type === 'transfer'
       return (
-        <li key={transaction.id} className="transaction-row">
+        <li key={transaction.id} className="transaction-row flex-wrap sm:flex-nowrap gap-3">
           <div className={`transaction-dot ${transaction.type}`} aria-hidden />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -126,16 +149,58 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
               ))}
             </div>
             <p className="mt-1 text-xs text-text-secondary">
-              {names[transaction.walletId] ?? 'Dompet'} · {transaction.categoryTag ?? 'LAINNYA'} · {formatDateShort(transaction.occurredAt)}
+              {isTransfer && transaction.toWalletId
+                ? `${names[transaction.walletId] ?? 'Dompet'} → ${names[transaction.toWalletId] ?? 'Tujuan'}`
+                : names[transaction.walletId] ?? 'Dompet'}
+              {' · '}
+              {transaction.categoryTag ?? (isTransfer ? 'TRANSFER' : 'LAINNYA')}
+              {' · '}
+              {formatDateShort(transaction.occurredAt)}
               {transaction.note ? ` · "${transaction.note}"` : ''}
             </p>
           </div>
-          <span className={`font-mono text-sm font-semibold ${transaction.type === 'income' ? 'text-accent-income' : transaction.type === 'expense' ? 'text-accent-expense' : 'text-accent'}`}>
-            <PrivacyAmount value={transaction.amount} sign={transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '−' : '↔'} />
-          </span>
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0 self-end sm:self-center">
+            <span className={`font-mono text-sm font-semibold tabular-nums ${transaction.type === 'income' ? 'text-accent-income' : transaction.type === 'expense' ? 'text-accent-expense' : 'text-accent'}`}>
+              <PrivacyAmount value={transaction.amount} sign={transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '−' : '↔'} />
+            </span>
+            <EditTransactionButton
+              txn={{
+                id: transaction.id,
+                walletId: transaction.walletId,
+                title: transaction.title,
+                amount: Number(transaction.amount),
+                type: transaction.type as 'income' | 'expense' | 'transfer',
+                categoryTag: transaction.categoryTag,
+                note: transaction.note,
+                occurredAt: transaction.occurredAt.toISOString(),
+              }}
+              wallets={walletRows}
+            />
+            <DeleteTransactionButton
+              txn={{
+                id: transaction.id,
+                title: transaction.title,
+                amount: Number(transaction.amount),
+                type: transaction.type as 'income' | 'expense' | 'transfer',
+              }}
+            />
+          </div>
         </li>
       )
     })}</ul> : <div className="empty-panel"><Search className="h-6 w-6 text-accent" aria-hidden /><h2>Tidak ada transaksi</h2><p>Coba ubah kata pencarian atau rentang tanggal.</p></div>}
-    {hasMore && <Link href={`/transactions?${params.toString()}`} className="secondary-button mt-5 w-full">Muat transaksi berikutnya <ChevronRight className="h-4 w-4" aria-hidden /></Link>}
+    {(hasMore || cursor) && (
+      <div className="mt-5 flex items-center gap-3">
+        {cursor && (
+          <Link href={firstPageHref} className="secondary-button flex-1 justify-center">
+            &larr; Halaman Pertama
+          </Link>
+        )}
+        {hasMore && (
+          <Link href={`/transactions?${params.toString()}`} className="primary-button flex-1 justify-center">
+            Muat transaksi berikutnya <ChevronRight className="h-4 w-4" aria-hidden />
+          </Link>
+        )}
+      </div>
+    )}
   </main>
 }
