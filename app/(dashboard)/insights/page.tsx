@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BarChart3, CalendarDays, Landmark, TrendingDown } from 'lucide-react'
+import { ArrowLeft, BarChart3, CalendarDays, Landmark, TrendingDown } from 'lucide-react'
 import { auth } from '@/auth'
 import { getDebts, getSpendingFlow, getTopCategories } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
@@ -45,6 +45,9 @@ export default async function InsightsPage() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-3xl px-5 pb-32 pt-8 sm:px-8 sm:pt-12">
+      <Link href="/settings" className="back-link mb-5 inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition">
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Akun & Pengaturan
+      </Link>
       <header className="mb-7 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Analisis</p>
