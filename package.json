@@ -45,9 +45,10 @@
     "test:quicklog": "node scripts/test-quicklog.js",
     "test:optimistic": "node scripts/test-optimistic.js",
     "test:browser": "node scripts/browser-audit.js",
+    "test:timezone": "node scripts/test-timezone.js",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run build",
-    "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js",
+    "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js",
     "test:all": "npm run test:unit && npm run typecheck && npm run lint",
     "release:check": "npm run test:all && node scripts/validate-release.js",
     "test:feature-max": "node scripts/test-feature-max.js"

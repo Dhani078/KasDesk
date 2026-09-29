@@ -6,10 +6,26 @@ function partsAt(date: Date, timeZone: string) {
 }
 
 function localMidnightUtc(year: number, month: number, day: number, timeZone: string) {
-  const guess = new Date(Date.UTC(year, month - 1, day))
-  const shown = partsAt(guess, timeZone)
-  const represented = Date.UTC(Number(shown.year), Number(shown.month) - 1, Number(shown.day))
-  return new Date(guess.getTime() - (represented - guess.getTime()))
+  const guessTime = Date.UTC(year, month - 1, day, 0, 0, 0)
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  })
+
+  const parts = dtf.formatToParts(new Date(guessTime))
+  const p: Record<string, string> = {}
+  for (const { type, value } of parts) p[type] = value
+  let h = Number(p.hour)
+  if (h === 24) h = 0
+  const localOfGuess = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), h, Number(p.minute), Number(p.second))
+  const offsetMs = localOfGuess - guessTime
+  return new Date(guessTime - offsetMs)
 }
 
 export function getMonthWindow(now = new Date(), timeZone = DEFAULT_TIME_ZONE) {
