@@ -50,15 +50,28 @@ async function login(email, pw) {
 /** Parse one "Rp 1.234.567" token. */
 function parseIDR(s) {
   if (!s) return NaN
+  const priv = s.match(/privacy-prefix([\s\S]*?)privacy-real[^\d]*([\d.]+)/i)
+  if (priv) {
+    const v = parseInt(priv[2].replace(/\./g, ''), 10)
+    const isNeg = /(?:−|-)\s*Rp/.test(priv[1])
+    return isNeg ? -v : v
+  }
   const m = s.match(/(−|-)?\s*Rp\s*([\d.]+)/)
   if (!m) return NaN
   const v = parseInt(m[2].replace(/\./g, ''), 10)
   return m[1] ? -v : v
 }
 function afterLabel(html, label) {
-  const i = html.indexOf(label)
+  let i = -1
+  if (label instanceof RegExp) {
+    const m = html.match(label)
+    if (m) i = m.index
+  } else {
+    i = html.indexOf(label)
+    if (i < 0) i = html.toLowerCase().indexOf(label.toLowerCase())
+  }
   if (i < 0) return NaN
-  return parseIDR(html.slice(i, i + 400))
+  return parseIDR(html.slice(i, i + 4000))
 }
 
 const EMAIL = `ins-${Date.now()}@example.com`

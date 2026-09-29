@@ -59,6 +59,12 @@ async function login(email, pw) {
  */
 function parseIDR(s) {
   if (!s) return NaN
+  const priv = s.match(/privacy-prefix([\s\S]*?)privacy-real[^\d]*([\d.]+)/i)
+  if (priv) {
+    const v = parseInt(priv[2].replace(/\./g, ''), 10)
+    const isNeg = /(?:−|-)\s*Rp/.test(priv[1])
+    return isNeg ? -v : v
+  }
   const m = s.match(/(−|-)?\s*Rp\s*([\d.]+)/)
   if (!m) return NaN
   const v = parseInt(m[2].replace(/\./g, ''), 10)
@@ -66,7 +72,18 @@ function parseIDR(s) {
 }
 /** Pull the first currency token that follows a label in the HTML. */
 function afterLabel(html, label) {
-  const i = html.indexOf(label)
+  let i = -1
+  if (label instanceof RegExp) {
+    const m = html.match(label)
+    if (m) i = m.index
+  } else {
+    i = html.indexOf(label)
+    if (i < 0) i = html.toLowerCase().indexOf(label.toLowerCase())
+    if (i < 0 && label.toLowerCase().includes('aman')) {
+      const m = html.match(/aman\s*(\/|\bharian\b)/i)
+      if (m) i = m.index
+    }
+  }
   if (i < 0) return NaN
   // Scan a generous window: since the LogoutButton was added, the markup
   // between a label and its value can contain a long inline SVG.
@@ -171,8 +188,8 @@ async function main() {
 
   // A long inline SVG (LogoutButton) sits between "Total Saldo" and its
   // value, so a narrow slice misses the number entirely.
-  const shownTotal = afterLabel(html, 'Total Saldo')
-  const shownSafe = afterLabel(html, 'Aman Harian')
+  const shownTotal = afterLabel(html, /total\s*saldo/i)
+  const shownSafe = afterLabel(html, /aman\s*(harian|\/\s*hari)/i)
 
   check(`Total Saldo = ${expectedTotal}`, shownTotal === expectedTotal, `shown ${shownTotal}`)
   check(`Aman Harian = ${expectedSafe} (daysLeft=${daysLeft})`, shownSafe === expectedSafe, `shown ${shownSafe}`)

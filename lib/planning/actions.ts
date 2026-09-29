@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, gte, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/lib/db'
@@ -83,6 +83,17 @@ export async function executeRecurringAction(formData: FormData) {
   }
   if (!targetWalletId) return
 
+  const [targetWallet] = await db
+    .select({ id: wallets.id, balance: wallets.balance, isArchived: wallets.isArchived })
+    .from(wallets)
+    .where(and(eq(wallets.id, targetWalletId), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
+    .limit(1)
+  if (!targetWallet) return
+
+  if (rule.type === 'expense' && Number(targetWallet.balance) < rule.amount) {
+    return
+  }
+
   await db.transaction(async (tx) => {
     await tx.insert(transactions).values({
       userId,
@@ -95,11 +106,18 @@ export async function executeRecurringAction(formData: FormData) {
       occurredAt: new Date(),
     })
 
-    const balanceDelta = rule.type === 'income' ? rule.amount : -rule.amount
-    await tx
-      .update(wallets)
-      .set({ balance: sql`${wallets.balance} + ${balanceDelta}` })
-      .where(and(eq(wallets.id, targetWalletId), eq(wallets.userId, userId)))
+    if (rule.type === 'expense') {
+      const debit = await tx
+        .update(wallets)
+        .set({ balance: sql`${wallets.balance} - ${rule.amount}` })
+        .where(and(eq(wallets.id, targetWalletId), eq(wallets.userId, userId), eq(wallets.isArchived, 0), gte(wallets.balance, rule.amount)))
+      if (!debit[0].affectedRows) throw new Error('INSUFFICIENT_BALANCE')
+    } else {
+      await tx
+        .update(wallets)
+        .set({ balance: sql`${wallets.balance} + ${rule.amount}` })
+        .where(and(eq(wallets.id, targetWalletId), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
+    }
 
     const currentNext = new Date(rule.nextRunAt)
     const nextDate = new Date(currentNext)

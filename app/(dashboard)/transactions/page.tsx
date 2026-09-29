@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Search, SlidersHorizontal, Tag as TagIcon, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Search, X } from 'lucide-react'
 import { and, desc, eq, gte, like, lt, lte, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { transactions, wallets } from '@/lib/db/schema'

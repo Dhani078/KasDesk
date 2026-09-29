@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useTransition, useState, useEffect } from 'react'
+import { useTransition, useState } from 'react'
 import Link from 'next/link'
 import { Search, SlidersHorizontal, Tag as TagIcon, X, Loader2 } from 'lucide-react'
 
@@ -34,15 +34,6 @@ export function TransactionFilter({
   const [category, setCategory] = useState(initialFilters.category ?? '')
   const [from, setFrom] = useState(initialFilters.from ?? '')
   const [to, setTo] = useState(initialFilters.to ?? '')
-
-  useEffect(() => {
-    setSearch(initialFilters.search ?? '')
-    setType(initialFilters.type ?? '')
-    setWallet(initialFilters.wallet ?? '')
-    setCategory(initialFilters.category ?? '')
-    setFrom(initialFilters.from ?? '')
-    setTo(initialFilters.to ?? '')
-  }, [initialFilters])
 
   const isFiltered = Boolean(
     initialFilters.search ||

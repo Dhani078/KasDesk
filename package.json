@@ -44,6 +44,7 @@
     "test:debt-partial": "node scripts/test-debt-partial.js",
     "test:quicklog": "node scripts/test-quicklog.js",
     "test:optimistic": "node scripts/test-optimistic.js",
+    "test:browser": "node scripts/browser-audit.js",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run build",
     "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js",
