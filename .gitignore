@@ -16,6 +16,7 @@ next-env.d.ts
 
 # scratch commit-message file (never tracked)
 _cm.txt
+*.zip
 
 # agent-loop artifacts (kept locally, never shipped)
 .agents/
