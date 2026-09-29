@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarClock, Lightbulb, Target, Wallet } from 'lucide-react'
+import { CalendarClock, Lightbulb, Sparkles, Target, Wallet } from 'lucide-react'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 
 type FocusInput = {
@@ -21,7 +21,7 @@ function pickFocus(dash: FocusInput) {
   if (dash.monthlyExpense > dash.monthlyIncome) return { href: '/insights', label: 'Cek laporan', title: 'Pengeluaran perlu direm', body: 'Bulan ini pengeluaran melewati pemasukan. Lihat kategori terbesar dulu.', Icon: Lightbulb, isQuickLog: false }
   if (dash.vaultAllocations === 0) return { href: '/vaults', label: 'Buat target', title: 'Sisihkan uang sebelum terpakai', body: 'Buat target tabungan agar saldo tidak tercampur uang belanja.', Icon: Target, isQuickLog: false }
   if (dash.upcomingDebts > 0) return { href: '/debts', label: 'Review utang', title: 'Pantau kewajiban aktif', body: 'Cek utang/piutang berjalan agar tidak mengganggu cashflow.', Icon: CalendarClock, isQuickLog: false }
-  return { href: '/insights', label: 'Buka laporan', title: 'Pertahankan ritme sehat', body: 'Keuanganmu mulai rapi. Review mingguan cukup untuk menjaga arah.', Icon: Lightbulb, isQuickLog: false }
+  return { href: '/coach', label: 'Tanya AI Coach', title: 'Pertahankan ritme sehat', body: 'Keuanganmu rapi. Konsultasikan target dan tips hemat lanjutan dengan AI Coach.', Icon: Sparkles, isQuickLog: false }
 }
 
 export function DailyFocus({ dash }: { dash: FocusInput }) {
