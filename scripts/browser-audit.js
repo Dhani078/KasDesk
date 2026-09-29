@@ -1,4 +1,6 @@
 const http = require('http');
+const { spawn } = require('child_process');
+const fs = require('fs');
 
 async function getJson(path) {
   return new Promise((resolve, reject) => {
@@ -10,6 +12,43 @@ async function getJson(path) {
       });
     }).on('error', reject);
   });
+}
+
+async function ensureChrome() {
+  try {
+    await getJson('/json/version');
+    return null;
+  } catch {
+    const candidates = [
+      process.env.CHROME_BIN,
+      'C:\\Users\\Anomali\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Users\\Anomali\\AppData\\Local\\ms-playwright\\chromium-1243\\chrome-win64\\chrome.exe',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    ].filter(Boolean);
+
+    const exe = candidates.find(c => fs.existsSync(c));
+    if (!exe) throw new Error('No Chrome executable found');
+
+    const proc = spawn(exe, [
+      '--headless=new',
+      '--remote-debugging-port=9222',
+      '--disable-gpu',
+      '--no-sandbox'
+    ], { stdio: 'ignore' });
+
+    for (let i = 0; i < 30; i++) {
+      await sleep(200);
+      try {
+        await getJson('/json/version');
+        return proc;
+      } catch {}
+    }
+    throw new Error('Chrome failed to start on port 9222');
+  }
 }
 
 class CDPClient {
@@ -51,6 +90,7 @@ async function sleep(ms) {
 }
 
 async function runAudit() {
+  const chromeProc = await ensureChrome();
   const version = await getJson('/json/version');
   const browserWs = new CDPClient(version.webSocketDebuggerUrl);
 
@@ -212,6 +252,7 @@ async function runAudit() {
   await browserWs.send('Target.closeTarget', { targetId });
   client.close();
   browserWs.close();
+  if (chromeProc) chromeProc.kill();
 
   const failed = results.filter(r => !r.pass);
   console.log(`\n==============================================`);
