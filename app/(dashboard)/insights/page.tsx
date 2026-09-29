@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, BarChart3, CalendarDays, Landmark, TrendingDown } from 'lucide-react'
+import { ArrowLeft, BarChart3, CalendarDays, Landmark, Sparkles, TrendingDown } from 'lucide-react'
 import { auth } from '@/auth'
 import { getDebts, getSpendingFlow, getTopCategories } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
@@ -54,6 +54,9 @@ export default async function InsightsPage() {
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">Laporan keuangan</h1>
           <p className="mt-2 text-sm leading-6 text-text-secondary">Ringkasan yang membantu melihat pola, bukan sekadar angka.</p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Link href="/coach" className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent-solid px-4 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95">
+              <Sparkles className="h-4 w-4" aria-hidden /> Tanya AI Coach
+            </Link>
             <Link href="/planning" className="inline-flex min-h-11 items-center rounded-xl border border-border-outer px-4 text-sm text-accent transition hover:border-accent/40">
               Atur budget & pengingat
             </Link>
