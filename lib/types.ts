@@ -20,3 +20,11 @@ export const CATEGORIES = [
 ] as const
 
 export type CategoryName = (typeof CATEGORIES)[number]
+
+export const AI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+] as const
+
+export type AiModel = (typeof AI_MODELS)[number]

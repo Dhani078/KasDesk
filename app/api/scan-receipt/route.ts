@@ -27,7 +27,7 @@ function hasValidImageSignature(buf: Buffer, mime: string): boolean {
 }
 
 const GEMINI_ENDPOINT =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'
 
 type ScanResult = {
   merchant_name: string
@@ -108,7 +108,24 @@ export async function POST(req: Request) {
   // 5. Call Gemini (server-side key).
   let modelJson: unknown
   try {
-    const upstream = await fetch(GEMINI_ENDPOINT, {
+    const payloadBody = JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: 'Extract the receipt data from this image. Return only JSON.' },
+            { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+      },
+    })
+
+    let upstream = await fetch(GEMINI_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -118,24 +135,28 @@ export async function POST(req: Request) {
         // server-side call the user never sees.
         'x-goog-api-key': apiKey,
       },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: 'Extract the receipt data from this image. Return only JSON.' },
-              { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0,
-          responseMimeType: 'application/json',
-        },
-      }),
+      body: payloadBody,
       signal: AbortSignal.timeout(30_000),
     })
+
+    // Auto-fallback if the primary flash model faces temporary high demand (503)
+    if (upstream.status === 503) {
+      for (const fallbackModel of ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-flash-latest']) {
+        const fallbackRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+            body: payloadBody,
+            signal: AbortSignal.timeout(30_000),
+          }
+        )
+        if (fallbackRes.status !== 503) {
+          upstream = fallbackRes
+          break
+        }
+      }
+    }
 
     if (upstream.status === 429) {
       return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429 })

@@ -3,6 +3,7 @@ import { ArrowLeft, Lightbulb, PiggyBank, ShieldAlert, TrendingDown } from 'luci
 import { getSpendingFlow, getTopCategories } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
+import { CoachChat } from '@/components/CoachChat'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,17 @@ export default async function CoachPage() {
     <main className="page-shell max-w-3xl">
       <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard</Link>
       <header className="page-header"><div><p className="eyebrow">Coach</p><h1>Asisten keuangan</h1><p>Saran praktis dari pola saldo, pengeluaran, tabungan, dan kewajibanmu.</p></div><span className="icon-tile"><Lightbulb className="h-5 w-5" aria-hidden /></span></header>
+
+      <CoachChat
+        initialContext={{
+          totalBalance: dash.totalBalance,
+          safeDailySpend: dash.safeDailySpend,
+          monthlyExpense: dash.monthlyExpense,
+          monthlyIncome: dash.monthlyIncome,
+          topCategory: top[0]?.category,
+          healthScore: dash.healthScore,
+        }}
+      />
 
       <section className="surface-card mb-6 rounded-3xl p-5 sm:p-6">
         <p className="text-xs uppercase tracking-[0.12em] text-text-secondary">Langkah terbaik berikutnya</p>

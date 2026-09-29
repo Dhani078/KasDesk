@@ -61,7 +61,7 @@ async function main() {
     process.exit(fail ? 1 : 0)
   }
 
-  const URL_ = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+  const URL_ = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'
   const body = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'say ok' }] }] })
 
   async function status(headers, url) {
