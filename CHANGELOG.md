@@ -8,6 +8,8 @@
 - Expanded Chrome Headless CDP browser audit to 54 automated checks across ultra-compact mobile (320px), standard mobile (390px), and desktop (1280px) viewports with verified zero horizontal overflow.
 - Cleaned unused code: removed redundant `ThemeToggle` component and deduplicated server action imports.
 - Fixed exact UTC boundary for Asia/Makassar (UTC+8) in `lib/timezone.ts` with dedicated unit test suite.
+- Localized OCR receipt validation warnings into clear Indonesian messages in `QuickLogSheet` (mapping technical codes `UNREADABLE_TOTAL`, `LOW_CONFIDENCE`, `OUT_OF_BOUNDS`, `TOTAL_MISMATCH`).
+- Added AI Coach route reference to `public/llms.txt` for AI crawler discovery.
 
 
 ## Final Antigravity handoff — 2026-09-12
