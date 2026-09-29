@@ -85,6 +85,13 @@ export function QuickLogButton({ wallets }: { wallets?: WalletLite[] }) {
   return null
 }
 
+const SCAN_REASON_MAP: Record<string, string> = {
+  UNREADABLE_TOTAL: 'Total struk tidak terbaca jelas. Mohon periksa kembali nominal di atas.',
+  LOW_CONFIDENCE: 'AI membaca struk dengan kepastian rendah. Silakan pastikan nominal dan kategori sudah pas.',
+  OUT_OF_BOUNDS: 'Nominal terdeteksi di luar batas wajar. Mohon sesuaikan nominal.',
+  TOTAL_MISMATCH: 'Rincian barang berbeda dengan total bayar (mungkin ada pajak/diskon). Cek kembali nominal.',
+}
+
 function Sheet({
   wallets,
   prefill,
@@ -383,7 +390,7 @@ function Sheet({
           >
             <p className="font-semibold">Periksa nominal hasil scan</p>
             <p className="mt-0.5 text-amber-200/80">
-              {activeScan.reason ?? 'AI membaca struk dengan kepastian rendah.'}
+              {SCAN_REASON_MAP[activeScan.reason ?? ''] ?? activeScan.reason ?? 'AI membaca struk dengan kepastian rendah.'}
             </p>
           </div>
         )}
