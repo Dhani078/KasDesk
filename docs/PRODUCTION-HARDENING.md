@@ -50,6 +50,9 @@ npm ci
 npm run typecheck
 npm run lint
 npm run build
+npm run test:timezone
+npm run test:coach
+npm run test:browser
 npm run release:check
 ```
 
