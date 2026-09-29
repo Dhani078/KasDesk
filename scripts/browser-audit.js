@@ -215,6 +215,7 @@ async function runAudit() {
     { url: '/insights', label: 'Laporan & Insights' },
     { url: '/planning', label: 'Budget & Planning' },
     { url: '/transactions', label: 'Riwayat Transaksi' },
+    { url: '/coach', label: 'AI Coach & Chat' },
     { url: '/settings', label: 'Pengaturan' },
   ];
 
