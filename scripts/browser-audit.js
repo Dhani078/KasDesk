@@ -227,6 +227,18 @@ async function runAudit() {
   }
 
   // ==========================================
+  // 1.5 COMPACT MOBILE AUDIT (320 x 568 iPhone SE)
+  // ==========================================
+  console.log('\n--- 1.5 COMPACT MOBILE VIEWPORT (320 x 568) ---');
+  await setViewport(320, 568, true);
+
+  for (const p of [{ url: '/', label: 'Home' }, ...pages]) {
+    await navigate(`http://localhost:3333${p.url}`);
+    const ovf = await evalJs('document.documentElement.scrollWidth > window.innerWidth');
+    assert(`Compact 320px: ${p.label} no horizontal overflow`, !ovf);
+  }
+
+  // ==========================================
   // 2. DESKTOP AUDIT (1280 x 800 PC)
   // ==========================================
   console.log('\n--- 2. DESKTOP VIEWPORT AUDIT (1280 x 800) ---');
