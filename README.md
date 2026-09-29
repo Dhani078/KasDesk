@@ -30,7 +30,8 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 🏷️ **Multi-Tag & Filter Label** | Kelompokkan mutasi dengan tag `#Liburan`, `#Kondangan`, `#Proyek` dan pantau total pengeluaran per-event. |
 | 📄 **Rekap Bulanan & WhatsApp Share** | Buat ringkasan bulanan estetik, bagikan 1-klik ke WhatsApp atau cetak / simpan ke PDF. |
 | 🏆 **Gamifikasi Health Score** | Tingkatkan level kesehatan finansialmu dari *Bronze*, *Silver*, *Gold*, hingga *Diamond Tier*. |
-| 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini AI otomatis mendeteksi nominal & tanggal transaksi. |
+| 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini 3.8 Flash otomatis mendeteksi nominal & tanggal transaksi. |
+| 💬 **AI Coach Interaktif** | Konsultasi finansial interaktif didukung Gemini 3.8/3.7/3.6 Flash dengan konteks saldo dan budget real-time. |
 | 🛡️ **Aman Harian (Safe-to-Spend)** | Menghitung sisa uang yang aman dibelanjakan hari ini agar tidak boncos sebelum gajian. |
 | 🎯 **Target Tabungan (Vault)** | Tabungan target dengan proyeksi waktu real-time yang terpisah dari uang belanja. |
 | 🤝 **Utang & Piutang** | Pantau kewajiban aktif lengkap dengan pembayaran penuh maupun cicilan bertahap. |
