@@ -8,6 +8,7 @@
 - [Celengan Tabungan (Vaults)](https://kas-desk.vercel.app/vaults)
 - [Pencatatan Utang & Piutang](https://kas-desk.vercel.app/debts)
 - [Laporan Keuangan & Analisis 7 Hari](https://kas-desk.vercel.app/insights)
+- [Asisten AI Finansial (Coach)](https://kas-desk.vercel.app/coach)
 - [Perencanaan Anggaran](https://kas-desk.vercel.app/planning)
 - [Kebijakan Privasi](https://kas-desk.vercel.app/privacy)
 - [Ketentuan Layanan](https://kas-desk.vercel.app/terms)
