@@ -1,8 +1,7 @@
 'use server'
 
 import { AuthError } from 'next-auth'
-import { signIn, signOut } from '@/auth'
-import { registerUser } from '@/auth'
+import { signIn, signOut, registerUser } from '@/auth'
 import { registerSchema, loginSchema } from '@/lib/schemas'
 import { checkDistributedRateLimit } from '@/lib/auth/distributed-rate-limit'
 import { isGoogleEnabled } from '@/lib/auth/google-enabled'
