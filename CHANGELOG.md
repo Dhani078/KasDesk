@@ -25,6 +25,8 @@
 - Enhanced `scripts/validate-release.js` to support target directory validation and provide clear developer feedback during local testing while strictly failing in release mode if secrets exist.
 - Added comprehensive single-command verification runner (`npm run test:full`) bundling unit tests, AI Coach tests, pagination tests, 59 browser checks, all 19 database integration suites, and release validation.
 - Patched transitive dependency vulnerabilities via npm overrides (`brace-expansion` ^1.1.21 & ^2.1.7, `fast-uri` ^3.1.8, `js-yaml` ^4.3.2), achieving 0 audit vulnerabilities on production and CI.
+- Optimized TiDB connection pool in `lib/db/index.ts` (extended `idleTimeout` to 5 minutes, `keepAliveInitialDelay` to 5s, `connectionLimit: 10`, `connectTimeout: 10s`) to maintain warm TLS sockets and eliminate reconnect latency during user sessions.
+- Optimized `BottomNav` wallet prefetch with deferred hydration, preventing initial network contention on page load.
 
 
 ## Final Antigravity handoff — 2026-09-12
