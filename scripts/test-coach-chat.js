@@ -100,7 +100,7 @@ async function main() {
   try { chatJson36 = JSON.parse(chatRes36) } catch {}
 
   check('Gemini 3.6 Flash answers successfully', Boolean(chatJson36.reply && chatJson36.reply.length > 20))
-  check('Gemini 3.6 Flash model confirmed', chatJson36.model === 'gemini-3.6-flash', `got ${chatJson36.model}`)
+  check('Gemini 3.6 Flash requested and resolved from modern models', chatJson36.requestedModel === 'gemini-3.6-flash' && ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'].includes(chatJson36.model), `got requested=${chatJson36.requestedModel}, resolved=${chatJson36.model}`)
   console.log(`    [AI Reply (${chatJson36.model})]: ${chatJson36.reply ? chatJson36.reply.substring(0, 85).replace(/\n/g, ' ') : ''}...`)
 
   // Cleanup
