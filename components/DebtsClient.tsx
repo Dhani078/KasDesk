@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Plus, X, Loader2, Check, Wallet, MessageCircle } from 'lucide-react'
 
 import { settleDebt, deleteDebt } from '@/lib/actions'
@@ -114,6 +114,15 @@ function DebtRow({ debt }: { debt: DebtLite }) {
   const [error, setError] = useState<string | null>(null)
   const [payOpen, setPayOpen] = useState(false)
   const [payAmount, setPayAmount] = useState('')
+
+  useEffect(() => {
+    if (!payOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPayOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [payOpen])
 
   function onSettle(amount?: number) {
     start(async () => {

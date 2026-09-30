@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, Copy, FileText, Printer, Share2, X, Sparkles } from 'lucide-react'
 import { formatIDR } from '@/lib/format'
 
@@ -21,6 +21,15 @@ export type MonthlyRecapData = {
 export function MonthlyRecapModal({ data }: { data: MonthlyRecapData }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   const topCatsText = data.topCategories.length
     ? data.topCategories

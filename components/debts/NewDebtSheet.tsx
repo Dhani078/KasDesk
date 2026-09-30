@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { createDebt } from '@/lib/actions'
 
@@ -10,6 +10,14 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
   const [amount, setAmount] = useState('')
 
   const [dueDate, setDueDate] = useState('')
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   function onAmountChange(v: string) {
     const digits = v.replace(/[^\d]/g, '')
