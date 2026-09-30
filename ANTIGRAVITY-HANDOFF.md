@@ -12,6 +12,7 @@ Jalankan pada environment nyata: `npm ci`, `npm run release:check`, `npm run bui
 - Jalankan bundle analyzer dan pastikan landing/login tidak memuat offline queue, bottom navigation, atau OCR chunk.
 - Pastikan OCR menggunakan distributed quota pada deployment multi-instance.
 - **Cursor Pagination & Query Resilience:** Jalankan `npm run test:transactions` untuk memverifikasi paging 30 transaksi, kontinuitas cursor base64url, dan ketahanan terhadap query string/cursor/tanggal rusak tanpa crash.
+- **Database Schema & Index Integrity:** Jalankan `npm run test:db-integrity` untuk memverifikasi 10 tabel penting, kolom hardened, dan composite index (`tx_user_date_idx`, `tx_wallet_date_idx`, `tx_user_client_mutation_uq`, `budgets_user_month_category_uq`).
 - Uji pencarian judul, catatan, kategori, dompet, tanggal, serta cursor pagination.
 - Uji feedback sukses/gagal dan pencegahan submit ganda pada budget dan pengingat.
 - Uji toggle pengingat hanya dapat mengubah data pemiliknya.
