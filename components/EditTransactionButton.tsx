@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Pencil, Loader2, X, Calculator } from 'lucide-react'
 
 import { updateTransaction } from '@/lib/actions'
@@ -43,6 +43,15 @@ export function EditTransactionButton({
   const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   // Local form state, initialized when the modal opens.
   const [amount, setAmount] = useState('')

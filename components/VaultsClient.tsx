@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Target, Plus, X, Loader2, ArrowDownToLine, ArrowUpFromLine, Trash2 } from 'lucide-react'
 
 import { createVault, depositToVault, withdrawFromVault, deleteVault } from '@/lib/actions'
@@ -280,6 +280,14 @@ function MoveSheet({ vault, dir, wallets, onClose }: { vault: VaultLite; dir: 'i
 }
 
 function Sheet({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
   return <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}><div role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()} className="max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"><div className="mb-4 flex items-center justify-between"><h2 className="truncate pr-2 text-base font-semibold text-text-primary">{title}</h2><button type="button" onClick={onClose} aria-label="Tutup" className="text-text-secondary"><X className="h-5 w-5" /></button></div>{children}</div></div>
 }
 
