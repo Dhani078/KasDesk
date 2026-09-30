@@ -15,6 +15,7 @@ Jalankan pada environment nyata: `npm ci`, `npm run release:check`, `npm run bui
 - **Database Schema & Index Integrity:** Jalankan `npm run test:db-integrity` untuk memverifikasi 10 tabel penting, kolom hardened, dan composite index (`tx_user_date_idx`, `tx_wallet_date_idx`, `tx_user_client_mutation_uq`, `budgets_user_month_category_uq`).
 - **Data Export & Zero Secret Leakage:** Jalankan `npm run test:export` untuk memverifikasi endpoint JSON & CSV, attachment header, isolasi data, dan pembuktian mutlak zero-leak password hash/secret.
 - **Planning & Budget Invariants:** Jalankan `npm run test:planning` untuk memverifikasi upsert budget, eksekusi pengingat rutin dengan debit saldo otomatis, majunya jadwal tanggal, dan proteksi isolasi data.
+- **Account Lifecycle & Cascading Purge:** Jalankan `npm run test:lifecycle` untuk memverifikasi validasi ganti password, invalidasi sesi lama via `sessionInvalidBefore`, dan penghapusan atomik seluruh data akun lintas 7 tabel saat konfirmasi "HAPUS AKUN".
 - Uji pencarian judul, catatan, kategori, dompet, tanggal, serta cursor pagination.
 - Uji feedback sukses/gagal dan pencegahan submit ganda pada budget dan pengingat.
 - Uji toggle pengingat hanya dapat mengubah data pemiliknya.
