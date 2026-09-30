@@ -3,10 +3,10 @@ import { ArrowRight, BarChart3, Cloud, LockKeyhole, ReceiptText, Smartphone, Wal
 import { PwaInstall } from '@/components/PwaInstall'
 
 const FEATURES = [
-  { Icon: ReceiptText, title: 'Catat lebih cepat', body: 'Pemasukan, pengeluaran, transfer, dan pemindaian struk dalam satu alur.' },
+  { Icon: ReceiptText, title: 'Catat lebih cepat', body: 'Pemasukan, pengeluaran, transfer, dan pemindaian struk dengan Gemini 3.8 Flash.' },
   { Icon: BarChart3, title: 'Laporan yang jelas', body: 'Pantau arus kas, tren mingguan, kategori, utang, dan target tabungan.' },
   { Icon: Cloud, title: 'Tetap siap saat offline', body: 'Transaksi diantrekan di perangkat dan disinkronkan saat koneksi kembali.' },
-  { Icon: LockKeyhole, title: 'Privat secara bawaan', body: 'Data setiap akun terisolasi dan koneksi database dilindungi TLS.' },
+  { Icon: LockKeyhole, title: 'Privat & Aman', body: 'Data akun terisolasi, proteksi PIN & Biometrik, dan koneksi database TLS.' },
 ]
 
 export default function WelcomePage() {
@@ -28,7 +28,7 @@ export default function WelcomePage() {
           <div>
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-accent">Keuangan pribadi, tanpa ribet</p>
             <h1 className="max-w-2xl text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-text-primary sm:text-6xl">Uangmu terlihat jelas. Keputusan terasa lebih tenang.</h1>
-            <p className="mt-6 max-w-xl text-base leading-7 text-text-secondary sm:text-lg">KASDESK menyatukan dompet, transaksi, tabungan, utang, OCR struk, dan laporan dalam aplikasi web yang bisa dipasang di iPhone, Android, dan laptop.</p>
+            <p className="mt-6 max-w-xl text-base leading-7 text-text-secondary sm:text-lg">KASDESK menyatukan dompet, transaksi, tabungan, utang, AI Coach, OCR struk, dan laporan dalam aplikasi web yang bisa dipasang di iPhone, Android, dan laptop.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/register" className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent-solid px-6 font-semibold text-white transition hover:brightness-110">Buat akun <ArrowRight className="h-4 w-4" aria-hidden /></Link>
               <Link href="/login" className="flex min-h-12 items-center justify-center rounded-xl border border-border-outer bg-surface px-6 font-semibold text-text-primary transition hover:bg-white/[0.05]">Buka dashboard</Link>
