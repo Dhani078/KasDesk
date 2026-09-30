@@ -16,6 +16,7 @@ Jalankan pada environment nyata: `npm ci`, `npm run release:check`, `npm run bui
 - **Data Export & Zero Secret Leakage:** Jalankan `npm run test:export` untuk memverifikasi endpoint JSON & CSV, attachment header, isolasi data, dan pembuktian mutlak zero-leak password hash/secret.
 - **Planning & Budget Invariants:** Jalankan `npm run test:planning` untuk memverifikasi upsert budget, eksekusi pengingat rutin dengan debit saldo otomatis, majunya jadwal tanggal, dan proteksi isolasi data.
 - **Account Lifecycle & Cascading Purge:** Jalankan `npm run test:lifecycle` untuk memverifikasi validasi ganti password, invalidasi sesi lama via `sessionInvalidBefore`, dan penghapusan atomik seluruh data akun lintas 7 tabel saat konfirmasi "HAPUS AKUN".
+- **Master Database Test Suite:** Jalankan `npm run test:db` untuk menjalankan seluruh 19 test suite database TiDB secara sekuensial dengan pembersihan otomatis fixture di akhir.
 - Uji pencarian judul, catatan, kategori, dompet, tanggal, serta cursor pagination.
 - Uji feedback sukses/gagal dan pencegahan submit ganda pada budget dan pengingat.
 - Uji toggle pengingat hanya dapat mengubah data pemiliknya.
