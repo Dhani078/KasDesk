@@ -49,6 +49,7 @@
     "test:coach": "node scripts/test-coach-chat.js",
     "test:transactions": "node scripts/test-transactions-pagination.js",
     "test:db-integrity": "node scripts/test-db-schema-integrity.js",
+    "test:export": "node scripts/test-export.js",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run build",
     "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js",
