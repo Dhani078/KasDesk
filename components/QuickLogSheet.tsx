@@ -228,6 +228,14 @@ function Sheet({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const mathLiveResult = hasMathOperator(amountText)
     ? evaluateMathExpression(amountText)
     : null

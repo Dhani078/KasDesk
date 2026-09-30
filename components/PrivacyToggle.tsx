@@ -23,11 +23,13 @@ export function PrivacyToggle() {
   }, [])
 
   function toggle() {
-    const n = !hidden
-    setHidden(n)
-    document.documentElement.classList.toggle('privacy-mode', n)
-    localStorage.setItem('kasdesk:privacy', n ? 'hidden' : 'shown')
-    window.dispatchEvent(new CustomEvent('kasdesk:privacy-changed'))
+    setHidden((prev) => {
+      const n = !prev
+      document.documentElement.classList.toggle('privacy-mode', n)
+      localStorage.setItem('kasdesk:privacy', n ? 'hidden' : 'shown')
+      window.dispatchEvent(new CustomEvent('kasdesk:privacy-changed'))
+      return n
+    })
   }
 
   return (

@@ -35,23 +35,27 @@ export function SettingsAppearance() {
   }, [])
 
   function togglePrivacy() {
-    const next = !privacyHidden
-    setPrivacyHidden(next)
-    document.documentElement.classList.toggle('privacy-mode', next)
-    localStorage.setItem('kasdesk:privacy', next ? 'hidden' : 'shown')
-    window.dispatchEvent(new CustomEvent('kasdesk:privacy-changed'))
+    setPrivacyHidden((prev) => {
+      const next = !prev
+      document.documentElement.classList.toggle('privacy-mode', next)
+      localStorage.setItem('kasdesk:privacy', next ? 'hidden' : 'shown')
+      window.dispatchEvent(new CustomEvent('kasdesk:privacy-changed'))
+      return next
+    })
   }
 
   function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    if (next === 'light') {
-      document.documentElement.dataset.theme = 'light'
-    } else {
-      delete document.documentElement.dataset.theme
-    }
-    localStorage.setItem('kasdesk:theme', next)
-    window.dispatchEvent(new CustomEvent('kasdesk:theme-changed'))
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      if (next === 'light') {
+        document.documentElement.dataset.theme = 'light'
+      } else {
+        delete document.documentElement.dataset.theme
+      }
+      localStorage.setItem('kasdesk:theme', next)
+      window.dispatchEvent(new CustomEvent('kasdesk:theme-changed'))
+      return next
+    })
   }
 
   return (
