@@ -17,6 +17,7 @@ Jalankan pada environment nyata: `npm ci`, `npm run release:check`, `npm run bui
 - **Planning & Budget Invariants:** Jalankan `npm run test:planning` untuk memverifikasi upsert budget, eksekusi pengingat rutin dengan debit saldo otomatis, majunya jadwal tanggal, dan proteksi isolasi data.
 - **Account Lifecycle & Cascading Purge:** Jalankan `npm run test:lifecycle` untuk memverifikasi validasi ganti password, invalidasi sesi lama via `sessionInvalidBefore`, dan penghapusan atomik seluruh data akun lintas 7 tabel saat konfirmasi "HAPUS AKUN".
 - **Master Database Test Suite:** Jalankan `npm run test:db` untuk menjalankan seluruh 19 test suite database TiDB secara sekuensial dengan pembersihan otomatis fixture di akhir.
+- **Eksekusi Pengujian Penuh (Full Gate):** Jalankan `npm run test:full` untuk menjalankan unit test, typecheck, linting, AI Coach test, cursor pagination, 59 live browser audit, 19 DB integration test, dan release validation sekaligus dalam 1 perintah.
 - Uji pencarian judul, catatan, kategori, dompet, tanggal, serta cursor pagination.
 - Uji feedback sukses/gagal dan pencegahan submit ganda pada budget dan pengingat.
 - Uji toggle pengingat hanya dapat mengubah data pemiliknya.

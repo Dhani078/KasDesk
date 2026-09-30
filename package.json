@@ -53,6 +53,7 @@
     "test:planning": "node scripts/test-planning.js",
     "test:lifecycle": "node scripts/test-account-lifecycle.js",
     "test:db": "node scripts/test-db-all.js",
+    "test:full": "npm run test:all && npm run test:coach && npm run test:transactions && npm run test:browser && npm run test:db && npm run release:check",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run build",
     "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js",
