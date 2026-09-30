@@ -200,12 +200,30 @@ async function runAudit() {
   const modalVisible = await evalJs('!!document.querySelector("[role=\'dialog\']") || document.body.innerText.includes("Catat Transaksi")');
   assert('QuickLog Sheet opens on click', modalVisible);
 
-  // Close modal if open
-  await evalJs(`
-    const closeBtn = document.querySelector("[role='dialog'] button[aria-label*='Tutup' i]");
-    if (closeBtn) closeBtn.click();
-  `);
-  await sleep(500);
+  // Close modal with Escape key
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  await sleep(600);
+  const modalClosed = await evalJs('!document.querySelector("[role=\'dialog\']")');
+  assert('QuickLog Sheet closes on Escape key', modalClosed);
+
+  // Test Privacy Mode Toggle
+  console.log('\nTesting Privacy Mode Toggle...');
+  await evalJs(`(() => {
+    const b = document.querySelector("button[aria-label*='nominal' i]");
+    if (b) b.click();
+  })()`);
+  await sleep(600);
+  const hasPrivMode = await evalJs('document.documentElement.classList.contains("privacy-mode")');
+  assert('Privacy mode activates class on html', hasPrivMode);
+
+  await evalJs(`(() => {
+    const b = document.querySelector("button[aria-label*='nominal' i]");
+    if (b) b.click();
+  })()`);
+  await sleep(600);
+  const curPrivClass = await evalJs('document.documentElement.className');
+  const privModeOff = !curPrivClass.includes('privacy-mode');
+  assert('Privacy mode deactivates cleanly', privModeOff);
 
   // F. Sub-pages on Mobile
   const pages = [
@@ -260,6 +278,25 @@ async function runAudit() {
     assert(`Desktop: ${p.label} loads cleanly`, bText.length > 50);
     assert(`Desktop: ${p.label} no horizontal overflow`, !ovf);
   }
+
+  // C. Theme Toggle on Desktop Settings
+  console.log('\n--- 2.1 DESKTOP THEME SWITCH AUDIT ---');
+  await navigate('http://localhost:3333/settings');
+  await evalJs(`(() => {
+    const btn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('Tema aplikasi') || b.getAttribute('aria-label')?.includes('tema'));
+    if (btn) btn.click();
+  })()`);
+  await sleep(600);
+  const curTheme1 = await evalJs('document.documentElement.dataset.theme');
+  assert('Desktop: Theme toggle switches to Light Mode', curTheme1 === 'light');
+
+  await evalJs(`(() => {
+    const btn = Array.from(document.querySelectorAll('button')).find(b => b.innerText.includes('Tema aplikasi') || b.getAttribute('aria-label')?.includes('tema'));
+    if (btn) btn.click();
+  })()`);
+  await sleep(600);
+  const curTheme2 = await evalJs('document.documentElement.dataset.theme || "dark"');
+  assert('Desktop: Theme toggle switches back to Dark Mode', curTheme2 === 'dark');
 
   // Clean up
   await browserWs.send('Target.closeTarget', { targetId });
