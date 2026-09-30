@@ -18,6 +18,7 @@
 - Added keyboard accessibility (Escape key dismissal) to `QuickLogSheet` modal dialog.
 - Hardened `PrivacyToggle` and `SettingsAppearance` with functional state updaters to prevent race conditions during rapid state transitions.
 - Expanded Chrome Headless CDP browser audit to 59 automated checks, verifying modal Escape dismissal, privacy mode toggle, and desktop light/dark theme switching.
+- Added unified database integration test runner (`scripts/test-db-all.js`), executing all 19 database-backed test suites sequentially with automated post-test fixture cleanup.
 
 
 ## Final Antigravity handoff — 2026-09-12
