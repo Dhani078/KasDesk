@@ -15,11 +15,12 @@ function createPool(): mysql.Pool {
     database: process.env.DATABASE_NAME ?? 'kasdesk',
     ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
     waitForConnections: true,
-    connectionLimit: 5,
-    maxIdle: 5,
-    idleTimeout: 60000,
+    connectionLimit: 10,
+    maxIdle: 10,
+    idleTimeout: 300000,
     enableKeepAlive: true,
-    keepAliveInitialDelay: 10000,
+    keepAliveInitialDelay: 5000,
+    connectTimeout: 10000,
     timezone: '+00:00',
   });
   return pool;

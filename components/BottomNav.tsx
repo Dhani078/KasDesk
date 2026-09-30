@@ -30,8 +30,15 @@ export function BottomNav() {
   const [wallets, setWallets] = useState<WalletLite[]>([])
 
   useEffect(() => {
-    getWallets().then((w) => setWallets(w ?? [])).catch(() => {})
-    const onOpen = () => setQuickLogOpen(true)
+    // Defer wallet prefetch until after initial page hydration
+    const timer = setTimeout(() => {
+      getWallets().then((w) => setWallets(w ?? [])).catch(() => {})
+    }, 1500)
+
+    const onOpen = () => {
+      getWallets().then((w) => setWallets(w ?? [])).catch(() => {})
+      setQuickLogOpen(true)
+    }
     const onSync = (e: Event) => {
       const custom = e as CustomEvent<WalletLite[]>
       if (custom.detail?.length) setWallets(custom.detail)
@@ -39,10 +46,18 @@ export function BottomNav() {
     window.addEventListener('kasdesk:open-quicklog', onOpen)
     window.addEventListener('kasdesk:sync-wallets', onSync)
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('kasdesk:open-quicklog', onOpen)
       window.removeEventListener('kasdesk:sync-wallets', onSync)
     }
   }, [])
+
+  function handleCenterClick() {
+    if (wallets.length === 0) {
+      getWallets().then((w) => setWallets(w ?? [])).catch(() => {})
+    }
+    setQuickLogOpen(true)
+  }
 
   return (
     <>
@@ -76,7 +91,7 @@ export function BottomNav() {
           <li className="min-w-0 flex-1 flex flex-col items-center justify-center">
             <button
               type="button"
-              onClick={() => setQuickLogOpen(true)}
+              onClick={handleCenterClick}
               aria-label="Catat transaksi"
               className="group -mt-3.5 flex flex-col items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer"
             >
