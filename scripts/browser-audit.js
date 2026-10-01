@@ -326,6 +326,29 @@ async function runAudit() {
   const searchFocused = await evalJs(`document.activeElement && document.activeElement.getAttribute('name') === 'search'`);
   assert('Desktop: Pressing "/" shortcut focuses transaction search input', Boolean(searchFocused));
 
+  // F. Desktop Privacy Mode Shortcut 'p'
+  await navigate('http://localhost:3333/');
+  await sleep(400);
+  const pModeInitial = await evalJs(`document.documentElement.classList.contains('privacy-mode')`);
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }))`);
+  await sleep(300);
+  const pModeToggled = await evalJs(`document.documentElement.classList.contains('privacy-mode')`);
+  assert('Desktop: Pressing "p" shortcut toggles privacy mode', pModeInitial !== pModeToggled);
+  // Restore
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }))`);
+  await sleep(200);
+
+  // G. Desktop Keyboard Shortcuts Cheatsheet '?'
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }))`);
+  await sleep(400);
+  const helpOpen = await evalJs('!!document.querySelector("[role=\\"dialog\\"][aria-label*=\\"Pintasan keyboard\\"]")');
+  assert('Desktop: Pressing "?" shortcut opens Shortcuts Cheatsheet modal', helpOpen);
+
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  await sleep(400);
+  const helpClosed = await evalJs('!document.querySelector("[role=\\"dialog\\"][aria-label*=\\"Pintasan keyboard\\"]")');
+  assert('Desktop: Pressing Escape closes Shortcuts Cheatsheet modal', helpClosed);
+
   // Clean up
   await browserWs.send('Target.closeTarget', { targetId });
   client.close();

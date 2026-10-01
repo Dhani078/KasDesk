@@ -366,6 +366,9 @@ function Sheet({
 
       resolvePending(clientId, true)
       setSaved(true)
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([15, 30, 20]) } catch {}
+      }
       setTimeout(() => {
         onClose()
       }, 350)

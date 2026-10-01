@@ -35,6 +35,10 @@
 - Added desktop keyboard shortcut (`/`) in `TransactionFilter` to instantly focus search without leaving the keyboard.
 - Integrated native Web Share API (`navigator.share`) with WhatsApp fallback in `MonthlyRecapModal` for financial recap sharing.
 - Expanded Chrome Headless CDP browser audit to 62 automated checks, covering transaction search focus shortcut.
+- Added global desktop keyboard shortcut (`P` / `p`) in `AppShell` to instantly toggle Privacy Mode (nominal masking).
+- Added global desktop keyboard shortcut (`?`) in `AppShell` opening an accessible Keyboard Shortcuts Cheatsheet modal dialog.
+- Added mobile tactile haptic feedback (`navigator.vibrate`) upon successful transaction recording in `QuickLogSheet` (pure native Web API, 0 KB bundle).
+- Expanded Chrome Headless CDP browser audit to 65 automated checks, validating privacy mode keyboard shortcut and cheatsheet modal dismissal.
 
 
 ## Final Antigravity handoff — 2026-09-12
