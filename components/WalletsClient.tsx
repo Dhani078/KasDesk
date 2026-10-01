@@ -80,6 +80,11 @@ export function WalletsClient({
                   <p className="truncate text-sm font-medium text-text-primary">{w.name}</p>
                   <p className="text-xs uppercase tracking-[0.06em] text-text-secondary">
                     {TYPE_LABEL[w.type] ?? w.type}
+                    {total > 0 && w.balance > 0 && (
+                      <span className="ml-2 font-mono text-[11px] text-text-secondary/70">
+                        • {Math.round((w.balance / total) * 100)}% aset
+                      </span>
+                    )}
                   </p>
                 </div>
                 <span className="font-mono text-sm tabular-nums text-text-primary">

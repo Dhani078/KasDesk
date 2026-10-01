@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, Search, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Search, X, Download } from 'lucide-react'
 import { and, desc, eq, gte, like, lt, lte, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { transactions, wallets } from '@/lib/db/schema'
@@ -71,7 +71,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
 
   return <main className="page-shell max-w-3xl">
     <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard</Link>
-    <header className="page-header"><div><p className="eyebrow">Riwayat</p><h1>Semua transaksi</h1><p>Cari judul, catatan, kategori, dompet, dan rentang tanggal.</p></div>{filtered && <Link href="/transactions" className="secondary-button"><X className="h-4 w-4" aria-hidden /> Reset</Link>}</header>
+    <header className="page-header"><div><p className="eyebrow">Riwayat</p><h1>Semua transaksi</h1><p>Cari judul, catatan, kategori, dompet, dan rentang tanggal.</p></div><div className="flex flex-wrap items-center gap-2"><a href="/api/export/csv" download className="secondary-button" title="Unduh data riwayat transaksi dalam format CSV"><Download className="h-4 w-4" aria-hidden /> Unduh CSV</a>{filtered && <Link href="/transactions" className="secondary-button"><X className="h-4 w-4" aria-hidden /> Reset</Link>}</div></header>
     <TransactionFilter
       walletRows={walletRows}
       categories={CATEGORY_ENUM}
