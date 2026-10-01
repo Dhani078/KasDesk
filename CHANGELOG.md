@@ -42,6 +42,7 @@
 - Added 1-click direct CSV export button on the `/transactions` header, enabling instant transaction data download without navigating to settings.
 - Added asset percentage distribution metric (`• X% aset`) to active wallet rows in `WalletsClient`, providing immediate asset allocation clarity.
 - Connected `FinancialHealthScoreCard` gamification criteria directly to AI Coach with a 1-click consultation trigger to improve financial tiers.
+- Expanded Chrome Headless CDP browser audit to 70 automated checks, covering `/install` PWA route across 320px, 390px, and 1280px viewports with 0 horizontal overflow.
 
 
 ## Final Antigravity handoff — 2026-09-12

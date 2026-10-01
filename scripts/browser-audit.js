@@ -241,6 +241,7 @@ async function runAudit() {
     { url: '/transactions', label: 'Riwayat Transaksi' },
     { url: '/coach', label: 'AI Coach & Chat' },
     { url: '/settings', label: 'Pengaturan' },
+    { url: '/install', label: 'Instal PWA' },
   ];
 
   for (const p of pages) {
