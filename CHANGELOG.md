@@ -41,6 +41,7 @@
 - Expanded Chrome Headless CDP browser audit to 65 automated checks, validating privacy mode keyboard shortcut and cheatsheet modal dismissal.
 - Added 1-click direct CSV export button on the `/transactions` header, enabling instant transaction data download without navigating to settings.
 - Added asset percentage distribution metric (`• X% aset`) to active wallet rows in `WalletsClient`, providing immediate asset allocation clarity.
+- Connected `FinancialHealthScoreCard` gamification criteria directly to AI Coach with a 1-click consultation trigger to improve financial tiers.
 
 
 ## Final Antigravity handoff — 2026-09-12
