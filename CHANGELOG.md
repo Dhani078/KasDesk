@@ -31,6 +31,10 @@
 - Added native drag-and-drop receipt image drop-zone and direct clipboard paste (`Ctrl+V` / `Cmd+V`) in `QuickLogSheet` and `ScanReceiptButton` for instant Gemini 3.8 Flash OCR parsing (zero extra dependencies, pure native Web APIs).
 - Expanded Chrome Headless CDP browser audit to 61 automated checks, verifying desktop keyboard shortcuts and modal dismissal.
 - Hardened `scripts/test-insights.js` category matching for start-of-month date transitions and `scripts/test-coach-chat.js` for flexible casing.
+- Added PWA App Shortcut for "Tanya AI Coach" (`/coach`) in `public/manifest.json` for one-tap home-screen access.
+- Added desktop keyboard shortcut (`/`) in `TransactionFilter` to instantly focus search without leaving the keyboard.
+- Integrated native Web Share API (`navigator.share`) with WhatsApp fallback in `MonthlyRecapModal` for financial recap sharing.
+- Expanded Chrome Headless CDP browser audit to 62 automated checks, covering transaction search focus shortcut.
 
 
 ## Final Antigravity handoff — 2026-09-12
