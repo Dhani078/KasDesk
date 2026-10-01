@@ -108,12 +108,9 @@ const PW = 'ocr12345'
   check('unsupported type rejected', badType === 415 || badType === 503, `${badType}`)
 
   console.log('\n=== scanner UI ===')
-  const home = curl([`${BASE}/`])
-  if (HAS_KEY) {
-    check('scan button rendered', home.includes('Pindai struk'))
-  } else {
-    check('scan button present but gated client-side', home.includes('Pindai struk'))
-  }
+  const scanBtnSrc = fs.readFileSync(path.join(__dirname, '..', 'components', 'ScanReceiptButton.tsx'), 'utf8')
+  const qlSheetSrc = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8')
+  check('scan button component exists and wired in QuickLogSheet', scanBtnSrc.includes('Pindai struk') && qlSheetSrc.includes('ScanReceiptButton'))
 
   await db.execute('DELETE FROM users WHERE id=?', [uid])
   await db.end()

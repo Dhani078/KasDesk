@@ -45,6 +45,9 @@
 - Expanded Chrome Headless CDP browser audit to 70 automated checks, covering `/install` PWA route across 320px, 390px, and 1280px viewports with 0 horizontal overflow.
 - Hardened Gemini 3.8/3.7/3.6 Flash parts extraction in `coach/chat` and `scan-receipt`, filtering thought artifacts and expanding output budget to 2048 tokens.
 - Enforced strict atomic double-scoped ownership check in `deleteTransaction` (`lib/actions.ts`).
+- Modularized registration and seed pipeline into `lib/auth/register.ts`, enabling clean decoupled imports without `server-only` bundler requirements.
+- Expanded unified database test runner (`scripts/test-db-all.js`) to 22 test suites, incorporating new user seed verification, archived coverage, and concurrency race-condition invariants.
+- Fixed `scripts/test-ocr.js` component check and added vector-generated receipt image fixture for reproducible OCR tests.
 
 
 ## Final Antigravity handoff — 2026-09-12
