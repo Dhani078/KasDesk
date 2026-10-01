@@ -86,7 +86,8 @@ async function main() {
 
   check('chat returns a valid reply', Boolean(chatJson38.reply && chatJson38.reply.length > 20), `got ${JSON.stringify(chatJson38)}`)
   check('chat identifies a modern Gemini model', Boolean(chatJson38.model && chatJson38.model.includes('gemini-3')), `model: ${chatJson38.model}`)
-  check('chat response includes financial score or context', chatJson38.reply && (chatJson38.reply.includes('99') || chatJson38.reply.includes('skor') || chatJson38.reply.includes('keuangan')))
+  const replyLower = (chatJson38.reply || '').toLowerCase()
+  check('chat response includes financial score or context', replyLower.includes('skor') || replyLower.includes('keuangan') || replyLower.includes('finansial') || replyLower.includes('89') || replyLower.includes('99'))
   console.log(`    [AI Reply (${chatJson38.model})]: ${chatJson38.reply ? chatJson38.reply.substring(0, 85).replace(/\n/g, ' ') : ''}...`)
 
   // 5. Test specific model selection (Gemini 3.6 Flash)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2, Calculator, ArrowRightLeft, ArrowLeftRight } from 'lucide-react'
+import { X, Loader2, Calculator, ArrowRightLeft, ArrowLeftRight, Sparkles } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
 import { usePendingTx } from '@/components/pending-tx'
@@ -236,6 +236,30 @@ function Sheet({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
+  const [isDragging, setIsDragging] = useState(false)
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!isDragging) setIsDragging(true)
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith('image/')) {
+      window.dispatchEvent(new CustomEvent('kasdesk:scan-file', { detail: file }))
+    }
+  }
+
   const mathLiveResult = hasMathOperator(amountText)
     ? evaluateMathExpression(amountText)
     : null
@@ -362,8 +386,20 @@ function Sheet({
         aria-modal="true"
         aria-label="Catat transaksi"
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[92dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`relative max-h-[92dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl border-t border-border-outer bg-surface p-5 pb-safe transition-colors ${
+          isDragging ? 'ring-2 ring-accent' : ''
+        }`}
       >
+        {isDragging && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-3xl bg-surface/95 backdrop-blur-md p-6 text-center border-2 border-dashed border-accent">
+            <Sparkles className="h-10 w-10 text-accent animate-bounce mb-2" />
+            <p className="font-semibold text-text-primary text-sm">Lepaskan gambar struk di sini</p>
+            <p className="text-xs text-text-secondary mt-1">Gemini 3.8 Flash akan memindai transaksi otomatis</p>
+          </div>
+        )}
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">Catat Transaksi</h2>
           <div className="flex items-center gap-2">
