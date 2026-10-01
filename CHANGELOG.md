@@ -19,11 +19,11 @@
 - Hardened all interactive sheets and dialogs with Escape key keyboard accessibility (`NewWalletSheet`, `NewDebtSheet`, `MonthlyRecapModal`, `EditTransactionButton`, `VaultsClient`, `DebtsClient`).
 - Hardened `PrivacyToggle` and `SettingsAppearance` with functional state updaters to prevent race conditions during rapid state transitions.
 - Expanded Chrome Headless CDP browser audit to 59 automated checks, verifying modal Escape dismissal, privacy mode toggle, and desktop light/dark theme switching.
-- Added unified database integration test runner (`scripts/test-db-all.js`), executing all 19 database-backed test suites sequentially with automated post-test fixture cleanup.
+- Added unified database integration test runner (`scripts/test-db-all.js`), executing all 22 database-backed test suites sequentially with automated post-test fixture cleanup.
 - Refined public `privacy/page.tsx` and `terms/page.tsx` using unified product design tokens (`page-shell`, `surface-card`, `back-link`).
 - Highlighted Gemini 3.8 Flash OCR and AI Coach features on public landing page (`welcome/page.tsx`).
 - Enhanced `scripts/validate-release.js` to support target directory validation and provide clear developer feedback during local testing while strictly failing in release mode if secrets exist.
-- Added comprehensive single-command verification runner (`npm run test:full`) bundling unit tests, AI Coach tests, pagination tests, 59 browser checks, all 19 database integration suites, and release validation.
+- Added comprehensive single-command verification runner (`npm run test:full`) bundling unit tests, AI Coach tests, pagination tests, 70 browser checks, all 22 database integration suites, and release validation.
 - Patched transitive dependency vulnerabilities via npm overrides (`brace-expansion` ^1.1.21 & ^2.1.7, `fast-uri` ^3.1.8, `js-yaml` ^4.3.2), achieving 0 audit vulnerabilities on production and CI.
 - Optimized TiDB connection pool in `lib/db/index.ts` (extended `idleTimeout` to 5 minutes, `keepAliveInitialDelay` to 5s, `connectionLimit: 10`, `connectTimeout: 10s`) to maintain warm TLS sockets and eliminate reconnect latency during user sessions.
 - Optimized `BottomNav` wallet prefetch with deferred hydration, preventing initial network contention on page load.
@@ -48,6 +48,18 @@
 - Modularized registration and seed pipeline into `lib/auth/register.ts`, enabling clean decoupled imports without `server-only` bundler requirements.
 - Expanded unified database test runner (`scripts/test-db-all.js`) to 22 test suites, incorporating new user seed verification, archived coverage, and concurrency race-condition invariants.
 - Fixed `scripts/test-ocr.js` component check and added vector-generated receipt image fixture for reproducible OCR tests.
+
+## Docs & metadata sync — 2026-10-01
+
+- Synced stale counts across all documentation: database suites 19 → 22 (`npm run test:db`), browser audit 54/59 → 70 checks (`npm run test:browser`).
+- Corrected `README.md` AI Vision entry from legacy Gemini 2.5 Flash to Gemini 3.8 Flash with 3.7/3.6 fallback cascade.
+- Expanded `README.md` testing section with the full gate (`npm run test:full`), `test:browser`, `test:db`, and `release:check`.
+- Documented recent features in the `README.md` feature table: desktop keyboard shortcuts (`c` / `/` / `p` / `?`), clipboard paste & drag-and-drop receipt OCR, and mobile haptic feedback.
+- Documented the intentional removal of `(dashboard)` route-level `loading.tsx` in `docs/PRODUCTION-HARDENING.md` and `CONTRIBUTING.md` so cross-user isolation 404s are never masked by a loading shell.
+- Rewrote `CONTRIBUTING.md` and `SECURITY.md` from one-liners into full quality-gate and security-test-suite runbooks; merged `SECURITY-NOTICE.md` into `SECURITY.md` and deleted the duplicate file.
+- Completed the `PROMPT-ANTIGRAVITY.md` Tahap 6 test list (added `test:db`, `test:coach`, `test:transactions`, `test:browser`, `test:newuser-seed`, `test:archived:coverage`, `test:archived:unit`, `test:db-integrity`, `test:export`, `test:planning`, `test:lifecycle`).
+- Added `APP_TIME_ZONE` to `.env.example`, `README.md`, and `docs/PRODUCTION-HARDENING.md` Vercel environment list.
+- Declared `engines.node >= 22` in `package.json` to match the required runtime.
 
 
 ## Final Antigravity handoff — 2026-09-12

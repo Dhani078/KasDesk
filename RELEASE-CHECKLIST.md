@@ -1,7 +1,7 @@
 # Release checklist
 
 - Rotate every credential previously shared outside the secret manager.
-- Run `npm ci`, `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run test:timezone`, `npm run test:coach`, and `npm run test:browser` (54 browser tests).
+- Run `npm ci`, `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run test:timezone`, `npm run test:coach`, `npm run test:browser` (70 browser checks), `npm run test:db` (22 database suites), and `npm run release:check`.
 - Run `npm run release:check`, and a production build.
 - Back up TiDB and test migrations 0000–0004 on empty and legacy staging databases.
 - Run database isolation, balance, transfer, reversal, debt, budget, recurring reminder, OCR, export, account deletion, and concurrency tests.

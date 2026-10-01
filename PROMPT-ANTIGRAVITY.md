@@ -149,7 +149,7 @@ Jika target gagal, perbaiki penyebabnya dan ulangi pengukuran.
 
 ## Tahap 6 — database dan keamanan
 
-Jalankan seluruh test yang membutuhkan TiDB hanya pada staging/fixture disposable:
+Jalankan seluruh test yang membutuhkan TiDB hanya pada staging/fixture disposable. Cara tercepat: `npm run test:db` menjalankan 22 suite database secara sekuensial dengan pembersihan fixture otomatis. Rincian per-suite:
 
 ```bash
 npm run test:auth
@@ -164,15 +164,31 @@ npm run test:transfer
 npm run test:isolation
 npm run test:register
 npm run test:register:atomic
+npm run test:newuser-seed
 npm run test:dashboard
 npm run test:insights
 npm run test:archived
+npm run test:archived:coverage
+npm run test:archived:unit
 npm run test:wallet-archive
+npm run test:db-integrity
+npm run test:export
+npm run test:planning
+npm run test:lifecycle
 npm run test:input-bounds
 npm run test:key-transport
 npm run test:security-headers
 npm run test:logout
 npm run test:offline
+```
+
+Test yang tidak membutuhkan database tetap wajib:
+
+```bash
+npm run test:unit
+npm run test:coach
+npm run test:transactions
+npm run test:browser   # 70 uji Chrome CDP pada 320px / 390px / 1280px
 ```
 
 Lalu bersihkan fixture:

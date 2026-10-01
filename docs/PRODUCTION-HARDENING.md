@@ -38,6 +38,7 @@ Production values must be set in Vercel, not committed:
 - `AUTH_TRUST_HOST=true`
 - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` when Google login is enabled
 - `GEMINI_API_KEY` when OCR is enabled
+- `APP_TIME_ZONE` (defaults to `Asia/Makassar` — set explicitly on Vercel to match the deployment region)
 
 `AUTH_URL` must match the deployed production URL exactly.
 
@@ -53,12 +54,13 @@ npm run build
 npm run test:timezone
 npm run test:coach
 npm run test:browser
+npm run test:db
 npm run release:check
 ```
 
 Then verify:
 
-- Dashboard first load feels instant because route-level skeletons render while server data loads.
+- Dashboard first load feels instant because server components stream while data loads. Route-level `loading.tsx` skeletons were intentionally removed from `(dashboard)` so cross-user isolation violations return a real 404 instead of being masked by a loading shell — do not re-add them.
 - PWA install works on Android Chrome and iOS Safari.
 - Offline transaction queue drains once the connection returns.
 - Lighthouse mobile Performance, Accessibility, Best Practices, and SEO stay above 90.
