@@ -46,11 +46,10 @@ async function main() {
 
   console.log('=== A new signup must get a wallet AND categories ===')
 
-  // registerUser pulls in next-auth, which needs AUTH_SECRET etc. If it throws
-  // for environmental reasons we say so instead of reporting a false pass.
+  // Import registerUser directly from lib/auth/register to bypass NextAuth web runtime
   let registerUser: any
   try {
-    ;({ registerUser } = await import('../auth'))
+    ;({ registerUser } = await import('../lib/auth/register'))
   } catch (e: any) {
     console.log(`\n--- SKIPPED: cannot import registerUser (${String(e?.message).slice(0, 70)}) ---`)
     await db.end()

@@ -38,13 +38,16 @@ const SCRIPTS = [
   'test-vaults.js',
   'test-isolation.js',
   'test-wallet-archive.js',
+  'test-archived-coverage.js',
   'test-dashboard-math.js',
   'test-insights.js',
   'test-planning.js',
   'test-register.js',
   'test-register-unit.js',
   'test-register-atomic.js',
+  'test-newuser-seed.ts',
   'test-account-lifecycle.js',
+  'test-concurrency.js',
   'test-export.js',
   'test-logout.js',
   'test-google-flag.js',
@@ -62,7 +65,11 @@ for (const script of SCRIPTS) {
   const scriptPath = path.join(__dirname, script)
   process.stdout.write(`• Running ${script.padEnd(35)} `)
   try {
-    const out = execFileSync('node', [scriptPath], { encoding: 'utf8', stdio: 'pipe' })
+    const isTs = script.endsWith('.ts')
+    const tsxCli = path.join(__dirname, '..', 'node_modules', 'tsx', 'dist', 'cli.mjs')
+    const cmd = 'node'
+    const args = isTs ? [tsxCli, '--env-file=.env.local', scriptPath] : [scriptPath]
+    const out = execFileSync(cmd, args, { encoding: 'utf8', stdio: 'pipe' })
     if (out.includes('FAIL') && !script.includes('concurrency')) {
       console.log('❌ FAIL')
       suitesFailed++
