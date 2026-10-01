@@ -139,8 +139,8 @@ export async function POST(req: Request) {
       signal: AbortSignal.timeout(30_000),
     })
 
-    // Auto-fallback if the primary flash model faces temporary high demand (503)
-    if (upstream.status === 503) {
+    // Auto-fallback if the primary flash model faces temporary high demand (503) or quota rate limit (429)
+    if (upstream.status === 503 || upstream.status === 429) {
       for (const fallbackModel of ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-flash-latest']) {
         const fallbackRes = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent`,
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
             signal: AbortSignal.timeout(30_000),
           }
         )
-        if (fallbackRes.status !== 503) {
+        if (fallbackRes.status !== 503 && fallbackRes.status !== 429) {
           upstream = fallbackRes
           break
         }
@@ -168,7 +168,8 @@ export async function POST(req: Request) {
 
     const payload = await upstream.json()
     // Model may wrap JSON in markdown fences despite responseMimeType.
-    const raw = payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    const parts = (payload?.candidates?.[0]?.content?.parts ?? []) as { text?: string; thought?: boolean }[]
+    const raw = parts.find((p) => p.text && !p.thought)?.text || parts[0]?.text || ''
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()
     modelJson = JSON.parse(cleaned)
   } catch (e) {

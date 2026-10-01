@@ -244,7 +244,9 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
           .where(eq(wallets.id, txRow.toWalletId))
       }
 
-      await tx.delete(transactions).where(eq(transactions.id, id))
+      await tx
+        .delete(transactions)
+        .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
     })
 
     revalidatePath('/')
