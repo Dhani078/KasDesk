@@ -39,6 +39,8 @@
 - Added global desktop keyboard shortcut (`?`) in `AppShell` opening an accessible Keyboard Shortcuts Cheatsheet modal dialog.
 - Added mobile tactile haptic feedback (`navigator.vibrate`) upon successful transaction recording in `QuickLogSheet` (pure native Web API, 0 KB bundle).
 - Expanded Chrome Headless CDP browser audit to 65 automated checks, validating privacy mode keyboard shortcut and cheatsheet modal dismissal.
+- Added 1-click direct CSV export button on the `/transactions` header, enabling instant transaction data download without navigating to settings.
+- Added asset percentage distribution metric (`• X% aset`) to active wallet rows in `WalletsClient`, providing immediate asset allocation clarity.
 
 
 ## Final Antigravity handoff — 2026-09-12
