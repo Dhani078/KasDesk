@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { ChevronDown, ChevronUp, CheckCircle2, Circle, Sparkles, Trophy } from 'lucide-react'
 import type { DashboardSummary } from '@/lib/analytics/actions'
 
@@ -198,6 +199,13 @@ export function FinancialHealthScoreCard({ dash }: { dash: DashboardSummary }) {
                 </span>
               </div>
             ))}
+            <Link
+              href="/coach"
+              className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-accent-solid py-2 px-3 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Konsultasikan Tips Naik Skor ke AI Coach
+            </Link>
           </div>
         )}
       </div>
