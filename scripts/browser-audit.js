@@ -318,6 +318,14 @@ async function runAudit() {
   const qlModalClosed = await evalJs('!document.querySelector("[role=\\"dialog\\"][aria-label*=\\"Catat transaksi\\"]")');
   assert('Desktop: Pressing Escape dismisses QuickLogSheet opened via shortcut', qlModalClosed);
 
+  // E. Desktop Transactions Search Shortcut '/'
+  await navigate('http://localhost:3333/transactions');
+  await sleep(500);
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }))`);
+  await sleep(300);
+  const searchFocused = await evalJs(`document.activeElement && document.activeElement.getAttribute('name') === 'search'`);
+  assert('Desktop: Pressing "/" shortcut focuses transaction search input', Boolean(searchFocused));
+
   // Clean up
   await browserWs.send('Target.closeTarget', { targetId });
   client.close();

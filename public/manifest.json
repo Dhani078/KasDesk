@@ -34,6 +34,17 @@
       ]
     },
     {
+      "name": "Tanya AI Coach",
+      "short_name": "AI Coach",
+      "url": "/coach",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Dompet",
       "short_name": "Dompet",
       "url": "/wallets",

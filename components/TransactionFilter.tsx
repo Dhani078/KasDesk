@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useTransition, useState } from 'react'
+import { useTransition, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, SlidersHorizontal, Tag as TagIcon, X, Loader2 } from 'lucide-react'
 
@@ -34,6 +34,28 @@ export function TransactionFilter({
   const [category, setCategory] = useState(initialFilters.category ?? '')
   const [from, setFrom] = useState(initialFilters.from ?? '')
   const [to, setTo] = useState(initialFilters.to ?? '')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '/') {
+        const target = e.target as HTMLElement | null
+        if (
+          target &&
+          (target.tagName === 'INPUT' ||
+            target.tagName === 'TEXTAREA' ||
+            target.tagName === 'SELECT' ||
+            target.isContentEditable)
+        ) {
+          return
+        }
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const isFiltered = Boolean(
     initialFilters.search ||
@@ -124,10 +146,16 @@ export function TransactionFilter({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="field-label sm:col-span-2">
-          Cari
+          <span className="flex items-center justify-between">
+            <span>Cari</span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono text-text-secondary font-normal">
+              Tekan <kbd className="rounded border border-border-inner bg-white/[0.05] px-1 py-0.2 text-[10px] text-text-primary">/</kbd> untuk fokus
+            </span>
+          </span>
           <div className="field-with-icon">
             <Search className="h-4 w-4 text-text-secondary" aria-hidden />
             <input
+              ref={searchInputRef}
               name="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

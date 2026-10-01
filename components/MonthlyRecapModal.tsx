@@ -65,7 +65,18 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
     }
   }
 
-  function onShareWhatsApp() {
+  async function onShare() {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Rekap Keuangan KasDesk - ${data.monthName}`,
+          text: waText,
+        })
+        return
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return
+      }
+    }
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
@@ -200,11 +211,11 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
 
               <button
                 type="button"
-                onClick={onShareWhatsApp}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#25D366] py-2.5 px-3 text-xs font-semibold text-white hover:opacity-90 active:scale-95 transition shadow-sm"
+                onClick={onShare}
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#25D366] py-2.5 px-3 text-xs font-semibold text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer"
               >
                 <Share2 className="h-4 w-4" />
-                Kirim WhatsApp
+                Bagikan Rekap
               </button>
 
               <button
