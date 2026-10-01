@@ -30,8 +30,11 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 🏷️ **Multi-Tag & Filter Label** | Kelompokkan mutasi dengan tag `#Liburan`, `#Kondangan`, `#Proyek` dan pantau total pengeluaran per-event. |
 | 📄 **Rekap Bulanan & WhatsApp Share** | Buat ringkasan bulanan estetik, bagikan 1-klik ke WhatsApp atau cetak / simpan ke PDF. |
 | 🏆 **Gamifikasi Health Score** | Tingkatkan level kesehatan finansialmu dari *Bronze*, *Silver*, *Gold*, hingga *Diamond Tier*. |
-| 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini 3.8 Flash otomatis mendeteksi nominal & tanggal transaksi. |
+| 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini 3.8 Flash otomatis mendeteksi nominal & tanggal transaksi. *Fallback cascade* otomatis ke 3.7 / 3.6 Flash saat server Google antre. |
 | 💬 **AI Coach Interaktif** | Konsultasi finansial interaktif didukung Gemini 3.8/3.7/3.6 Flash dengan konteks saldo dan budget real-time. |
+| ⌨️ **Keyboard Shortcut Desktop** | `c` catat cepat, `/` cari transaksi, `p` mode privasi, `?` daftar shortcut. |
+| 📋 **Tempel & Drop Struk** | Tempel struk dari clipboard (`Ctrl+V` / `Cmd+V`) atau drag-and-drop langsung ke QuickLog untuk scan OCR instan. |
+| 📳 **Haptic Feedback** | Getaran halus pada mobile setiap transaksi berhasil dicatat (native Web API, 0 KB). |
 | 🛡️ **Aman Harian (Safe-to-Spend)** | Menghitung sisa uang yang aman dibelanjakan hari ini agar tidak boncos sebelum gajian. |
 | 🎯 **Target Tabungan (Vault)** | Tabungan target dengan proyeksi waktu real-time yang terpisah dari uang belanja. |
 | 🤝 **Utang & Piutang** | Pantau kewajiban aktif lengkap dengan pembayaran penuh maupun cicilan bertahap. |
@@ -67,7 +70,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 ## 🚀 Panduan Memulai Cepat (Quick Start)
 
 ### 1. Prasyarat
-- Node.js 20+ atau 22+
+- Node.js 22+ (sesuai `PROMPT-ANTIGRAVITY.md` Tahap 1)
 - Akun TiDB Cloud (atau database MySQL lokal)
 
 ### 2. Kloning & Instalasi
@@ -102,6 +105,9 @@ AUTH_TRUST_HOST=true
 
 # Google Gemini API (Opsional untuk fitur Scan Struk)
 GEMINI_API_KEY=AIzaSy...
+
+# Timezone perhitungan bulan (default Asia/Makassar / UTC+8)
+APP_TIME_ZONE=Asia/Makassar
 ```
 
 ### 4. Sinkronisasi Skema Database & Jalankan
@@ -138,7 +144,7 @@ Buka **[http://localhost:3000](http://localhost:3000)** di browser Anda! 🚀
   * Parser Aritmatika Aman (`lib/calculator.ts`) tanpa `eval()` berbahaya.
   * Parser Tag Multibahasa (`lib/tags.ts`) dengan ekstraksi regex Unicode.
   * Generator Ringkasan WhatsApp & PDF Print View (`components/MonthlyRecapModal.tsx`).
-* **AI Vision**: [Google Gemini 2.5 Flash](https://ai.google.dev/) untuk ekstraksi cepat data nota belanja.
+* **AI Vision**: [Google Gemini 3.8 Flash](https://ai.google.dev/) untuk ekstraksi cepat data nota belanja, dengan *fallback cascade* otomatis ke Gemini 3.7 Flash dan 3.6 Flash saat server Google antre (503/429).
 * **PWA Engine**: Service Worker berbasis Workbox dengan caching cerdas dan antrean mutasi offline.
 
 </details>
@@ -150,8 +156,19 @@ Buka **[http://localhost:3000](http://localhost:3000)** di browser Anda! 🚀
 KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
-# Menjalankan seluruh Unit Tests (Rate Limit, QuickLog, Optimistic, Features)
+# Verifikasi Lengkap 1 Perintah (Full Gate)
+# = typecheck + lint + unit + AI Coach + cursor pagination
+#   + 70 browser audit (CDP) + 22 DB integration suites + release validation
+npm run test:full
+
+# Menjalankan seluruh Unit Tests (Rate Limit, QuickLog, Optimistic, Features, Timezone)
 npm run test:unit
+
+# Audit Browser Headless Chrome CDP nyata (320px / 390px / 1280px, 0 horizontal overflow)
+npm run test:browser
+
+# 22 Database Integration Suites (TiDB): isolasi, saldo, transfer, utang, vault, konkurensi
+npm run test:db
 
 # Pengecekan Type Safety TypeScript
 npm run typecheck
@@ -161,6 +178,9 @@ npm run lint
 
 # Verifikasi Lengkap (Typecheck + Lint + Build)
 npm run check
+
+# Validasi Rilis (secret leakage check, PWA manifest, environment)
+npm run release:check
 
 # Verifikasi Keamanan Dependensi
 npm audit --omit=dev --audit-level=high
@@ -185,7 +205,7 @@ KasDesk/
 │   └── EditTransactionButton.tsx # Edit transaksi + kalkulator & tag
 ├── lib/                  # Logika Bisnis & Helper
 │   ├── db/               # Skema Drizzle ORM & konfigurasi pool database
-│   ├── auth/             # Sesi, validasi rate limit, dan password hashing
+│   ├── auth/             # Sesi, validasi rate limit, password hashing, dan registrasi seed pipeline (`register.ts`)
 │   ├── analytics/        # Kalkulasi Skor Kesehatan, Aman Harian, dan Ringkasan
 │   ├── calculator.ts     # Parser aritmatika aman untuk input nominal
 │   ├── tags.ts           # Helper ekstraksi dan toggle tag (#Tag)
