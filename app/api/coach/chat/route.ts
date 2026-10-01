@@ -161,7 +161,7 @@ export async function POST(req: Request) {
     contents,
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 2048,
     },
   })
 
@@ -188,8 +188,6 @@ export async function POST(req: Request) {
         signal: AbortSignal.timeout(8_000),
       })
 
-      console.error('[coach/chat] ' + targetModel, res.status)
-
       if (res.status === 503 || res.status === 429) {
         upstreamError = `Model ${targetModel} status ${res.status}`
         continue
@@ -197,14 +195,23 @@ export async function POST(req: Request) {
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '')
-        console.error('[coach/chat] ' + targetModel + ' errBody:', errText.substring(0, 200))
         upstreamError = `Upstream error ${res.status}: ${errText.substring(0, 100)}`
         continue
       }
 
       const resJson = await res.json()
-      replyText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
-      if (replyText) {
+      const parts = (resJson?.candidates?.[0]?.content?.parts ?? []) as { text?: string; thought?: boolean }[]
+      const textParts = parts
+        .filter((p) => p.text && !p.thought)
+        .map((p) => p.text!.trim())
+        .filter(Boolean)
+
+      let extracted = textParts.join('\n\n') || parts[0]?.text?.trim() || ''
+      // Strip potential thinking artifact prefix if present
+      extracted = extracted.replace(/^(\*{0,2}Thought Process:?[\s\S]*?\*{0,2}Output Generation\*{0,2}\s*)/i, '').trim()
+
+      if (extracted && extracted.length >= 20) {
+        replyText = extracted
         resolvedModel = targetModel
         break
       }
