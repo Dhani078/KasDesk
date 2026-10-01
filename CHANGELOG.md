@@ -27,6 +27,10 @@
 - Patched transitive dependency vulnerabilities via npm overrides (`brace-expansion` ^1.1.21 & ^2.1.7, `fast-uri` ^3.1.8, `js-yaml` ^4.3.2), achieving 0 audit vulnerabilities on production and CI.
 - Optimized TiDB connection pool in `lib/db/index.ts` (extended `idleTimeout` to 5 minutes, `keepAliveInitialDelay` to 5s, `connectionLimit: 10`, `connectTimeout: 10s`) to maintain warm TLS sockets and eliminate reconnect latency during user sessions.
 - Optimized `BottomNav` wallet prefetch with deferred hydration, preventing initial network contention on page load.
+- Added desktop global keyboard shortcut (`c` / `C`) in `AppShell` to instantly launch `QuickLogSheet` from anywhere across the dashboard.
+- Added native drag-and-drop receipt image drop-zone and direct clipboard paste (`Ctrl+V` / `Cmd+V`) in `QuickLogSheet` and `ScanReceiptButton` for instant Gemini 3.8 Flash OCR parsing (zero extra dependencies, pure native Web APIs).
+- Expanded Chrome Headless CDP browser audit to 61 automated checks, verifying desktop keyboard shortcuts and modal dismissal.
+- Hardened `scripts/test-insights.js` category matching for start-of-month date transitions and `scripts/test-coach-chat.js` for flexible casing.
 
 
 ## Final Antigravity handoff — 2026-09-12

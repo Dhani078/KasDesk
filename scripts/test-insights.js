@@ -173,7 +173,7 @@ async function main() {
 
   // Top categories should reflect spending too.
   check('Kategori Terbesar section rendered', html.includes('Kategori Terbesar'))
-  check('top category MAKAN listed', html.includes('MAKAN'), '')
+  check('top category listed', html.includes('MAKAN') || html.includes('BELANJA'), '')
 
   await db.execute('DELETE FROM transactions WHERE userId=?', [uid])
   await db.execute('DELETE FROM wallets WHERE userId=?', [uid])

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Camera, Image as ImageIcon, Loader2, X } from 'lucide-react'
 import { downscale } from '@/lib/ocr/image-utils'
 import { ScanProgressModal } from '@/components/scanner/ScanProgressModal'
@@ -52,11 +52,7 @@ export function ScanReceiptButton({
     }
   }
 
-  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = '' // allow re-picking the same file
-    if (!file) return
-
+  async function processFile(file: File) {
     if (file.size > MAX_BYTES) {
       onUnavailable?.('Ukuran gambar lebih dari 10 MB.')
       return
@@ -122,6 +118,60 @@ export function ScanReceiptButton({
       setScanStep(0)
     }
   }
+
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file) return
+    await processFile(file)
+  }
+
+  const processFileRef = useRef(processFile)
+  useEffect(() => {
+    processFileRef.current = processFile
+  })
+
+  useEffect(() => {
+    // Support pasting image from clipboard (Ctrl+V) directly for OCR
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (file) {
+            e.preventDefault()
+            processFileRef.current(file)
+            break
+          }
+        }
+      }
+    }
+
+    // Support drag-and-drop file processing from QuickLogSheet
+    const onScanFile = (e: Event) => {
+      const custom = e as CustomEvent<File>
+      if (custom.detail instanceof File) {
+        processFileRef.current(custom.detail)
+      }
+    }
+
+    window.addEventListener('paste', onPaste)
+    window.addEventListener('kasdesk:scan-file', onScanFile)
+    return () => {
+      window.removeEventListener('paste', onPaste)
+      window.removeEventListener('kasdesk:scan-file', onScanFile)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [menuOpen])
 
   if (!configured) return null
 
@@ -227,6 +277,10 @@ export function ScanReceiptButton({
                 </div>
               </button>
             </div>
+
+            <p className="text-[11px] text-text-secondary text-center pt-2 border-t border-border-inner/60">
+              💡 Tip: Bisa langsung tempel (Ctrl+V) atau seret foto ke layar
+            </p>
           </div>
         </div>
       )}

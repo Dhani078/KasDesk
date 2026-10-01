@@ -109,7 +109,13 @@ async function runAudit() {
 
   async function navigate(url) {
     await client.send('Page.navigate', { url });
-    await sleep(1500);
+    for (let i = 0; i < 20; i++) {
+      await sleep(200);
+      const ready = await evalJs('document.readyState');
+      const hasContent = await evalJs('document.body ? document.body.innerText.length > 30 : false');
+      if (ready === 'complete' && hasContent) break;
+    }
+    await sleep(300);
   }
 
   async function evalJs(expr) {
@@ -297,6 +303,20 @@ async function runAudit() {
   await sleep(600);
   const curTheme2 = await evalJs('document.documentElement.dataset.theme || "dark"');
   assert('Desktop: Theme toggle switches back to Dark Mode', curTheme2 === 'dark');
+
+  // D. Desktop QuickLog Keyboard Shortcut 'c' & Escape
+  console.log('\n--- 2.2 DESKTOP KEYBOARD SHORTCUT AUDIT ---');
+  await navigate('http://localhost:3333/');
+  await sleep(500);
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', bubbles: true }))`);
+  await sleep(500);
+  const qlModalOpen = await evalJs('!!document.querySelector("[role=\\"dialog\\"][aria-label*=\\"Catat transaksi\\"]")');
+  assert('Desktop: Pressing "c" shortcut opens QuickLogSheet', qlModalOpen);
+
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  await sleep(500);
+  const qlModalClosed = await evalJs('!document.querySelector("[role=\\"dialog\\"][aria-label*=\\"Catat transaksi\\"]")');
+  assert('Desktop: Pressing Escape dismisses QuickLogSheet opened via shortcut', qlModalClosed);
 
   // Clean up
   await browserWs.send('Target.closeTarget', { targetId });
