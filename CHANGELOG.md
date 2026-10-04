@@ -60,6 +60,8 @@
 - Completed the `PROMPT-ANTIGRAVITY.md` Tahap 6 test list (added `test:db`, `test:coach`, `test:transactions`, `test:browser`, `test:newuser-seed`, `test:archived:coverage`, `test:archived:unit`, `test:db-integrity`, `test:export`, `test:planning`, `test:lifecycle`).
 - Added `APP_TIME_ZONE` to `.env.example`, `README.md`, and `docs/PRODUCTION-HARDENING.md` Vercel environment list.
 - Declared `engines.node >= 22` in `package.json` to match the required runtime.
+- Rewrote `PRIVACY.md` and `TERMS.md` from one-liners into deployment checkbooks that mirror the exact 3 in-app sections on `/privacy` and `/terms`, cross-reference the export (`test:export`) and deletion (`test:lifecycle`) verification suites, and list the real subprocessors (TiDB Cloud `ap-southeast-1`, Vercel, Google Gemini).
+- Noted the real TiDB region (`ap-southeast-1`) in `.env.example`.
 
 
 ## Final Antigravity handoff — 2026-09-12
