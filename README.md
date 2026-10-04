@@ -40,6 +40,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 🤝 **Utang & Piutang** | Pantau kewajiban aktif lengkap dengan pembayaran penuh maupun cicilan bertahap. |
 | 📶 **100% Offline-First** | Transaksi diantrekan secara lokal via IndexedDB saat sinyal hilang dan otomatis sinkron saat online. |
 | 📑 **Export CSV & JSON** | Unduh laporan transaksi siap buka di Excel/Google Sheets atau export seluruh akun. |
+| 🗺️ **Roadmap PRD v2.0/v3.0** | Cetak biru lengkap arsitektur masa depan untuk Claude/Opus/Antigravity di [`PRD.md`](./PRD.md). |
 
 ---
 
@@ -192,6 +193,7 @@ npm audit --omit=dev --audit-level=high
 
 ```
 KasDesk/
+├── PRD.md                # Spesifikasi Lengkap & Arsitektur v2.0/v3.0 untuk Agen AI
 ├── app/                  # Rute Next.js App Router
 │   ├── (dashboard)/      # Halaman terautentikasi (Home, Wallets, Insights, Planning, dll.)
 │   ├── (public)/         # Halaman publik (Welcome, Login, Register, Terms)

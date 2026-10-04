@@ -1,5 +1,12 @@
 # Changelog
 
+## PRD v2.0 & v3.0 Master Architecture Specification — 2026-10-04
+
+- Authored comprehensive Product Requirement Document (`PRD.md`) defining the next-generation Personal Wealth Operating System & Financial Autopilot roadmap.
+- Specified 9 flagship epics: Multi-Currency & Crypto Net Worth Rollup, Smart Split-Bill & WhatsApp Settlement Engine, Predictive Cashflow Forecast & Personal Runway, Zero-Credential Bank/E-Wallet Statement Importer, Digital Envelopes (ZBB) & Micro-Savings Auto-Rules, Shared Financial Spaces (Household Mode), AI Coach v2 with Indonesian PPh 21 Freelancer Tax Simulator, Native PWA Superpowers (Web Push, Share Target), and Client-Side Zero-Knowledge Encrypted Backup (`AES-256-GCM`).
+- Outlined Drizzle ORM migrations `0005` through `0008` (TiDB MySQL 8 schemas, composite indexes, CHECK constraints, and foreign key cascades).
+- Defined modular component architecture enforcing strict `<300-500 LOC` boundaries and 4-phase execution roadmap for autonomous AI coding agents.
+
 ## AI Coach & Gemini Flash Upgrade — 2026-09-29
 
 - Upgraded receipt OCR from legacy Gemini 2.5 Flash to modern Gemini 3.8 Flash with automatic fallback cascade across Gemini 3.7 Flash and 3.6 Flash.
