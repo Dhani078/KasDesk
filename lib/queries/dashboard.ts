@@ -25,7 +25,12 @@ export async function getDashboard() {
     }
   }
 
-  const [walletRows, vaultRows, debtRows] = await Promise.all([
+  const now = new Date()
+  const monthWindow = getMonthWindow(now)
+  const monthStart = monthWindow.start
+
+  // Fetch all 4 aggregates in parallel to eliminate sequential database round-trips
+  const [walletRows, vaultRows, debtRows, monthRows] = await Promise.all([
     db
       .select({ balance: wallets.balance })
       .from(wallets)
@@ -38,21 +43,16 @@ export async function getDashboard() {
       .select({ amount: debts.amount, paidAmount: debts.paidAmount })
       .from(debts)
       .where(and(eq(debts.userId, userId), eq(debts.isPaid, 0))),
-  ])
-
-  // Month-to-date totals for the home summary.
-  const now = new Date()
-  const monthWindow = getMonthWindow(now)
-  const monthStart = monthWindow.start
-  const monthRows = await db
-    .select({ type: transactions.type, amount: transactions.amount })
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.userId, userId),
-        gte(transactions.occurredAt, monthStart),
+    db
+      .select({ type: transactions.type, amount: transactions.amount })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          gte(transactions.occurredAt, monthStart),
+        ),
       ),
-    )
+  ])
 
   let monthlyIncome = 0
   let monthlyExpense = 0
