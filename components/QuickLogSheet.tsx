@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2, Calculator, ArrowRightLeft, ArrowLeftRight, Sparkles } from 'lucide-react'
+import { X, Loader2, Calculator, Sparkles } from 'lucide-react'
 
 import { createTransaction } from '@/lib/actions'
 import { usePendingTx } from '@/components/pending-tx'
@@ -13,6 +13,9 @@ import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
 import { DateTransactionPicker, getLocalDateString } from '@/components/quicklog/DateTransactionPicker'
 import { NoteWithTags } from '@/components/quicklog/NoteWithTags'
+import { ScanWarningBanner } from '@/components/quicklog/ScanWarningBanner'
+import { CalculatorBar } from '@/components/quicklog/CalculatorBar'
+import { TransferWalletsBox } from '@/components/quicklog/TransferWalletsBox'
 
 const ScanReceiptButton = dynamic(
   () => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton),
@@ -83,13 +86,6 @@ export function QuickLogButton({ wallets }: { wallets?: WalletLite[] }) {
     }
   }, [wallets])
   return null
-}
-
-const SCAN_REASON_MAP: Record<string, string> = {
-  UNREADABLE_TOTAL: 'Total struk tidak terbaca jelas. Mohon periksa kembali nominal di atas.',
-  LOW_CONFIDENCE: 'AI membaca struk dengan kepastian rendah. Silakan pastikan nominal dan kategori sudah pas.',
-  OUT_OF_BOUNDS: 'Nominal terdeteksi di luar batas wajar. Mohon sesuaikan nominal.',
-  TOTAL_MISMATCH: 'Rincian barang berbeda dengan total bayar (mungkin ada pajak/diskon). Cek kembali nominal.',
 }
 
 function Sheet({
@@ -430,17 +426,7 @@ function Sheet({
           </div>
         </div>
 
-        {activeScan && activeScan.needs_confirmation && (
-          <div
-            role="alert"
-            className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200"
-          >
-            <p className="font-semibold">Periksa nominal hasil scan</p>
-            <p className="mt-0.5 text-amber-200/80">
-              {SCAN_REASON_MAP[activeScan.reason ?? ''] ?? activeScan.reason ?? 'AI membaca struk dengan kepastian rendah.'}
-            </p>
-          </div>
-        )}
+        <ScanWarningBanner scan={activeScan} />
 
         {saved ? (
           <div className="flex flex-col items-center gap-3 py-8">
@@ -519,51 +505,14 @@ function Sheet({
                 </div>
               )}
 
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <div className="flex items-center gap-1 rounded-lg border border-border-outer bg-white/[0.02] p-0.5">
-                  {(['+', '−', '×', '÷'] as const).map((op) => (
-                    <button
-                      key={op}
-                      type="button"
-                      onClick={() => applyOperator(op === '−' ? '-' : op === '×' ? '*' : op === '÷' ? '/' : op)}
-                      className="flex h-6 w-6 items-center justify-center rounded text-xs font-semibold text-text-secondary hover:bg-white/[0.08] hover:text-text-primary active:scale-95"
-                      aria-label={`Operator ${op}`}
-                    >
-                      {op}
-                    </button>
-                  ))}
-                  {mathLiveResult !== null && (
-                    <button
-                      type="button"
-                      onClick={evaluateAndSetAmount}
-                      className="flex h-6 px-1.5 items-center justify-center rounded bg-accent/20 text-xs font-bold text-accent hover:bg-accent hover:text-white active:scale-95"
-                      aria-label="Hitung"
-                    >
-                      =
-                    </button>
-                  )}
-                </div>
-
-                {[10000, 20000, 50000, 100000, 200000].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => addQuickAmount(amt)}
-                    className="rounded-lg border border-border-outer bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95"
-                  >
-                    +{amt >= 1000000 ? `${amt / 1000000}jt` : `${amt / 1000}rb`}
-                  </button>
-                ))}
-                {amountText && (
-                  <button
-                    type="button"
-                    onClick={() => setAmountText('')}
-                    className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-1 text-[11px] text-text-secondary hover:text-danger active:scale-95"
-                  >
-                    Hapus
-                  </button>
-                )}
-              </div>
+              <CalculatorBar
+                mathLiveResult={mathLiveResult}
+                amountText={amountText}
+                onApplyOperator={applyOperator}
+                onEvaluate={evaluateAndSetAmount}
+                onAddQuickAmount={addQuickAmount}
+                onClear={() => setAmountText('')}
+              />
             </div>
 
             <div>
@@ -598,77 +547,15 @@ function Sheet({
             />
 
             {txType === 'transfer' ? (
-              <div className="space-y-3 rounded-2xl border border-border-outer bg-white/[0.02] p-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-accent">
-                    <ArrowRightLeft className="h-3.5 w-3.5" /> Transfer Antar Dompet
-                  </span>
-                  {wallets.length >= 2 && (
-                    <button
-                      type="button"
-                      onClick={handleSwapWallets}
-                      className="!min-h-0 !min-w-0 flex items-center gap-1 rounded-lg border border-border-outer bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 transition"
-                      title="Tukar dompet asal dan tujuan"
-                    >
-                      <ArrowLeftRight className="h-3 w-3" /> Tukar Posisi
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="wallet_id" className="mb-1 block text-xs text-text-secondary">
-                      Dari Dompet (Asal)
-                    </label>
-                    <select
-                      id="wallet_id"
-                      name="wallet_id"
-                      value={walletSel}
-                      onChange={(e) => handleWalletChange(e.target.value)}
-                      required
-                      className="w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
-                    >
-                      {wallets.map((w) => (
-                        <option key={w.id} value={w.id}>
-                          {w.name} · {formatIDR(w.balance)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="to_wallet_id" className="mb-1 block text-xs text-text-secondary">
-                      Ke Dompet (Tujuan)
-                    </label>
-                    <select
-                      id="to_wallet_id"
-                      name="to_wallet_id"
-                      value={effectiveToWallet}
-                      onChange={(e) => setToWalletSel(e.target.value)}
-                      required
-                      className="w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
-                    >
-                      {wallets.map((w) => (
-                        <option key={w.id} value={w.id} disabled={w.id === walletSel}>
-                          {w.name} · {formatIDR(w.balance)} {w.id === walletSel ? '(Dompet Asal)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {wallets.length < 2 && (
-                  <p className="text-xs font-medium text-amber-500">
-                    Dibutuhkan minimal 2 dompet untuk transfer saldo. Buat dompet baru di menu Dompet.
-                  </p>
-                )}
-                {walletSel === effectiveToWallet && wallets.length >= 2 && (
-                  <p className="text-xs font-medium text-danger">
-                    Dompet asal dan tujuan tidak boleh sama. Silakan pilih dompet tujuan yang berbeda.
-                  </p>
-                )}
-                <input type="hidden" name="category_tag" value={catSel} />
-              </div>
+              <TransferWalletsBox
+                wallets={wallets}
+                walletSel={walletSel}
+                effectiveToWallet={effectiveToWallet}
+                onWalletChange={handleWalletChange}
+                onToWalletChange={(id) => setToWalletSel(id)}
+                onSwapWallets={handleSwapWallets}
+                categoryTag={catSel}
+              />
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div>
