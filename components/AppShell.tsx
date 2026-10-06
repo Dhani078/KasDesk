@@ -6,6 +6,7 @@ import { AppLock } from './AppLock'
 import { BottomNav } from './BottomNav'
 import { OfflineIndicator } from './OfflineIndicator'
 import { PendingTxProvider } from './pending-tx'
+import { FloatingCoachBubble } from '@/components/coach/FloatingCoachBubble'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -69,6 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
         <OfflineIndicator />
         <BottomNav />
+        <FloatingCoachBubble />
 
         {shortcutsOpen && (
           <div

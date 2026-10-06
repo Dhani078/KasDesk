@@ -1,5 +1,11 @@
 # Changelog
 
+## Global Floating AI Coach Bubble (FAB) — 2026-10-06
+
+- Added a floating AI Coach Chat Bubble (`components/coach/FloatingCoachBubble.tsx`) mounted globally inside `AppShell.tsx` across every dashboard view (Home, Dompet, Transaksi, Laporan, dsb).
+- Positioned seamlessly above mobile BottomNav (`bottom-20 right-4 sm:bottom-6 sm:right-6`) featuring a glowing Sparkles action button.
+- Tap to open an instant slide-up financial chat drawer supporting conversational transaction logging (*"makan 18rb"*, *"bensin 25k"*), inline wallet selection with `TransactionActionCard`, and live financial context responses.
+
 ## Bank Statement & Mutasi Importer Engine (EPIC 4) — 2026-10-06
 
 - Implemented privacy-first local Bank Statement & E-Wallet Mutasi parser (`lib/importer/statement-parser.ts`) supporting BCA (KlikBCA / myBCA), Mandiri Livin, SeaBank, BRImo, and generic CSV/TSV/Notification text.
