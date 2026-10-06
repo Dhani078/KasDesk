@@ -32,3 +32,4 @@ npm run test:cleanup:fixtures
 - Rotating `AUTH_SECRET` invalidates all existing sessions.
 - Production rate limiting must use shared storage; the bundled in-memory limiter is a single-instance fallback.
 - OCR fail-closes when `GEMINI_API_KEY` is absent.
+- Client-Side Encrypted Backup (`.kasdesk.enc`) uses native Web Crypto API (`AES-256-GCM` with 100,000 PBKDF2 iterations and random 16-byte salt/12-byte IV). Passphrase never leaves the browser.

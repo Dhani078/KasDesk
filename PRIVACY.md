@@ -7,8 +7,10 @@ KASDESK ships an in-app policy at `/privacy` (`app/(public)/privacy/page.tsx`, `
 The published page has exactly 3 sections. Each claim below must be verified before launch:
 
 1. **Penggunaan Data Akun & Transaksi** — claims data (nama, email, password terenkripsi; dompet, mutasi, target tabungan, utang-piutang) is processed only to operate features and never sold to third parties or advertisers. Verify the retention period and the lawful basis for your region.
-2. **Fitur AI (Scan Struk & AI Coach)** — claims text and images are processed over TLS via Google Gemini and not stored for public model training. Verify against the current Google Gemini / Google Cloud terms, and state which model series is used (`gemini-3.8-flash` with `gemini-3.7-flash` / `gemini-3.6-flash` fallback today).
-3. **Hak Akses & Ekspor Data** — claims a full CSV/JSON export and permanent account deletion are always available. Verify both flows on staging:
+2. **Fitur AI (Scan Struk & AI Coach)** — claims text and images are processed over TLS via Google Gemini and not stored for public model training. Verify against the current Google Gemini / Google Cloud terms, and state which model series is used (`gemini-3.8-flash` with `gemini-3.7-flash` / `gemini-3.6-flash` / `gemini-3.5-flash` / `gemini-2.5-flash` fallback today).
+3. **Ekstraksi Mutasi Bank & e-Statement Lokal** — ekstraksi teks file CSV/PDF mutasi rekening bank lokal (BCA, Mandiri, SeaBank, BRImo) diproses 100% lokal di browser pengguna (zero-credential & zero third-party upload).
+4. **Cadangan Zero-Knowledge Encrypted** — file cadangan `.kasdesk.enc` dienkripsi di sisi klien dengan AES-256-GCM + PBKDF2; kunci rahasia tidak pernah dikirim ke server.
+5. **Hak Akses & Ekspor Data** — claims a full CSV/JSON export and permanent account deletion are always available. Verify both flows on staging:
    - Export: `npm run test:export` (proves JSON & CSV endpoints work and leak no password hash, token, cookie, API key, or secret).
    - Deletion: `npm run test:lifecycle` (proves typing "HAPUS AKUN" atomically purges the account across all tables and rejects old tokens immediately).
 

@@ -19,4 +19,4 @@ The published page has exactly 3 sections:
 
 ## Note on AI features
 
-Receipt OCR (`/api/scan-receipt`) and AI Coach (`/api/coach/chat`) call Google Gemini. They fail closed when `GEMINI_API_KEY` is absent (503 `OCR_NOT_CONFIGURED`) and rate-limit per user, but neither is a substitute for the user verifying the parsed nominal.
+Receipt OCR (`/api/scan-receipt`), Wallet Screenshot OCR (`/api/wallets/scan-balance`), and AI Coach (`/api/coach/chat`) call Google Gemini. They fail closed when `GEMINI_API_KEY` is absent (503 `OCR_NOT_CONFIGURED` / `AI_NOT_CONFIGURED`) and rate-limit per user, but neither is a substitute for the user verifying the parsed nominal. Local tax formulas (PPh 21 Norma NPPN) and Cashflow Forecast are analytical projections.

@@ -10,11 +10,11 @@ Before opening a change, run the full gate in order:
 npm ci
 npm run typecheck
 npm run lint
-npm run test:unit        # rate limit, QuickLog, optimistic, feature-max, timezone
-npm run test:coach       # AI Coach auth + Gemini response
+npm run test:unit        # 151 unit checks: rate limit, QuickLog, tax, split-bill, backup, forecast, nlp, statement
+npm run test:coach       # AI Coach auth + Gemini response + guardrails + conversational draft
 npm run test:transactions# cursor pagination + corrupted-query resilience
 npm run test:browser     # 70 headless Chrome CDP checks, 320px / 390px / 1280px
-npm run test:db          # 22 TiDB-backed suites (isolation, balance, transfer, debts, vaults, concurrency, lifecycle, export)
+npm run test:db          # 23 TiDB-backed suites (isolation, balance, transfer, debts, vaults, concurrency, balance-sync)
 npm run release:check    # zero secret leakage + PWA manifest + release validation
 npm run build
 ```
