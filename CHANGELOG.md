@@ -5,6 +5,7 @@
 - Added instant 1-tap transfer action in `DashboardQuickActions` and `WalletsClient`, dispatching custom event with `initialType: 'transfer'` directly to `QuickLogSheet`.
 - Unified layout styling in `app/(dashboard)/wallets/[id]/page.tsx` with standard `page-shell max-w-3xl` and accessible `back-link`.
 - Enabled dynamic wallet selection for `executeRecurringAction` in `app/(dashboard)/planning/page.tsx` when user owns multiple active wallets.
+- Added keyboard Escape dismissal accessibility to `DeleteTransactionButton` confirmation modal and `AppLockSettings` PIN dialogs.
 - Verified 70 automated browser checks across 320px/390px/1280px viewports (0 horizontal overflow), 22 TiDB suites, AI Coach cascade, and release checks (`npm run test:full` PASS).
 
 ## PRD v2.0 & v3.0 Master Architecture Specification — 2026-10-04
