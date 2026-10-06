@@ -1,5 +1,14 @@
 # Changelog
 
+## Smart Split-Bill & WhatsApp Settlement Engine — 2026-10-06
+
+- Implemented Smart Split-Bill engine (`lib/split-bill.ts` & `components/splitbill/SplitBillModal.tsx`) for restaurant/group outing expense sharing.
+- Built proportional tax (PB1 10%/11%), service charge, and voucher discount allocation algorithm guaranteeing 0 Rupiah discrepancy (`sum(memberDue) === grandTotal`).
+- Added 1-click WhatsApp bill message generator (`wa.me/?text=...`) and clipboard copying per participant.
+- Integrated direct 1-click "Simpan sebagai Piutang" button into KasDesk's `debts` table for participants with outstanding shares.
+- Created dedicated test suite `scripts/test-split-bill.js` (16 checks covering empty lists, proportional tax math, shared items, rounding reconciliation, and WhatsApp template generation), wired into `npm run test:unit`.
+- Wired Split-Bill modal trigger into `app/(dashboard)/debts/page.tsx`.
+
 ## Freelancer Tax Simulator & Emergency Fund Runway — 2026-10-06
 
 - Implemented Indonesian personal income tax simulator (`lib/tax.ts` & `components/coach/TaxEstimatorModal.tsx`) for freelancers/creators/contractors under the official DJP Norma Penghitungan Penghasilan Neto (NPPN PER-17/PJ/2015) and progressive brackets (UU HPP Pasal 17).
