@@ -50,12 +50,13 @@ Before production deploy:
 npm ci
 npm run typecheck
 npm run lint
-npm run build
-npm run test:timezone
+npm run test:unit
 npm run test:coach
+npm run test:transactions
 npm run test:browser
 npm run test:db
 npm run release:check
+npm run build
 ```
 
 Then verify:

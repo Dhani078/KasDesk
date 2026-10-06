@@ -4,8 +4,22 @@ Jalankan pada environment nyata: `npm ci`, `npm run release:check`, `npm run bui
 
 ## Verifikasi upgrade 10/10 terbaru
 
-- **AI Model Upgrade:** OCR dan AI Coach Chat menggunakan seri model Gemini Flash terbaru (`gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`) dengan otomatis *fallback cascade*. Tidak lagi menggunakan Gemini 2.5 Flash.
-- **AI Coach Chat:** Jalankan `npm run test:coach` untuk memverifikasi autentikasi 401/307, validasi input, dan respons cerdas model dengan konteks metrik finansial real-time.
+- **Logo Geometris Vektor & Animasi Halus:** Custom SVG brand logo (`components/KasDeskLogo.tsx`) bertema perisai brankas heksagonal dengan aksen neon elektrik dan tipografi modern, terpasang di landing (`/welcome`), login, dan register. Floating AI Coach bubble (`components/coach/FloatingCoachBubble.tsx`) dilengkapi animasi halus `animate-float-smooth` dan `animate-pulse-glow` dengan orb AI bercahaya.
+- **Global Floating AI Coach Bubble (FAB):** Terpasang di `AppShell.tsx` sehingga aktif di setiap rute dashboard (Home, Dompet, Transaksi, Laporan, Pengaturan). Mendukung pencatatan transaksi langsung via percakapan (*"makan siang 18000"* $\rightarrow$ auto-draft `#MAKAN` + tombol catat instan) dan dipagari dengan guardrail keuangan ketat (menolak coding secara santun).
+- **Vision OCR Saldo Screenshot Bank:** Endpoint `/api/wallets/scan-balance` dan modal `SyncWalletModal.tsx` mengekstrak saldo utama dari screenshot m-Banking/e-wallet (BCA, Mandiri, SeaBank, GoPay, DANA) dan mencatat mutasi penyesuaian `#PENYESUAIAN` secara atomik di database.
+- **Bank Statement & Mutasi Importer Engine (EPIC 4):** Modul `lib/importer/statement-parser.ts` dan modal `StatementImportModal.tsx` di rute `/transactions` mendukung impor CSV/Teks dari KlikBCA, Mandiri Livin, SeaBank, BRImo, dan notifikasi SMS dengan auto-kategori heuristik dan SHA-256 fingerprint deduplication.
+- **Smart Split-Bill & WhatsApp Settlement Engine (EPIC 2):** Modul `lib/split-bill.ts` dan modal `SplitBillModal.tsx` di rute `/debts` mendistribusikan pajak PB1 dan service restoran secara proporsional dengan jaminan selisih 0 Rupiah, integrasi 1-klik ke piutang, dan generator pesan WhatsApp.
+- **Predictive Cashflow Forecast & Financial Autopilot (EPIC 3):** Modul `lib/analytics/forecast.ts` dan visualizer SVG `CashflowForecast.tsx` di rute `/insights` mensimulasikan kurva saldo harian 30/60/90 hari dengan peringatan tanggal kritis, overdraft detection, dan What-If shock simulator.
+- **Emergency Fund Runway (Survival Index):** Modul `components/insights/RunwayMeter.tsx` memetakan ketahanan likuiditas dana darurat (bulan/hari) terhadap monthly burn rate aktual.
+- **Kalkulator Pajak Freelancer PPh 21:** Modul `lib/tax.ts` dan modal `TaxEstimatorModal.tsx` di rute `/coach` menghitung norma NPPN 50% dan tarif progresif UU HPP Pasal 17 (TK/0 s/d K/3) dengan tombol integrasi 1-klik ke AI Coach.
+- **Client-Side Zero-Knowledge Encrypted Backup (EPIC 9):** Modul `lib/crypto/backup.ts` dan modal `EncryptedBackupModal.tsx` di rute `/settings` mengenkripsi cadangan format `.kasdesk.enc` via Web Crypto API (AES-256-GCM + PBKDF2 100k iterasi), passphrase tidak pernah menyentuh server.
+- **Arsitektur Dual-Mode (Manual + AI Copilot):**
+  - Budget (`/planning`): Form manual + `AiBudgetModal.tsx` (rekomendasi 50/30/20 batch apply).
+  - Target Tabungan (`/vaults`): Form manual + `AiVaultPlannerModal.tsx` (skor kelayakan finansial 0-100 & setoran berkala).
+  - Utang & Piutang (`/debts`): Form manual + `AiDebtReminderModal.tsx` (generator draf WhatsApp anti-canggung gaya santun/santai/tegas).
+- **AI Model Upgrade:** OCR dan AI Coach Chat menggunakan seri model Gemini Flash terbaru (`gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-2.5-flash`) dengan otomatis *fallback cascade*.
+- **AI Coach Chat:** Jalankan `npm run test:coach` untuk memverifikasi autentikasi 401/307, validasi input, guardrail coding, dan deteksi percakapan transaksi.
+- **Master Unit Tests (151 Checks):** Jalankan `npm run test:unit` untuk menjalankan seluruh 12 test suite offline mandiri secara instan.
 - **Audit Browser Headless Nyata:** Jalankan `npm run test:browser` (70 uji via Chrome CDP WebSocket): memverifikasi 0 horizontal overflow pada ultra-compact mobile (320x568 iPhone SE), mobile standar (390x844), PC desktop (1280x800), penutupan modal via Escape, toggle mode privasi, peralihan tema terang/gelap, shortcut keyboard `c` / `/` / `p` / `?`, dan rute `/install` PWA pada seluruh viewport.
 - **Timezone Makassar (UTC+8):** Jalankan `npm run test:timezone` untuk memastikan perhitungan batas awal bulan 00:00:00 Makassar tepat hingga satuan detik.
 - Pastikan route groups `(public)` dan `(dashboard)` ter-build tanpa konflik URL.

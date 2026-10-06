@@ -23,24 +23,27 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 
 | Fitur Unggulan | Manfaat Utama |
 | :--- | :--- |
+| 🎨 **Custom SVG Geometric Brandmark** | Logo vektor presisi tinggi (`components/KasDeskLogo.tsx`) bertema heksagonal *vault-shield* bercahaya neon elektrik & tipografi modern. |
 | ⚡ **QuickLog 2-Tap** | Catat pengeluaran harian dalam 2 ketukan via Bottom Sheet & chip kategori pintar. |
 | 🧮 **Kalkulator di Kolom Nominal** | Hitung matematika langsung di input (`15000+5000` = `20.000`) dengan operator instan & live preview. |
+| 💬 **AI Coach Chat & Floating Bubble (FAB)** | Asisten finansial melayang di seluruh halaman (`FloatingCoachBubble.tsx`), catat transaksi percakapan otomatis (*"makan 18rb"*), dan guardrail ketat anti-coding. |
+| 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini 3.8 Flash otomatis mendeteksi nominal & tanggal transaksi. *Fallback cascade* otomatis ke 3.7 / 3.6 / 3.5 / 2.5 Flash. |
+| 📷 **AI Scan Saldo Screenshot Bank** | Ekstraksi saldo rekening langsung dari tangkapan layar m-Banking (BCA, Mandiri, SeaBank, GoPay, DANA) & auto-reconcile `#PENYESUAIAN`. |
+| 📥 **Bank Statement & Mutasi Importer (EPIC 4)** | Urai mutasi CSV/Teks (BCA KlikBCA, Mandiri Livin, SeaBank, BRImo, SMS) dengan SHA-256 deduplikasi & batch commit atomik. |
+| 👥 **Smart Split-Bill & WhatsApp Settlement (EPIC 2)** | Bagi tagihan pesanan per orang, distribusi proporsional pajak PB1/Service, zero-difference rounding, dan tautan WA otomatis. |
+| 📈 **Proyeksi Arus Kas & Tanggal Kritis (EPIC 3)** | Simulasi kurva saldo harian 30/60/90 hari dengan deteksi tanggal kritis, overdraft warning, dan simulator pengeluaran dadakan (What-If Shock). |
+| 🛡️ **Meteran Runway Kas & Dana Darurat** | Ukur daya tahan likuiditas kas (Survival Index dalam bulan/hari) terhadap monthly burn rate aktual. |
+| 💼 **Kalkulator Pajak Freelancer PPh 21** | Simulasi pajak tahunan dan tabungan bulanan mandiri norma NPPN 50% & tarif progresif UU HPP Pasal 17 (TK/0 s/d K/3). |
+| 🔒 **Cadangan Terenkripsi Zero-Knowledge (EPIC 9)** | Ekspor `.kasdesk.enc` berstandar militer (AES-256-GCM + PBKDF2 100k iterasi), passphrase tidak pernah terkirim ke server. |
+| 🤖 **Arsitektur Dual-Mode (Manual + AI Copilot)** | Setiap modul dilengkapi aksi manual & asisten AI: Budget 50/30/20, Simulasi Kelayakan Target Tabungan, dan AI Draf Pengingat Piutang WA. |
 | 🔐 **Kunci PIN & Biometrik** | Perlindungan layar penuh dengan PIN 6-digit atau FaceID / Sidik Jari (WebAuthn). |
 | 🔄 **Pengingat Langganan Rutin** | Pantau tagihan/langganan berkala dengan badge hitung mundur (*H-3*) dan tombol **Catat Sekarang** 1-klik. |
 | 🏷️ **Multi-Tag & Filter Label** | Kelompokkan mutasi dengan tag `#Liburan`, `#Kondangan`, `#Proyek` dan pantau total pengeluaran per-event. |
 | 📄 **Rekap Bulanan & WhatsApp Share** | Buat ringkasan bulanan estetik, bagikan 1-klik ke WhatsApp atau cetak / simpan ke PDF. |
 | 🏆 **Gamifikasi Health Score** | Tingkatkan level kesehatan finansialmu dari *Bronze*, *Silver*, *Gold*, hingga *Diamond Tier*. |
-| 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini 3.8 Flash otomatis mendeteksi nominal & tanggal transaksi. *Fallback cascade* otomatis ke 3.7 / 3.6 Flash saat server Google antre. |
-| 💬 **AI Coach Interaktif** | Konsultasi finansial interaktif didukung Gemini 3.8/3.7/3.6 Flash dengan konteks saldo dan budget real-time. |
 | ⌨️ **Keyboard Shortcut Desktop** | `c` catat cepat, `/` cari transaksi, `p` mode privasi, `?` daftar shortcut. |
-| 📋 **Tempel & Drop Struk** | Tempel struk dari clipboard (`Ctrl+V` / `Cmd+V`) atau drag-and-drop langsung ke QuickLog untuk scan OCR instan. |
-| 📳 **Haptic Feedback** | Getaran halus pada mobile setiap transaksi berhasil dicatat (native Web API, 0 KB). |
-| 🛡️ **Aman Harian (Safe-to-Spend)** | Menghitung sisa uang yang aman dibelanjakan hari ini agar tidak boncos sebelum gajian. |
-| 🎯 **Target Tabungan (Vault)** | Tabungan target dengan proyeksi waktu real-time yang terpisah dari uang belanja. |
-| 🤝 **Utang & Piutang** | Pantau kewajiban aktif lengkap dengan pembayaran penuh maupun cicilan bertahap. |
 | 📶 **100% Offline-First** | Transaksi diantrekan secara lokal via IndexedDB saat sinyal hilang dan otomatis sinkron saat online. |
-| 📑 **Export CSV & JSON** | Unduh laporan transaksi siap buka di Excel/Google Sheets atau export seluruh akun. |
-| 🗺️ **Roadmap PRD v2.0/v3.0** | Cetak biru lengkap arsitektur masa depan untuk Claude/Opus/Antigravity di [`PRD.md`](./PRD.md). |
+| 🗺️ **Master PRD v2.0/v3.0** | Cetak biru lengkap 9 Epic arsitektur masa depan untuk Claude/Opus/Hermes di [`PRD.md`](./PRD.md). |
 
 ---
 
@@ -158,17 +161,27 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + unit + AI Coach + cursor pagination
+# = typecheck + lint + 151 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 22 DB integration suites + release validation
 npm run test:full
 
-# Menjalankan seluruh Unit Tests (Rate Limit, QuickLog, Optimistic, Features, Timezone)
+# Menjalankan seluruh 151 Unit Tests (offline & deterministik)
 npm run test:unit
+
+# Test spesifik per modul inovasi:
+npm run test:tax               # Kalkulator PPh 21 Freelancer NPPN 50%
+npm run test:split-bill         # Algoritma Smart Split-Bill & PB1 Proportional
+npm run test:encrypted-backup   # AES-256-GCM + PBKDF2 100k Zero-Knowledge Backup
+npm run test:forecast           # Proyeksi Arus Kas Prediktif & What-If Simulator
+npm run test:balance-sync       # Rekonsiliasi Saldo Screenshot Bank Atomik
+npm run test:nlp                # NLP Conversational Transaction Parser & Guardrails
+npm run test:dual-mode-ai       # Dual-Mode AI Copilots (Budget, Vault, Debt WA)
+npm run test:statement          # Multi-Bank Statement CSV/Text Importer Engine
 
 # Audit Browser Headless Chrome CDP nyata (320px / 390px / 1280px, 0 horizontal overflow)
 npm run test:browser
 
-# 22 Database Integration Suites (TiDB): isolasi, saldo, transfer, utang, vault, konkurensi
+# 23 Database Integration Suites (TiDB Cloud): isolasi, saldo, transfer, utang, vault, balance-sync
 npm run test:db
 
 # Pengecekan Type Safety TypeScript
