@@ -52,6 +52,15 @@ export function AppLockSettings() {
     setSuccessMsg('')
   }
 
+  useEffect(() => {
+    if (modalMode === 'none') return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') resetModal()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [modalMode])
+
   const handleSetupClick = () => {
     setInputPin('')
     setTempPin('')

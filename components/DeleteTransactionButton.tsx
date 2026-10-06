@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Trash2, Loader2, X } from 'lucide-react'
 
 import { deleteTransaction } from '@/lib/actions'
@@ -23,6 +23,15 @@ export function DeleteTransactionButton({ txn }: { txn: TxnRow }) {
   const [confirm, setConfirm] = useState(false)
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!confirm) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirm(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [confirm])
 
   function onDelete() {
     setError(null)
