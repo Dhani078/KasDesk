@@ -106,16 +106,19 @@ async function runAudit() {
   await client.send('Page.enable');
   await client.send('Runtime.enable');
   await client.send('DOM.enable');
+  await client.send('Network.enable');
+  await client.send('Network.clearBrowserCookies');
 
   async function navigate(url) {
     await client.send('Page.navigate', { url });
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
       await sleep(200);
       const ready = await evalJs('document.readyState');
-      const hasContent = await evalJs('document.body ? document.body.innerText.length > 30 : false');
-      if (ready === 'complete' && hasContent) break;
+      const isBusy = await evalJs('!!document.querySelector("[aria-busy=\'true\']")');
+      const hasContent = await evalJs('document.body ? document.body.innerText.length > 50 : false');
+      if (ready === 'complete' && !isBusy && hasContent) break;
     }
-    await sleep(300);
+    await sleep(400);
   }
 
   async function evalJs(expr) {
