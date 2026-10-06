@@ -16,14 +16,18 @@ export const dynamic = 'force-dynamic'
 
 /** AI-OCR-SPEC §1.1 step 2 — client downscales first; this is the backstop. */
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
-function hasValidImageSignature(buf: Buffer, mime: string): boolean {
-  if (mime === 'image/jpeg') return buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
-  if (mime === 'image/png') return buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))
-  if (mime === 'image/webp') return buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP'
-  if (mime === 'image/heic' || mime === 'image/heif') return buf.length >= 12 && buf.toString('ascii', 4, 8) === 'ftyp'
-  return false
+function detectMime(buf: Buffer, clientMime?: string): string | null {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg'
+  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png'
+  if (buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return 'image/webp'
+  if (buf.length >= 12 && buf.toString('ascii', 4, 8) === 'ftyp') return 'image/heic'
+  const lower = (clientMime || '').toLowerCase().trim()
+  if (lower === 'image/jpeg' || lower === 'image/jpg' || lower === 'image/pjpeg') return 'image/jpeg'
+  if (lower === 'image/png' || lower === 'image/x-png') return 'image/png'
+  if (lower === 'image/webp') return 'image/webp'
+  if (lower === 'image/heic' || lower === 'image/heif') return 'image/heic'
+  return null
 }
 
 const GEMINI_ENDPOINT =
@@ -89,20 +93,23 @@ export async function POST(req: Request) {
 
   const file = form.get('image')
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'NO_IMAGE' }, { status: 400 })
+    return NextResponse.json({ error: 'NO_IMAGE', message: 'Tidak ada berkas gambar yang diunggah.' }, { status: 400 })
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'IMAGE_TOO_LARGE' }, { status: 413 })
-  }
-  if (!file.type || !ACCEPTED.includes(file.type)) {
-    return NextResponse.json({ error: 'UNSUPPORTED_TYPE' }, { status: 415 })
+    return NextResponse.json({ error: 'IMAGE_TOO_LARGE', message: 'Ukuran gambar melebihi batas 10 MB.' }, { status: 413 })
   }
 
   // Image is held in memory only — never written to disk (spec §1.1 / FR-OCR-7).
   const buf = Buffer.from(await file.arrayBuffer())
-  if (!hasValidImageSignature(buf, file.type)) {
-    return NextResponse.json({ error: 'INVALID_IMAGE' }, { status: 415 })
+  const mimeType = detectMime(buf, file.type)
+
+  if (!mimeType) {
+    return NextResponse.json({ error: 'UNSUPPORTED_TYPE', message: 'Format gambar tidak didukung (gunakan JPG, PNG, atau WebP).' }, { status: 415 })
   }
+  if (mimeType === 'image/heic') {
+    return NextResponse.json({ error: 'UNSUPPORTED_TYPE', message: 'Format HEIC/Live Photo tidak dapat dibaca oleh AI Vision. Mohon gunakan format JPG/PNG atau screenshot struk.' }, { status: 415 })
+  }
+
   const b64 = buf.toString('base64')
 
   // 5. Call Gemini (server-side key).
@@ -115,7 +122,7 @@ export async function POST(req: Request) {
           role: 'user',
           parts: [
             { text: 'Extract the receipt data from this image. Return only JSON.' },
-            { inlineData: { mimeType: file.type || 'image/jpeg', data: b64 } },
+            { inlineData: { mimeType, data: b64 } },
           ],
         },
       ],
@@ -129,41 +136,41 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // The key travels in a header, not the query string. A query string
-        // ends up in proxy logs, CDN logs and — worst — any error message that
-        // echoes the request URL, which is exactly how an API key leaks from a
-        // server-side call the user never sees.
         'x-goog-api-key': apiKey,
       },
       body: payloadBody,
       signal: AbortSignal.timeout(30_000),
     })
 
-    // Auto-fallback if the primary flash model faces temporary high demand (503) or quota rate limit (429)
-    if (upstream.status === 503 || upstream.status === 429) {
-      for (const fallbackModel of ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-flash-latest']) {
-        const fallbackRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-            body: payloadBody,
-            signal: AbortSignal.timeout(30_000),
+    // Auto-fallback if the primary flash model faces temporary high demand (503), quota limit (429), or server error
+    if (!upstream.ok && (upstream.status >= 500 || upstream.status === 429)) {
+      for (const fallbackModel of ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']) {
+        try {
+          const fallbackRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+              body: payloadBody,
+              signal: AbortSignal.timeout(30_000),
+            }
+          )
+          if (fallbackRes.ok) {
+            upstream = fallbackRes
+            break
           }
-        )
-        if (fallbackRes.status !== 503 && fallbackRes.status !== 429) {
-          upstream = fallbackRes
-          break
+        } catch {
+          // Continue to next fallback model
         }
       }
     }
 
     if (upstream.status === 429) {
-      return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429 })
+      return NextResponse.json({ error: 'RATE_LIMITED', message: 'Server AI sedang sibuk. Silakan coba beberapa saat lagi.' }, { status: 429 })
     }
     if (!upstream.ok) {
       console.error('[scan-receipt] upstream', upstream.status)
-      return NextResponse.json({ error: 'OCR_UPSTREAM_ERROR' }, { status: 502 })
+      return NextResponse.json({ error: 'OCR_UPSTREAM_ERROR', message: 'Gagal menghubungi layanan AI. Silakan coba lagi.' }, { status: 502 })
     }
 
     const payload = await upstream.json()
@@ -174,22 +181,19 @@ export async function POST(req: Request) {
     modelJson = JSON.parse(cleaned)
   } catch (e) {
     console.error('[scan-receipt]', e instanceof Error ? e.message : e)
-    return NextResponse.json({ error: 'OCR_FAILED' }, { status: 502 })
+    return NextResponse.json({ error: 'OCR_FAILED', message: 'Gagal memproses gambar struk. Silakan periksa gambar atau catat manual.' }, { status: 502 })
   }
 
   // 6. Validate — spec §6.1. Never trust model output shape.
   const parsed = GeminiOCRResponseSchema.safeParse(modelJson)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'OCR_INVALID_RESPONSE' }, { status: 502 })
+    return NextResponse.json({ error: 'OCR_INVALID_RESPONSE', message: 'Format data struk tidak dikenali.' }, { status: 502 })
   }
 
   const d = parsed.data
 
-  // spec §6.1 — reject non-positive prices/quantities outright.
-  const badItems = d.items.some((i) => i.price <= 0 || i.quantity <= 0)
-  if (badItems) {
-    return NextResponse.json({ error: 'OCR_INVALID_RESPONSE' }, { status: 502 })
-  }
+  // Sanitize line items: retain items with positive price & quantity without crashing on discount rows
+  d.items = (d.items || []).filter((i) => i.price > 0 && i.quantity > 0)
 
   // Coerce unknown categories instead of failing (spec §2.2).
   const category = (CATEGORY_ENUM as readonly string[]).includes(d.detected_category)

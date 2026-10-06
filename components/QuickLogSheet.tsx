@@ -417,6 +417,7 @@ function Sheet({
             <ScanReceiptButton
               variant="compact"
               onResult={(r) => {
+                setError(null)
                 setActiveScan(r)
                 if (r.detected_total) {
                   setAmountText(formatIDR(r.detected_total).replace(/^Rp\s?/, ''))
@@ -439,6 +440,23 @@ function Sheet({
         </div>
 
         <ScanWarningBanner scan={activeScan} />
+
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 flex items-start justify-between gap-2 rounded-2xl border border-danger/30 bg-danger/10 p-3 text-xs font-medium text-danger animate-fade-in-up"
+          >
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-danger hover:opacity-70 p-0.5 cursor-pointer"
+              aria-label="Tutup pesan error"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {saved ? (
           <div className="flex flex-col items-center gap-3 py-8">
