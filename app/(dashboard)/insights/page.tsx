@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { getMonthWindow } from '@/lib/timezone'
 import { MonthlyRecapModal } from '@/components/MonthlyRecapModal'
 import { FinancialHealthScoreCard } from '@/components/FinancialHealthScoreCard'
+import { RunwayMeter } from '@/components/insights/RunwayMeter'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +67,12 @@ export default async function InsightsPage() {
       </header>
 
       <FinancialHealthScoreCard dash={dash} />
+
+      <RunwayMeter
+        totalBalance={dash.totalBalance}
+        monthlyExpense={dash.monthlyExpense}
+        weeklyTotal={weeklyTotal}
+      />
 
       <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Ringkasan laporan">
         <article className="surface-card rounded-2xl p-4"><TrendingDown className="h-4 w-4 text-accent-expense" aria-hidden /><p className="mt-3 text-xs text-text-secondary">7 hari</p><p className="mt-1 font-mono text-base font-semibold sm:text-lg"><PrivacyAmount value={weeklyTotal} /></p></article>

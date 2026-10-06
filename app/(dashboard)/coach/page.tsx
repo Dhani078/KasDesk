@@ -4,6 +4,7 @@ import { getSpendingFlow, getTopCategories } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { CoachChat } from '@/components/CoachChat'
+import { TaxEstimatorModal } from '@/components/coach/TaxEstimatorModal'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +44,17 @@ export default async function CoachPage() {
   return (
     <main className="page-shell max-w-3xl">
       <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard</Link>
-      <header className="page-header"><div><p className="eyebrow">Coach</p><h1>Asisten keuangan</h1><p>Saran praktis dari pola saldo, pengeluaran, tabungan, dan kewajibanmu.</p></div><span className="icon-tile"><Lightbulb className="h-5 w-5" aria-hidden /></span></header>
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">Coach</p>
+          <h1>Asisten keuangan</h1>
+          <p>Saran praktis dari pola saldo, pengeluaran, tabungan, dan kewajibanmu.</p>
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
+            <TaxEstimatorModal defaultGross={dash.monthlyIncome > 0 ? dash.monthlyIncome * 12 : undefined} />
+          </div>
+        </div>
+        <span className="icon-tile"><Lightbulb className="h-5 w-5" aria-hidden /></span>
+      </header>
 
       <CoachChat
         initialContext={{

@@ -108,6 +108,19 @@ export function CoachChat({ initialContext }: Props) {
   const [isPending, startTransition] = useTransition()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const chatBottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handleCoachPrompt = (e: Event) => {
+      const custom = e as CustomEvent<{ prompt?: string }>
+      if (custom.detail?.prompt) {
+        setInput(custom.detail.prompt)
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('kasdesk:coach-prompt', handleCoachPrompt)
+    return () => window.removeEventListener('kasdesk:coach-prompt', handleCoachPrompt)
+  }, [])
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -382,6 +395,7 @@ export function CoachChat({ initialContext }: Props) {
         className="border-t border-border-outer bg-surface p-3 sm:p-4 flex items-center gap-2.5"
       >
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
