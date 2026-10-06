@@ -12,6 +12,7 @@ import { EditTransactionButton } from '@/components/EditTransactionButton'
 import { DeleteTransactionButton } from '@/components/DeleteTransactionButton'
 import { TransactionFilter } from '@/components/TransactionFilter'
 import { EmptyState } from '@/components/EmptyState'
+import { StatementImportModal } from '@/components/importer/StatementImportModal'
 
 export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 30
@@ -34,7 +35,10 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const userId = await requireUserId()
   if (!userId) return null
   const q = await searchParams
-  const walletRows = await db.select({ id: wallets.id, name: wallets.name }).from(wallets).where(eq(wallets.userId, userId))
+  const walletRows = await db
+    .select({ id: wallets.id, name: wallets.name, balance: wallets.balance })
+    .from(wallets)
+    .where(and(eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
   const walletIds = new Set(walletRows.map((wallet) => wallet.id))
   const type = q.type === 'income' || q.type === 'expense' || q.type === 'transfer' ? q.type : undefined
   const category = CATEGORY_ENUM.includes(q.category as (typeof CATEGORY_ENUM)[number]) ? q.category : undefined
@@ -71,7 +75,26 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
 
   return <main className="page-shell max-w-3xl">
     <Link href="/" className="back-link"><ArrowLeft className="h-4 w-4" aria-hidden /> Dashboard</Link>
-    <header className="page-header"><div><p className="eyebrow">Riwayat</p><h1>Semua transaksi</h1><p>Cari judul, catatan, kategori, dompet, dan rentang tanggal.</p></div><div className="flex flex-wrap items-center gap-2"><a href="/api/export/csv" download className="secondary-button" title="Unduh data riwayat transaksi dalam format CSV"><Download className="h-4 w-4" aria-hidden /> Unduh CSV</a>{filtered && <Link href="/transactions" className="secondary-button"><X className="h-4 w-4" aria-hidden /> Reset</Link>}</div></header>
+    <header className="page-header">
+      <div>
+        <p className="eyebrow">Riwayat</p>
+        <h1>Semua transaksi</h1>
+        <p>Cari judul, catatan, kategori, dompet, dan rentang tanggal.</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <StatementImportModal
+          wallets={walletRows.map((w) => ({ id: w.id, name: w.name, balance: Number(w.balance) }))}
+        />
+        <a href="/api/export/csv" download className="secondary-button" title="Unduh data riwayat transaksi dalam format CSV">
+          <Download className="h-4 w-4" aria-hidden /> Unduh CSV
+        </a>
+        {filtered && (
+          <Link href="/transactions" className="secondary-button">
+            <X className="h-4 w-4" aria-hidden /> Reset
+          </Link>
+        )}
+      </div>
+    </header>
     <TransactionFilter
       walletRows={walletRows}
       categories={CATEGORY_ENUM}

@@ -51,6 +51,7 @@ const SCRIPTS = [
   'test-export.js',
   'test-logout.js',
   'test-google-flag.js',
+  'test-balance-sync.js',
 ]
 
 console.log('==============================================')
