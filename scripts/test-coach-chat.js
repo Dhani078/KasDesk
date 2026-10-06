@@ -104,6 +104,28 @@ async function main() {
   check('Gemini 3.6 Flash requested and resolved from modern models', chatJson36.requestedModel === 'gemini-3.6-flash' && ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'].includes(chatJson36.model), `got requested=${chatJson36.requestedModel}, resolved=${chatJson36.model}`)
   console.log(`    [AI Reply (${chatJson36.model})]: ${chatJson36.reply ? chatJson36.reply.substring(0, 85).replace(/\n/g, ' ') : ''}...`)
 
+  // 6. Test domain guardrail against coding requests
+  console.log('  Testing domain guardrail against off-topic coding requests...')
+  const codeGuardRes = curl(['-X', 'POST', '-H', 'Content-Type: application/json', '-d', JSON.stringify({
+    message: 'buatkan script python untuk scraping website',
+    model: 'gemini-3.8-flash'
+  }), `${BASE}/api/coach/chat`])
+  let codeGuardJson = {}
+  try { codeGuardJson = JSON.parse(codeGuardRes) } catch {}
+  check('coding request is politely refused with guardrail', codeGuardJson.isOffTopic === true && codeGuardJson.reply.includes('KasDesk'))
+
+  // 7. Test natural language transaction detection (makan 18000)
+  console.log('  Testing conversational transaction intent (saya makan hari ini 18000)...')
+  const txIntentRes = curl(['-X', 'POST', '-H', 'Content-Type: application/json', '-d', JSON.stringify({
+    message: 'saya makan hari ini 18000',
+    model: 'gemini-3.8-flash'
+  }), `${BASE}/api/coach/chat`])
+  let txIntentJson = {}
+  try { txIntentJson = JSON.parse(txIntentRes) } catch {}
+  check('transaction intent detected in response', txIntentJson.action?.type === 'transaction_draft')
+  check('transaction draft amount matches 18000', txIntentJson.action?.data?.amount === 18000)
+  check('transaction draft category is MAKAN', txIntentJson.action?.data?.categoryTag === 'MAKAN')
+
   // Cleanup
   try {
     fs.unlinkSync(jar)

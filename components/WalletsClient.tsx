@@ -9,6 +9,7 @@ import { formatIDR } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 import { NewWalletSheet, TYPE_LABEL } from '@/components/wallets/NewWalletSheet'
+import { SyncWalletModal } from '@/components/wallets/SyncWalletModal'
 
 type WalletLite = {
   id: string
@@ -37,6 +38,7 @@ export function WalletsClient({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {wallets.length >= 1 && <SyncWalletModal wallets={wallets} />}
           {wallets.length >= 2 && (
             <button
               type="button"

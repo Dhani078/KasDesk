@@ -6,6 +6,7 @@ import { getDashboardSummary } from '@/lib/analytics/actions'
 import { getTopCategories } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
 import { AI_MODELS, type AiModel } from '@/lib/types'
+import { parseCoachMessageNlp } from '@/lib/coach/nlp-parser'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,12 @@ function generateFallbackAdvice(
   top: { category: string; amount: number }[],
   query: string
 ): string {
+  const nlp = parseCoachMessageNlp(query)
+  if (nlp.isTransactionIntent && nlp.transactionDraft) {
+    const draft = nlp.transactionDraft
+    return `Siap! Saya mendeteksi ${draft.type === 'expense' ? 'pengeluaran' : 'pemasukan'} sebesar **${formatIDR(draft.amount)}** untuk **${draft.notes}** (Kategori #${draft.categoryTag}).\n\nSilakan konfirmasi pada kartu di bawah ini untuk langsung menyimpannya ke dompet KasDesk Anda.`
+  }
+
   const q = query.toLowerCase()
   const topCat = top[0]?.category || 'Umum'
   const topAmt = top[0]?.amount ? formatIDR(top[0].amount) : 'Rp 0'
@@ -64,8 +71,13 @@ function buildSystemPrompt(
     ? topCategories.map((c) => `${c.category}: ${formatIDR(c.amount)}`).join(', ')
     : 'Belum ada data pengeluaran'
 
-  return `Kamu adalah KasDesk AI Coach, asisten keuangan pribadi yang cerdas, praktis, dan ramah.
+  return `Kamu adalah KasDesk AI Coach, asisten keuangan pribadi yang cerdas, praktis, dan ramah khusus untuk aplikasi KasDesk.
 Tugasmu adalah menganalisis kondisi keuangan pengguna dan memberikan saran yang to-the-point, realistis, dan mudah dieksekusi.
+
+PENTING - BATASAN TOPIK (GUARDRAIL):
+- Kamu HANYA melayani topik manajemen keuangan pribadi, pencatatan transaksi, dompet, budget, tabungan (vaults), utang-piutang, pajak freelancer, dan fitur KasDesk.
+- JANGAN PERNAH membuat kode program (Python, JS, HTML, script bot, dsb) atau membahas coding/programming teknis. Jika pengguna meminta coding atau topik di luar keuangan, tolak secara santun dan kembalikan percakapan ke manajemen keuangan KasDesk.
+- Jika pengguna memberitahukan pengeluaran atau pemasukan (misal: "saya makan hari ini 18000" atau "beli bensin 25k"), tanggapi dengan konfirmasi ramah bahwa transaksi siap dicatat dan berikan catatan singkat apakah pengeluaran tersebut wajar terhadap batas belanja aman harian (${formatIDR(dash.safeDailySpend)}/hari).
 
 Berikut ringkasan data finansial terkini pengguna:
 - Total Saldo Semua Dompet: ${formatIDR(dash.totalBalance)}
@@ -81,8 +93,7 @@ Panduan respons:
 1. Jawab dalam Bahasa Indonesia yang santun, bersahabat, dan jelas.
 2. Gunakan format Rupiah (${formatIDR(100000)}) untuk setiap angka uang.
 3. Berikan saran terarah (maksimal 2-3 poin tindakan konkret jika diperlukan).
-4. Jika pengguna bertanya di luar keuangan/budget/tabungan/utang, arahkan kembali dengan sopan ke topik manajemen finansial KasDesk.
-5. Jangan bertele-tele, hindari jargon keuangan rumit.`
+4. Jangan bertele-tele, hindari jargon keuangan rumit.`
 }
 
 export async function POST(req: Request) {
@@ -127,6 +138,18 @@ export async function POST(req: Request) {
   }
 
   const { message, model: chosenModel, history } = parsed.data
+
+  // 4b. Guardrail check & transaction intent parsing
+  const nlp = parseCoachMessageNlp(message)
+  if (nlp.isOffTopicCoding) {
+    return NextResponse.json({
+      reply: 'Maaf, saya adalah asisten finansial khusus aplikasi KasDesk. Saya tidak dapat membuat kode program atau menangani tugas pemrograman teknis.\n\nNamun, saya siap membantu Anda menganalisis saldo, mencatat transaksi cepat, mengecek batas belanja aman, mengestimasi pajak freelancer, atau menyusun strategi tabungan di KasDesk. Ada yang ingin dihitung atau dievaluasi dari keuangan Anda?',
+      model: chosenModel,
+      requestedModel: chosenModel,
+      usedFallback: false,
+      isOffTopic: true,
+    })
+  }
 
   // 5. Gather real financial context
   const [dash, top] = await Promise.all([getDashboardSummary(), getTopCategories(5)])
@@ -228,6 +251,9 @@ export async function POST(req: Request) {
       model: chosenModel,
       requestedModel: chosenModel,
       usedFallback: true,
+      action: nlp.isTransactionIntent && nlp.transactionDraft
+        ? { type: 'transaction_draft', data: nlp.transactionDraft }
+        : undefined,
       note: upstreamError
         ? `Analisis berbasis metrik lokal (${upstreamError})`
         : 'Analisis berbasis metrik lokal KasDesk saat server antre',
@@ -239,5 +265,8 @@ export async function POST(req: Request) {
     model: resolvedModel,
     requestedModel: chosenModel,
     usedFallback: resolvedModel !== chosenModel,
+    action: nlp.isTransactionIntent && nlp.transactionDraft
+      ? { type: 'transaction_draft', data: nlp.transactionDraft }
+      : undefined,
   })
 }
