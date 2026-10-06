@@ -8,6 +8,7 @@ import { formatIDR, formatDate } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 import { NewDebtSheet } from '@/components/debts/NewDebtSheet'
+import { SplitBillModal } from '@/components/splitbill/SplitBillModal'
 
 export type DebtLite = {
   id: string
@@ -31,20 +32,23 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
 
   return (
     <>
-      <div className="mb-5 flex items-baseline justify-between">
+      <div className="mb-5 flex items-baseline justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold text-text-primary">Utang &amp; Piutang</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-text-secondary">
             Belum lunas <PrivacyAmount value={totalOpen} />
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer"
-        >
-          <Plus className="h-3.5 w-3.5" /> Catat
-        </button>
+        <div className="flex items-center gap-2">
+          <SplitBillModal />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" /> Catat
+          </button>
+        </div>
       </div>
 
       <div className="mb-5 flex gap-1 rounded-xl bg-surface p-1">
