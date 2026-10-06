@@ -1,5 +1,13 @@
 # Changelog
 
+## Freelancer Tax Simulator & Emergency Fund Runway — 2026-10-06
+
+- Implemented Indonesian personal income tax simulator (`lib/tax.ts` & `components/coach/TaxEstimatorModal.tsx`) for freelancers/creators/contractors under the official DJP Norma Penghitungan Penghasilan Neto (NPPN PER-17/PJ/2015) and progressive brackets (UU HPP Pasal 17).
+- Added 1-click consultation bridge from tax calculation into AI Coach chat via custom prompt injection.
+- Added Emergency Fund Runway & Survival Index (`components/insights/RunwayMeter.tsx`) to `/insights`, calculating liquid burn rate and survival timeline (0 to 12+ months) with visual status indicators.
+- Created dedicated test suite `scripts/test-tax.js` (11 checks covering zero income, PTKP deductions TK/0 through K/3, progressive brackets, and monthly reserve precision), wired into `npm run test:unit`.
+- Cleaned unused icon imports and validated zero ESLint warnings and zero TypeScript errors.
+
 ## OCR Resilience & Error Transparency — 2026-10-06
 
 - Fixed OCR failure caused by upstream Gemini 3.8/3.7 demand spikes (503) by expanding automatic cascade across `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, and `gemini-2.5-flash`.
