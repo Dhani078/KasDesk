@@ -1,5 +1,13 @@
 # Changelog
 
+## Custom Geometric SVG Brandmark & Ultra-Smooth Floating AI Core — 2026-10-06
+
+- Designed custom isometric vector SVG brand logo (`components/KasDeskLogo.tsx`) featuring a faceted hexagonal vault shield in electric cobalt, cyan, and deep indigo with prismic glow and modern typography.
+- Replaced plain generic icons across Welcome landing, Login, and Register screens with the responsive vector `KasDeskLogo`.
+- Transformed the global floating AI Coach bubble (`components/coach/FloatingCoachBubble.tsx`) into an ultra-smooth floating orb:
+  - Added hardware-accelerated fluid float & ambient pulse animations (`animate-float-smooth`, `animate-pulse-glow` in `globals.css`).
+  - Added glassmorphic backdrop with custom animated glowing AI core and micro-interaction spring physics (`cubic-bezier(0.16, 1, 0.3, 1)`).
+
 ## Global Floating AI Coach Bubble (FAB) — 2026-10-06
 
 - Added a floating AI Coach Chat Bubble (`components/coach/FloatingCoachBubble.tsx`) mounted globally inside `AppShell.tsx` across every dashboard view (Home, Dompet, Transaksi, Laporan, dsb).

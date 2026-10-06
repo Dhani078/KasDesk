@@ -1,6 +1,7 @@
 import { RegisterForm } from './RegisterForm'
 import { GoogleSignInButton } from '@/components/GoogleSignInButton'
 import { isGoogleEnabled } from '@/lib/auth/google-enabled'
+import { KasDeskLogo } from '@/components/KasDeskLogo'
 
 /** Server component: resolves the Google flag server-side (no secret to client).
  *
@@ -15,7 +16,9 @@ export default function RegisterPage() {
   return (
     <main className="flex min-h-dvh flex-col justify-center px-6 py-12">
       <div className="surface-card mx-auto w-full max-w-md rounded-3xl p-6 sm:p-8">
-        <p className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-accent">KASDESK</p>
+        <div className="mb-6">
+          <KasDeskLogo size="md" href="/welcome" />
+        </div>
         <h1 className="text-3xl font-semibold tracking-tight text-text-primary">Mulai lebih teratur</h1>
         <p className="mb-8 mt-2 text-sm leading-6 text-text-secondary">Buat ruang aman untuk keputusan finansialmu.</p>
 

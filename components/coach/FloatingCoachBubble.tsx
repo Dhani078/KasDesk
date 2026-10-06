@@ -139,10 +139,23 @@ export function FloatingCoachBubble() {
           onClick={() => setIsOpen(true)}
           title="Tanya AI Coach KasDesk"
           aria-label="Buka Chat AI Coach"
-          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-accent to-accent-solid p-3.5 sm:px-4 sm:py-3 text-white shadow-2xl transition hover:brightness-110 hover:scale-105 active:scale-95 cursor-pointer ring-2 ring-accent/30 animate-fade-in group"
+          className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2.5 rounded-full bg-surface/90 backdrop-blur-xl border border-accent/40 p-2.5 pr-4 text-text-primary shadow-[0_8px_32px_rgba(79,127,232,0.35)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-105 hover:border-accent hover:shadow-[0_12px_40px_rgba(56,189,248,0.5)] active:scale-95 cursor-pointer group animate-float-smooth animate-pulse-glow"
         >
-          <Sparkles className="h-5 w-5 animate-spin-slow group-hover:rotate-12 transition-transform" />
-          <span className="hidden sm:inline text-xs font-semibold tracking-wide">Tanya AI Coach</span>
+          {/* Glowing Animated AI Core Orb */}
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-accent to-sky-400 p-0.5 shadow-md">
+            <span className="absolute inset-0 rounded-full bg-accent/40 animate-ping opacity-50" />
+            <div className="relative flex h-full w-full items-center justify-center rounded-full bg-canvas/40 backdrop-blur-sm">
+              <Sparkles className="h-4 w-4 text-white transition-transform duration-500 group-hover:rotate-45" />
+            </div>
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-[11px] font-bold tracking-wide text-text-primary group-hover:text-accent transition-colors">
+              AI Coach
+            </span>
+            <span className="hidden sm:inline text-[9px] text-text-secondary leading-none">
+              Tanya / Catat Cepat
+            </span>
+          </div>
         </button>
       )}
 
@@ -151,20 +164,23 @@ export function FloatingCoachBubble() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 w-[94vw] sm:w-[400px] h-[520px] max-h-[80vh] flex flex-col surface-card rounded-3xl border border-border-outer shadow-2xl overflow-hidden animate-fade-in-up"
+          className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 w-[94vw] sm:w-[410px] h-[530px] max-h-[82vh] flex flex-col surface-card rounded-3xl border border-border-outer shadow-[0_20px_60px_rgba(0,0,0,0.45)] overflow-hidden backdrop-blur-2xl animate-fade-in-up"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-border-inner bg-surface/80 p-3.5 backdrop-blur-sm">
+          <div className="flex items-center justify-between border-b border-border-inner bg-surface/80 p-3.5 backdrop-blur-md">
             <div className="flex items-center gap-2.5">
-              <span className="icon-tile !h-8 !w-8 text-accent">
+              <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-accent to-sky-400 shadow-sm text-white">
                 <Bot className="h-4 w-4" />
-              </span>
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent-income ring-2 ring-canvas" />
+              </div>
               <div>
-                <h3 className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+                <h3 className="text-xs font-bold text-text-primary flex items-center gap-1.5">
                   <span>KasDesk AI Coach</span>
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-income animate-pulse" />
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-accent/15 text-accent font-semibold">
+                    v2.5
+                  </span>
                 </h3>
-                <p className="text-[10px] text-text-secondary">Asisten Finansial Pintar</p>
+                <p className="text-[10px] text-text-secondary">Asisten Finansial &amp; Catat Percakapan</p>
               </div>
             </div>
 

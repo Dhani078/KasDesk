@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Cloud, LockKeyhole, ReceiptText, Smartphone, WalletCards } from 'lucide-react'
+import { ArrowRight, BarChart3, Cloud, LockKeyhole, ReceiptText, Smartphone } from 'lucide-react'
 import { PwaInstall } from '@/components/PwaInstall'
+import { KasDeskLogo } from '@/components/KasDeskLogo'
 
 const FEATURES = [
   { Icon: ReceiptText, title: 'Catat lebih cepat', body: 'Pemasukan, pengeluaran, transfer, dan pemindaian struk dengan Gemini 3.8 Flash.' },
@@ -14,10 +15,7 @@ export default function WelcomePage() {
     <main className="min-h-dvh overflow-hidden px-5 py-6 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-6xl">
         <nav className="flex items-center justify-between" aria-label="Navigasi landing">
-          <Link href="/welcome" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent-solid text-white"><WalletCards className="h-5 w-5" aria-hidden /></span>
-            KASDESK
-          </Link>
+          <KasDeskLogo size="md" href="/welcome" />
           <div className="flex items-center gap-2">
             <Link href="/login" className="min-h-11 rounded-xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/[0.04] hover:text-text-primary">Masuk</Link>
             <Link href="/register" className="min-h-11 rounded-xl bg-text-primary px-4 py-2.5 text-sm font-semibold text-canvas transition hover:opacity-90">Mulai</Link>

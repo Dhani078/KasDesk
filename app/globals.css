@@ -138,3 +138,30 @@ button:active,a:active { transform:scale(.985); }
   animation: scanBeam 2.2s ease-in-out infinite;
 }
 
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(79, 127, 232, 0.25), 0 0 0 1px rgba(79, 127, 232, 0.2);
+  }
+  50% {
+    box-shadow: 0 14px 40px rgba(56, 189, 248, 0.45), 0 0 0 2px rgba(56, 189, 248, 0.4);
+  }
+}
+
+@keyframes floatSmooth {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3.5s ease-in-out infinite;
+}
+
+.animate-float-smooth {
+  animation: floatSmooth 4s ease-in-out infinite;
+}
+
+
