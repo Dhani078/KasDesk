@@ -1,5 +1,14 @@
 # Changelog
 
+## Bank Statement & Mutasi Importer Engine (EPIC 4) — 2026-10-06
+
+- Implemented privacy-first local Bank Statement & E-Wallet Mutasi parser (`lib/importer/statement-parser.ts`) supporting BCA (KlikBCA / myBCA), Mandiri Livin, SeaBank, BRImo, and generic CSV/TSV/Notification text.
+- Added smart heuristic auto-categorization mapping Indonesian merchants (Indomaret, Alfamart, SPBU Pertamina, PLN, Tokopedia, Shopee, dsb) into KasDesk category tags.
+- Built deterministic SHA-256 mutation fingerprinting for automated deduplication against existing transactions.
+- Created interactive review & commit modal `StatementImportModal` (`components/importer/StatementImportModal.tsx`) with row selection checkboxes, editable category assignment, live inflow/outflow delta calculations, and atomic batch commit server action (`lib/importer/actions.ts`).
+- Mounted `StatementImportModal` on the `/transactions` history dashboard.
+- Authored test suite `scripts/test-statement-parser.js` (20 checks), added to `npm run test:unit`.
+
 ## Dual-Mode AI Copilot Across All Modules (Manual + AI) — 2026-10-06
 
 - Expanded KasDesk into a complete Dual-Mode architecture where every key financial module provides both traditional manual controls and 1-tap AI assistance:
