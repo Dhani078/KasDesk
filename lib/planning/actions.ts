@@ -138,3 +138,38 @@ export async function executeRecurringAction(formData: FormData) {
   revalidatePath('/insights')
   revalidatePath('/transactions')
 }
+
+export async function applyAiBudgetBatchAction(params: {
+  month: string
+  items: { category: (typeof CATEGORY_ENUM)[number]; amount: number }[]
+}): Promise<{ success: boolean; count?: number; error?: string }> {
+  const userId = await requireUserId()
+  if (!userId) return { success: false, error: 'UNAUTHENTICATED' }
+
+  const { month, items } = params
+  if (!items?.length) return { success: false, error: 'Tidak ada item budget yang dipilih' }
+
+  try {
+    await db.transaction(async (tx) => {
+      for (const item of items) {
+        if (!item.amount || item.amount <= 0) continue
+        await tx
+          .insert(budgets)
+          .values({
+            userId,
+            month,
+            categoryTag: item.category,
+            amount: item.amount,
+          })
+          .onDuplicateKeyUpdate({ set: { amount: item.amount } })
+      }
+    })
+
+    revalidatePath('/planning')
+    revalidatePath('/insights')
+    return { success: true, count: items.length }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal menerapkan rekomendasi AI' }
+  }
+}
+
