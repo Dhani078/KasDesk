@@ -8,17 +8,17 @@ import { z } from 'zod'
  * response can never reach the client un-shape-checked).
  */
 export const GeminiOCRResponseSchema = z.object({
-  merchant_name: z.string(),
+  merchant_name: z.string().default('UNKNOWN'),
   items: z.array(
     z.object({
       name: z.string(),
-      price: z.number(),
-      quantity: z.number(),
+      price: z.coerce.number().default(0),
+      quantity: z.coerce.number().default(1),
     }),
-  ),
-  detected_total: z.number(),
-  confidence_score: z.number().min(0).max(1),
-  detected_category: z.string(),
+  ).default([]),
+  detected_total: z.coerce.number().default(0),
+  confidence_score: z.coerce.number().min(0).max(1).default(0.8),
+  detected_category: z.string().default('LAINNYA'),
   detected_date: z.string().nullable().optional(),
 })
 

@@ -96,11 +96,16 @@ export function ScanReceiptButton({
         return
       }
       if (!res.ok) {
-        onUnavailable?.(
-          json?.error === 'RATE_LIMITED'
-            ? 'Terlalu banyak scan. Coba lagi nanti.'
-            : 'Scan gagal. Silakan catat manual.',
-        )
+        const msg =
+          json?.message ||
+          (json?.error === 'RATE_LIMITED'
+            ? 'Terlalu banyak scan. Coba lagi dalam beberapa saat.'
+            : json?.error === 'IMAGE_TOO_LARGE'
+            ? 'Ukuran gambar terlalu besar (maksimal 10 MB).'
+            : json?.error === 'UNSUPPORTED_TYPE'
+            ? 'Format gambar tidak didukung (gunakan JPG, PNG, atau WebP).'
+            : 'Scan gagal memproses struk. Silakan catat manual.')
+        onUnavailable?.(msg)
         return
       }
       onResult(json as ScanResult)
@@ -108,7 +113,7 @@ export function ScanReceiptButton({
       if (err instanceof Error && err.name === 'AbortError') {
         return // User voluntarily cancelled
       }
-      onUnavailable?.('Tidak dapat terhubung. Silakan catat manual.')
+      onUnavailable?.('Tidak dapat terhubung ke server. Silakan catat manual.')
     } finally {
       clearInterval(stepTimer)
       abortCtrlRef.current = null

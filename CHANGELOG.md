@@ -1,5 +1,14 @@
 # Changelog
 
+## OCR Resilience & Error Transparency — 2026-10-06
+
+- Fixed OCR failure caused by upstream Gemini 3.8/3.7 demand spikes (503) by expanding automatic cascade across `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, and `gemini-2.5-flash`.
+- Hardened MIME detection via binary magic byte signature matching, resolving browser MIME mismatches (`image/jpg`, `application/octet-stream`, `image/heic`).
+- Prevented OCR rejection on discount rows by sanitizing line items instead of throwing 502 `OCR_INVALID_RESPONSE`.
+- Enhanced `lib/ocr/image-utils.ts` client-side downscaling with canvas-to-JPEG conversion and HTMLImageElement fallback.
+- Added visible top-level error banner and specific server error message propagation in `QuickLogSheet` and `ScanReceiptButton`.
+- Verified full test gate: `npm run test:full` and `npm run test:ocr-real` passed with 100% success.
+
 ## UX Optimization & Transfer Shortcuts — 2026-10-05
 
 - Added instant 1-tap transfer action in `DashboardQuickActions` and `WalletsClient`, dispatching custom event with `initialType: 'transfer'` directly to `QuickLogSheet`.
