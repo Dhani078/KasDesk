@@ -45,12 +45,12 @@ export default async function WalletDetailPage({
     .limit(100)
 
   return (
-    <main className="min-h-dvh px-5 pt-8 pb-32">
+    <main className="page-shell max-w-3xl pb-32">
       <Link
         href="/wallets"
-        className="mb-4 inline-flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary"
+        className="back-link mb-3"
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> Dompet
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Dompet
       </Link>
 
       <header className="mb-6">

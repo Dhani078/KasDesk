@@ -42,11 +42,20 @@ export function QuickLogSheet({
   const [internalOpen, setInternalOpen] = useState(false)
   const [syncedWallets, setSyncedWallets] = useState<WalletLite[]>([])
   const [scanned, setScanned] = useState<ScanResult | null>(null)
+  const [initialType, setInitialType] = useState<'income' | 'expense' | 'transfer'>('expense')
 
   const wallets = initialWallets.length > 0 ? initialWallets : syncedWallets
 
   useEffect(() => {
-    const handleOpen = () => setInternalOpen(true)
+    const handleOpen = (e?: Event) => {
+      const custom = e as CustomEvent<{ type?: 'income' | 'expense' | 'transfer' }> | undefined
+      if (custom?.detail?.type) {
+        setInitialType(custom.detail.type)
+      } else {
+        setInitialType('expense')
+      }
+      setInternalOpen(true)
+    }
     const handleSync = (e: Event) => {
       const custom = e as CustomEvent<WalletLite[]>
       if (custom.detail?.length) setSyncedWallets(custom.detail)
@@ -72,6 +81,7 @@ export function QuickLogSheet({
         <Sheet
           wallets={wallets}
           prefill={scanned}
+          initialType={initialType}
           onClose={handleClose}
         />
       )}
@@ -91,10 +101,12 @@ export function QuickLogButton({ wallets }: { wallets?: WalletLite[] }) {
 function Sheet({
   wallets,
   prefill,
+  initialType = 'expense',
   onClose,
 }: {
   wallets: WalletLite[]
   prefill: ScanResult | null
+  initialType?: 'income' | 'expense' | 'transfer'
   onClose: () => void
 }) {
   const { addPending, resolvePending } = usePendingTx()
@@ -179,7 +191,7 @@ function Sheet({
     setCatOrder((prev) => [c, ...prev.filter((x) => x !== c)])
   }
 
-  const [txType, setTxType] = useState<'income' | 'expense' | 'transfer'>('expense')
+  const [txType, setTxType] = useState<'income' | 'expense' | 'transfer'>(initialType)
   const [walletSel, setWalletSel] = useState(() => {
     if (typeof window === 'undefined') return wallets[0]?.id ?? ''
     try {

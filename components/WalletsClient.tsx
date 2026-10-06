@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, ChevronRight, X, Loader2, Archive, ArchiveRestore, Target } from 'lucide-react'
+import { Plus, ChevronRight, X, Loader2, Archive, ArchiveRestore, Target, ArrowRightLeft } from 'lucide-react'
 
 import { archiveWallet } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
@@ -29,20 +29,31 @@ export function WalletsClient({
 
   return (
     <>
-      <div className="mb-6 flex items-baseline justify-between">
+      <div className="mb-6 flex items-baseline justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold text-text-primary">Dompet</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-text-secondary">
             Total <PrivacyAmount value={total} />
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer"
-        >
-          <Plus className="h-3.5 w-3.5" /> Dompet
-        </button>
+        <div className="flex items-center gap-2">
+          {wallets.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog', { detail: { type: 'transfer' } }))}
+              className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs font-medium text-accent ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
+            >
+              <ArrowRightLeft className="h-3.5 w-3.5" /> Transfer
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" /> Dompet
+          </button>
+        </div>
       </div>
 
       <Link

@@ -88,9 +88,23 @@ export default async function PlanningPage() {
 
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
               {rule.isActive ? (
-                <form action={executeRecurringAction}>
+                <form action={executeRecurringAction} className="flex items-center gap-1.5">
                   <input type="hidden" name="id" value={rule.id} />
-                  {walletRows.length > 0 && <input type="hidden" name="walletId" value={walletRows[0].id} />}
+                  {walletRows.length > 1 ? (
+                    <select
+                      name="walletId"
+                      aria-label="Pilih dompet pembayaran"
+                      className="rounded-xl border border-border-outer bg-canvas px-2 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
+                    >
+                      {walletRows.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : walletRows.length === 1 ? (
+                    <input type="hidden" name="walletId" value={walletRows[0].id} />
+                  ) : null}
                   <button
                     type="submit"
                     className="inline-flex items-center gap-1 rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 active:scale-95 shadow-sm"
