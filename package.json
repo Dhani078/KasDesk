@@ -60,7 +60,9 @@
     "test:split-bill": "npx tsx scripts/test-split-bill.js",
     "test:encrypted-backup": "npx tsx scripts/test-encrypted-backup.js",
     "test:forecast": "npx tsx scripts/test-forecast.js",
-    "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js && npx tsx scripts/test-tax.js && npx tsx scripts/test-split-bill.js && npx tsx scripts/test-encrypted-backup.js && npx tsx scripts/test-forecast.js",
+    "test:balance-sync": "npx tsx scripts/test-balance-sync.js",
+    "test:nlp": "npx tsx scripts/test-nlp-parser.js",
+    "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js && npx tsx scripts/test-tax.js && npx tsx scripts/test-split-bill.js && npx tsx scripts/test-encrypted-backup.js && npx tsx scripts/test-forecast.js && npx tsx scripts/test-balance-sync.js && npx tsx scripts/test-nlp-parser.js",
     "test:all": "npm run test:unit && npm run typecheck && npm run lint",
     "release:check": "npm run test:all && node scripts/validate-release.js",
     "test:feature-max": "node scripts/test-feature-max.js"

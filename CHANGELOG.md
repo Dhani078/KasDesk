@@ -1,5 +1,13 @@
 # Changelog
 
+## Conversational AI Transaction Logging, Domain Guardrails & Screenshot Wallet Sync — 2026-10-06
+
+- Implemented conversational NLP transaction parser (`lib/coach/nlp-parser.ts`) supporting natural phrases like "saya makan hari ini 18000", "beli bensin 25k", and "dapat gaji 5jt" into auto-categorized drafts (#MAKAN, #TRANSPORT, #GAJI).
+- Added interactive `TransactionActionCard` directly inside AI Coach chat bubbles allowing 1-tap saving to a user-selected wallet with instant atomic balance updates.
+- Enforced strict financial domain guardrails in `/api/coach/chat` that politely refuse technical coding/programming requests and steer users back to KasDesk financial management.
+- Implemented Vision OCR screenshot balance detection (`/api/wallets/scan-balance`) and atomic reconciliation (`lib/wallets/reconcile.ts` & `components/wallets/SyncWalletModal.tsx`) for m-Banking/e-Wallet apps (BCA, Mandiri, SeaBank, GoPay, ShopeePay, DANA) with `#PENYESUAIAN` audit transaction logging.
+- Authored test suites `scripts/test-nlp-parser.js` and `scripts/test-balance-sync.js`, wired into `npm run test:unit` and `npm run test:coach`.
+
 ## Predictive Cashflow Forecast & Financial Autopilot — 2026-10-06
 
 - Implemented daily cashflow simulation engine (`lib/analytics/forecast.ts`) projecting balances across 30, 60, and 90-day horizons.

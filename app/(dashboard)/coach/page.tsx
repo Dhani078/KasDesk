@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft, Lightbulb, PiggyBank, ShieldAlert, TrendingDown } from 'lucide-react'
-import { getSpendingFlow, getTopCategories } from '@/lib/actions'
+import { getSpendingFlow, getTopCategories, getWallets } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { CoachChat } from '@/components/CoachChat'
@@ -28,7 +28,12 @@ function buildAdvice(input: Awaited<ReturnType<typeof getDashboardSummary>> & { 
 }
 
 export default async function CoachPage() {
-  const [dash, flow, top] = await Promise.all([getDashboardSummary(), getSpendingFlow(), getTopCategories(5)])
+  const [dash, flow, top, walletsList] = await Promise.all([
+    getDashboardSummary(),
+    getSpendingFlow(),
+    getTopCategories(5),
+    getWallets(),
+  ])
   const weeklyTotal = flow.reduce((sum, row) => sum + row.total, 0)
   const advice = buildAdvice({ ...dash, weeklyTotal, topCategory: top[0]?.category, topAmount: top[0]?.amount })
   const nextBestAction = dash.walletCount === 0
@@ -57,6 +62,7 @@ export default async function CoachPage() {
       </header>
 
       <CoachChat
+        wallets={walletsList.map((w) => ({ id: w.id, name: w.name, balance: Number(w.balance) }))}
         initialContext={{
           totalBalance: dash.totalBalance,
           safeDailySpend: dash.safeDailySpend,

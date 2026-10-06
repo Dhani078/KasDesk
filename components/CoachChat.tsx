@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from 'react'
 import { Sparkles, Send, Trash2, Bot, User, Check, Copy, ArrowRight, RefreshCw, Cpu } from 'lucide-react'
 import { AI_MODELS, type AiModel } from '@/lib/types'
+import { TransactionActionCard } from '@/components/coach/TransactionActionCard'
 
 type Message = {
   id: string
@@ -10,9 +11,19 @@ type Message = {
   text: string
   model?: string
   timestamp: string
+  action?: {
+    type: 'transaction_draft'
+    data: {
+      type: 'expense' | 'income'
+      amount: number
+      categoryTag: string
+      notes: string
+    }
+  }
 }
 
 type Props = {
+  wallets?: { id: string; name: string; balance?: number }[]
   initialContext?: {
     totalBalance: number
     safeDailySpend: number
@@ -93,7 +104,7 @@ function getNowTime() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export function CoachChat({ initialContext }: Props) {
+export function CoachChat({ initialContext, wallets = [] }: Props) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -197,6 +208,7 @@ export function CoachChat({ initialContext }: Props) {
           role: 'model',
           text: data.reply,
           model: data.model,
+          action: data.action,
           timestamp: getNowTime(),
         }
 
@@ -316,6 +328,10 @@ export function CoachChat({ initialContext }: Props) {
                 >
                   {isUser ? m.text : renderFormattedText(m.text)}
                 </div>
+
+                {!isUser && m.action?.type === 'transaction_draft' && m.action.data && (
+                  <TransactionActionCard draft={m.action.data} wallets={wallets} />
+                )}
 
                 <div
                   className={`flex items-center gap-2 mt-1 px-1 text-[11px] text-text-secondary ${
