@@ -1,5 +1,12 @@
 # Changelog
 
+## Zero-Knowledge Encrypted Backup & Browser Audit Hardening — 2026-10-06
+
+- Implemented client-side zero-knowledge encrypted backup (`lib/crypto/backup.ts` & `components/backup/EncryptedBackupModal.tsx`) using native Web Crypto API (`AES-256-GCM` with 100,000 PBKDF2 iterations and random 16-byte salt/12-byte IV) producing `.kasdesk.enc` files.
+- Added client-side inspection and verification modal in `/settings` allowing users to decrypt and inspect wallet/transaction counts before restoring.
+- Created dedicated test suite `scripts/test-encrypted-backup.js` (12 checks covering short passphrase rejection, armored JSON integrity, AES-256-GCM cipher spec, roundtrip decryption, wrong passphrase rejection, and tamper detection), wired into `npm run test:unit`.
+- Hardened `scripts/browser-audit.js` with initial `Network.clearBrowserCookies` and streaming loading skeleton detection (`aria-busy`), preventing stale session collisions across test runs.
+
 ## Smart Split-Bill & WhatsApp Settlement Engine — 2026-10-06
 
 - Implemented Smart Split-Bill engine (`lib/split-bill.ts` & `components/splitbill/SplitBillModal.tsx`) for restaurant/group outing expense sharing.

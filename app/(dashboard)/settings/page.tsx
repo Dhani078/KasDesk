@@ -22,6 +22,7 @@ import { DeleteAccountForm } from '@/components/DeleteAccountForm'
 import { ChangePasswordForm } from '@/components/ChangePasswordForm'
 import { AppLockSettings } from '@/components/AppLockSettings'
 import { LogoutButton } from '@/components/LogoutButton'
+import { EncryptedBackupModal } from '@/components/backup/EncryptedBackupModal'
 
 export const dynamic = 'force-dynamic'
 
@@ -209,6 +210,7 @@ export default async function SettingsPage() {
               <ChevronRight className="h-4 w-4 text-text-secondary transition group-hover:translate-x-0.5" aria-hidden />
             </Link>
           ))}
+          <EncryptedBackupModal />
           {exportRows.map(({ href, Icon, title, body }) => (
             <a key={href} href={href} download className="setting-row group">
               <span className="icon-tile">
