@@ -1,5 +1,19 @@
 # Changelog
 
+## Dual-Mode AI Copilot Across All Modules (Manual + AI) — 2026-10-06
+
+- Expanded KasDesk into a complete Dual-Mode architecture where every key financial module provides both traditional manual controls and 1-tap AI assistance:
+  1. **Budget & Planning (`/planning`)**:
+     - *Manual*: Form tambah batas budget per kategori.
+     - *AI Copilot*: `AiBudgetModal` (`lib/planning/ai-budget.ts`) menerapkan formula cerdas 50/30/20 yang disesuaikan dengan histori pengeluaran nyata, lengkap dengan tombol batch apply semua kategori sekaligus.
+  2. **Target Tabungan / Brankas (`/vaults`)**:
+     - *Manual*: Form input nama & tanggal target biasa.
+     - *AI Copilot*: `AiVaultPlannerModal` (`lib/vaults/ai-planner.ts`) menguji kelayakan (*Feasibility Score 0-100*, vonis SANGAT REALISTIS hingga TIDAK REALISTIS), menghitung setoran bulanan/mingguan terhadap surplus arus kas bebas.
+  3. **Utang & Piutang (`/debts`)**:
+     - *Manual*: Pencatatan utang-piutang & pelunasan standar.
+     - *AI Copilot*: `AiDebtReminderModal` (`lib/debts/ai-reminder.ts`) generator draf pesan penagihan WhatsApp otomatis anti-canggung dengan pilihan 3 nada bicara (*santun*, *santai*, *tegas*) dan rekening transfer.
+- Authored test suite `scripts/test-dual-mode-ai.js` (12 checks covering 50/30/20 recommendations, vault feasibility ratios, and WhatsApp reminder tones), wired into `npm run test:unit`.
+
 ## Conversational AI Transaction Logging, Domain Guardrails & Screenshot Wallet Sync — 2026-10-06
 
 - Implemented conversational NLP transaction parser (`lib/coach/nlp-parser.ts`) supporting natural phrases like "saya makan hari ini 18000", "beli bensin 25k", and "dapat gaji 5jt" into auto-categorized drafts (#MAKAN, #TRANSPORT, #GAJI).

@@ -9,6 +9,7 @@ import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 import { NewDebtSheet } from '@/components/debts/NewDebtSheet'
 import { SplitBillModal } from '@/components/splitbill/SplitBillModal'
+import { AiDebtReminderModal } from '@/components/debts/AiDebtReminderModal'
 
 export type DebtLite = {
   id: string
@@ -29,6 +30,7 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
   const open_ = list.filter((d) => !d.isPaid)
   const done = list.filter((d) => d.isPaid)
   const totalOpen = open_.reduce((s, d) => s + Math.max(0, Number(d.amount) - Number(d.paidAmount || 0)), 0)
+  const openReceivables = debts.filter((d) => d.direction === 'piutang' && !d.isPaid)
 
   return (
     <>
@@ -40,6 +42,7 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {openReceivables.length > 0 && <AiDebtReminderModal receivables={openReceivables} />}
           <SplitBillModal />
           <button
             type="button"

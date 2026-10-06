@@ -8,6 +8,7 @@ import { formatIDR, formatDate } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { projectVault } from '@/lib/vaults/projection'
 import { EmptyState } from '@/components/EmptyState'
+import { AiVaultPlannerModal } from '@/components/vaults/AiVaultPlannerModal'
 
 export type VaultLite = {
   id: string
@@ -29,9 +30,13 @@ function ProjectionText({ vault }: { vault: VaultLite }) {
 export function VaultsClient({
   vaults,
   wallets,
+  monthlyIncome = 0,
+  monthlyExpense = 0,
 }: {
   vaults: VaultLite[]
   wallets: WalletLite[]
+  monthlyIncome?: number
+  monthlyExpense?: number
 }) {
   const [open, setOpen] = useState(false)
   const [move, setMove] = useState<{ vault: VaultLite; dir: 'in' | 'out' } | null>(null)
@@ -40,20 +45,23 @@ export function VaultsClient({
 
   return (
     <>
-      <div className="mb-6 flex items-baseline justify-between">
+      <div className="mb-6 flex items-baseline justify-between gap-2">
         <div>
           <h1 className="text-xl font-semibold text-text-primary">Target Tabungan</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-text-secondary">
             Terkumpul <PrivacyAmount value={total} />
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer"
-        >
-          <Plus className="h-3.5 w-3.5" /> Target
-        </button>
+        <div className="flex items-center gap-2">
+          <AiVaultPlannerModal monthlyIncome={monthlyIncome} monthlyExpense={monthlyExpense} />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" /> Target
+          </button>
+        </div>
       </div>
 
       {vaults.length === 0 ? (

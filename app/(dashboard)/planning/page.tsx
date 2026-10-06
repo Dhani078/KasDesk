@@ -10,6 +10,8 @@ import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { deleteBudget, deleteRecurring, toggleRecurring, executeRecurringAction } from '@/lib/planning/actions'
 import { getBudgetAlerts } from '@/lib/planning/insights'
 import { BudgetForm, RecurringForm } from '@/components/PlanningForms'
+import { AiBudgetModal } from '@/components/planning/AiBudgetModal'
+import { getDashboardSummary } from '@/lib/analytics/actions'
 import { getMonthWindow } from '@/lib/timezone'
 
 export const dynamic = 'force-dynamic'
@@ -38,11 +40,12 @@ export default async function PlanningPage() {
   const userId = await requireUserId()
   if (!userId) return null
   const { month } = getMonthWindow()
-  const [budgetRows, alerts, rules, walletRows] = await Promise.all([
+  const [budgetRows, alerts, rules, walletRows, dash] = await Promise.all([
     db.select().from(budgets).where(and(eq(budgets.userId, userId), eq(budgets.month, month))),
     getBudgetAlerts(userId),
     db.select().from(recurringRules).where(eq(recurringRules.userId, userId)).orderBy(asc(recurringRules.nextRunAt)),
     db.select({ id: wallets.id, name: wallets.name }).from(wallets).where(and(eq(wallets.userId, userId), eq(wallets.isArchived, 0))),
+    getDashboardSummary(),
   ])
   const alertMap = new Map(alerts.map((alert) => [alert.category, alert]))
   const totalBudget = alerts.reduce((sum, row) => sum + row.budget, 0)
@@ -59,7 +62,19 @@ export default async function PlanningPage() {
 
     <section className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3"><article className="surface-card rounded-2xl p-4"><p className="text-xs text-text-secondary">Total budget</p><p className="mt-2 font-mono font-semibold"><PrivacyAmount value={totalBudget} /></p></article><article className="surface-card rounded-2xl p-4"><p className="text-xs text-text-secondary">Terpakai</p><p className="mt-2 font-mono font-semibold text-accent-expense"><PrivacyAmount value={totalSpent} /></p></article><article className="surface-card col-span-2 rounded-2xl p-4 sm:col-span-1"><p className="text-xs text-text-secondary">Tersisa</p><p className="mt-2 font-mono font-semibold text-accent-income"><PrivacyAmount value={remaining} /></p></article></section>
 
-    <section className="mb-10"><div className="section-heading"><div><h2><Target className="h-5 w-5 text-accent" aria-hidden /> Budget bulan ini</h2><p>Pengeluaran dihitung otomatis dari transaksi {month}.</p></div></div><BudgetForm month={month} categories={CATEGORY_ENUM.filter((category) => category !== 'GAJI')} />
+    <section className="mb-10">
+      <div className="section-heading flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2><Target className="h-5 w-5 text-accent" aria-hidden /> Budget bulan ini</h2>
+          <p>Pengeluaran dihitung otomatis dari transaksi {month}.</p>
+        </div>
+        <AiBudgetModal
+          month={month}
+          monthlyIncome={dash.monthlyIncome}
+          categorySpendings={alerts.map((a) => ({ category: a.category, spent: a.spent }))}
+        />
+      </div>
+      <BudgetForm month={month} categories={CATEGORY_ENUM.filter((category) => category !== 'GAJI')} />
       {budgetRows.length ? <div className="mt-4 grid gap-3 sm:grid-cols-2">{budgetRows.map((budget) => {const alert = alertMap.get(budget.categoryTag); const used = alert?.spent ?? 0; const raw = alert?.percent ?? 0; const percent = Math.min(100, raw); return <article key={budget.id} className="surface-card rounded-3xl p-5"><div className="flex items-start justify-between gap-3"><div><span className={`status-pill ${raw >= 100 ? 'danger' : ''}`}>{raw >= 100 ? 'Batas tercapai' : raw >= 80 ? `${raw}% · hati-hati` : `${raw}% terpakai`}</span><h3 className="mt-3 font-semibold">{budget.categoryTag}</h3><p className="mt-1 text-sm text-text-secondary"><PrivacyAmount value={used} /> dari <PrivacyAmount value={budget.amount} /></p></div><form action={deleteBudget}><input type="hidden" name="id" value={budget.id}/><button aria-label={`Hapus budget ${budget.categoryTag}`} className="icon-button danger"><Trash2 className="h-4 w-4" aria-hidden /></button></form></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[.06]"><div className={`h-full rounded-full transition-all ${raw >= 100 ? 'bg-danger' : raw >= 80 ? 'bg-accent-expense' : 'bg-accent'}`} style={{width:`${percent}%`}}/></div></article>})}</div> : <div className="empty-panel mt-4"><Target className="h-6 w-6 text-accent" aria-hidden /><h3>Belum ada budget</h3><p>Mulai dari satu kategori yang paling sering digunakan.</p></div>}
     </section>
 
