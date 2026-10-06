@@ -1,5 +1,14 @@
 # Changelog
 
+## Predictive Cashflow Forecast & Financial Autopilot — 2026-10-06
+
+- Implemented daily cashflow simulation engine (`lib/analytics/forecast.ts`) projecting balances across 30, 60, and 90-day horizons.
+- Combined liquid balance ($S_0$), scheduled recurring inflows and outflows (`recurringRules`), and historical discretionary daily burn rate.
+- Added automated 'Tanggal Kritis' & overdraft detection with recommended daily expense reduction targets.
+- Created interactive SVG financial curve component (`components/insights/CashflowForecast.tsx`) with zero charting dependencies, complete with real-time "What-If" expense shock simulator.
+- Mounted predictive forecast onto the `/insights` analytics dashboard.
+- Authored test suite `scripts/test-forecast.js` (12 checks verifying linear decay, scheduled salary spikes, shock deductions, critical date detection, and date monotonicity), integrated into `npm run test:unit`.
+
 ## Zero-Knowledge Encrypted Backup & Browser Audit Hardening — 2026-10-06
 
 - Implemented client-side zero-knowledge encrypted backup (`lib/crypto/backup.ts` & `components/backup/EncryptedBackupModal.tsx`) using native Web Crypto API (`AES-256-GCM` with 100,000 PBKDF2 iterations and random 16-byte salt/12-byte IV) producing `.kasdesk.enc` files.

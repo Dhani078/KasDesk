@@ -10,22 +10,42 @@ import { getMonthWindow } from '@/lib/timezone'
 import { MonthlyRecapModal } from '@/components/MonthlyRecapModal'
 import { FinancialHealthScoreCard } from '@/components/FinancialHealthScoreCard'
 import { RunwayMeter } from '@/components/insights/RunwayMeter'
+import { CashflowForecast } from '@/components/insights/CashflowForecast'
+import { db } from '@/lib/db'
+import { recurringRules } from '@/lib/db/schema'
+import { and, eq } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
 export default async function InsightsPage() {
-  const [session, dash, flow, top, debts] = await Promise.all([
-    auth(),
+  const session = await auth()
+  const userId = session?.user?.id
+  const [dash, flow, top, debts, activeRecurring] = await Promise.all([
     getDashboardSummary(),
     getSpendingFlow(),
     getTopCategories(7),
     getDebts(),
+    userId
+      ? db
+          .select({
+            id: recurringRules.id,
+            title: recurringRules.title,
+            type: recurringRules.type,
+            amount: recurringRules.amount,
+            frequency: recurringRules.frequency,
+            nextRunAt: recurringRules.nextRunAt,
+            isActive: recurringRules.isActive,
+          })
+          .from(recurringRules)
+          .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isActive, 1)))
+      : Promise.resolve([]),
   ])
   const { month } = getMonthWindow()
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Kawan'
   const weeklyTotal = flow.reduce((sum, item) => sum + item.total, 0)
   const activeDays = flow.filter((item) => item.total > 0).length
   const dailyAverage = activeDays ? Math.round(weeklyTotal / activeDays) : 0
+  const dailyBurnRate = dash.monthlyExpense > 0 ? Math.round(dash.monthlyExpense / 30) : (weeklyTotal > 0 ? Math.round(weeklyTotal / 7) : 0)
   const maxFlow = Math.max(1, ...flow.map((item) => item.total))
   const openDebts = debts.filter((debt) => !debt.isPaid)
   const debtTotal = openDebts.reduce((sum, debt) => sum + Math.max(0, Number(debt.amount) - Number(debt.paidAmount)), 0)
@@ -72,6 +92,12 @@ export default async function InsightsPage() {
         totalBalance={dash.totalBalance}
         monthlyExpense={dash.monthlyExpense}
         weeklyTotal={weeklyTotal}
+      />
+
+      <CashflowForecast
+        currentBalance={dash.totalBalance}
+        dailyBurnRate={dailyBurnRate}
+        recurringRules={activeRecurring}
       />
 
       <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Ringkasan laporan">
