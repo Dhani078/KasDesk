@@ -1,5 +1,22 @@
 # Changelog
 
+## Micro-Savings "Celengan Pembulatan" & Spare-Change Round-Up (EPIC 5) — 2026-10-07
+
+- Implemented pure mathematical micro-savings calculation engine (`lib/micro-savings.ts`):
+  - `calculateRoundUp(amount, step)`: supports spare-change rounding to nearest Rp 1.000, Rp 5.000, or Rp 10.000 with zero remainder overcharges.
+  - `calculatePayYourselfFirst(incomeAmount, percentage)`: computes 10-20% auto-allocation for income $\ge \text{Rp } 1.000.000$.
+  - Local configuration persistence with custom cross-component change dispatcher (`ROUNDUP_CONFIG_CHANGED_EVENT`).
+- Hardened server-side transaction mutation in `createTransaction` (`lib/actions.ts` & `lib/schemas.ts`):
+  - Atomic multi-table database transaction: debits `totalDebit = amount + roundUpAmount` from source wallet, increments target vault `currentAmount`, and records an audit ledger entry (`Celengan: <title>`) without double-charging wallet balance.
+  - Dynamic cache revalidation of `/vaults`, `/wallets`, `/insights`, and `/`.
+- Created interactive `RoundUpSettingsModal` (`components/vaults/RoundUpSettingsModal.tsx`):
+  - Toggle switch, step selection pills (Rp 1.000 / Rp 5.000 / Rp 10.000), target vault dropdown with goal projection, and live calculation preview simulator.
+  - Mounted trigger button with animated active pulse and status banner in `components/VaultsClient.tsx`.
+- Integrated QuickLog Sheet (`components/QuickLogSheet.tsx`):
+  - Live round-up calculation chips (amber badge `+Rp X ke Tabungan`) previewed in real-time as users type expense amounts.
+  - "Pay Yourself First" suggestion card for incomes $\ge \text{Rp } 1.000.000$ with 1-tap vault allocation.
+- Authored test suite `scripts/test-micro-savings.js` with 18 automated checks (pure math, round-up boundaries, edge cases, Pay Yourself First, schema parsing, and atomic DB execution), wired into `package.json` (`npm run test:micro-savings` and `npm run test:unit`).
+
 ## Custom Geometric SVG Brandmark & Ultra-Smooth Floating AI Core — 2026-10-06
 
 - Designed custom isometric vector SVG brand logo (`components/KasDeskLogo.tsx`) featuring a faceted hexagonal vault shield in electric cobalt, cyan, and deep indigo with prismic glow and modern typography.

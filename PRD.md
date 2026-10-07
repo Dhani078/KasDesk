@@ -90,7 +90,7 @@ Berikut adalah 9 Epic fitur unggulan baru yang harus diimplementasikan secara be
 │ EPIC 2: Smart Split-Bill & WhatsApp Social Settlement Engine   [DONE]  │
 │ EPIC 3: Predictive Cashflow Forecast & Financial Autopilot     [DONE]  │
 │ EPIC 4: Bank Statement & E-Wallet PDF/CSV Import Engine        [DONE]  │
-│ EPIC 5: Digital Envelopes (ZBB) & Micro-Savings Auto-Rules             │
+│ EPIC 5: Digital Envelopes (ZBB) & Micro-Savings Auto-Rules     [DONE*] │
 │ EPIC 6: Shared Financial Spaces (Mode Rumah Tangga & Pasutri)          │
 │ EPIC 7: AI Financial Coach v2 (Conversational & Tax Simulator) [DONE]  │
 │ EPIC 8: Native PWA Superpowers (Web Push, Share Target, Icons)         │
@@ -264,8 +264,10 @@ Banyak pengguna gagal menabung karena menunggu sisa uang di akhir bulan. Konsep 
      `Gaji Rp 8.000.000 terdeteksi! Sisihkan 15% (Rp 1.200.000) ke Vault Dana Darurat sekarang? [Ya, Tabung Sekarang] [Nanti Saja]`.
 
 #### 3.5.3 Acceptance Criteria
-- [ ] Transaksi pembulatan menciptakan alokasi mutasi yang benar tanpa mengurangi saldo dompet secara ganda.
-- [ ] Progres Vault meningkat secara otomatis saat transaksi pembulatan aktif.
+- [x] Transaksi pembulatan menciptakan alokasi mutasi yang benar tanpa mengurangi saldo dompet secara ganda (atomic debit di `createTransaction`).
+- [x] Progres Vault meningkat secara otomatis saat transaksi pembulatan aktif (`currentAmount` terupdate).
+- [x] Dialog dan rekomendasi "Pay Yourself First" aktif untuk transaksi pemasukan $\ge \text{Rp } 1.000.000$.
+- [x] Modal konfigurasi Celengan Pembulatan (`RoundUpSettingsModal`) mendukung pilihan step Rp 1.000, Rp 5.000, dan Rp 10.000 dengan preview kalkulasi live.
 
 ---
 
@@ -591,8 +593,8 @@ Dokumen ini disusun agar autonomous coding agents (Claude, Antigravity, Hermes s
 │   ├── Step 2.1: Buat migrasi SQL 0006 & 0007 (splitBills & savingsRules)
 │   ├── Step 2.2: Implementasikan algoritma pembagian pajak proporsional (`lib/split-bill.ts`)
 │   ├── Step 2.3: Buat generator teks WhatsApp & integrasi sinkronisasi ke tabel `debts`
-│   ├── Step 2.4: Buat logika pembulatan celengan otomatis pada pipeline transaksi
-│   └── Step 2.5: Buat unit & database tests untuk split-bill dan aturan celengan
+│   ├── Step 2.4: Buat logika pembulatan celengan otomatis pada pipeline transaksi [DONE]
+│   └── Step 2.5: Buat unit & database tests untuk split-bill dan aturan celengan [DONE]
 │
 ├── FASE 3: Financial Autopilot (Predictive Cashflow, Coach v2 & Pajak)
 │   ├── Step 3.1: Buat kalkulator proyeksi arus kas 30/60/90 hari (`lib/analytics/forecast.ts`)
