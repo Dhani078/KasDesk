@@ -14,6 +14,7 @@
 | **Deployment Target** | Vercel (Edge/Serverless) + TiDB Cloud Serverless (MySQL 8 compatible) |
 | **Target Timezone** | `Asia/Makassar` (UTC+8) default, configurable per user |
 | **Primary Currency** | `IDR` (Rupiah Indonesia) with multi-currency rollup |
+| **Technical Blueprint** | [`docs/ROADMAP-EXPANSION-SPECS.md`](./docs/ROADMAP-EXPANSION-SPECS.md) |
 
 ---
 

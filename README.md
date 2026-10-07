@@ -45,6 +45,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | ⌨️ **Keyboard Shortcut Desktop** | `c` catat cepat, `/` cari transaksi, `p` mode privasi, `?` daftar shortcut. |
 | 📶 **100% Offline-First** | Transaksi diantrekan secara lokal via IndexedDB saat sinyal hilang dan otomatis sinkron saat online. |
 | 🗺️ **Master PRD v2.0/v3.0** | Cetak biru lengkap 9 Epic arsitektur masa depan untuk Claude/Opus/Hermes di [`PRD.md`](./PRD.md). |
+| 📐 **Technical Blueprint** | Spesifikasi teknis & rancangan rekayasa mendalam di [`docs/ROADMAP-EXPANSION-SPECS.md`](./docs/ROADMAP-EXPANSION-SPECS.md). |
 
 ---
 
