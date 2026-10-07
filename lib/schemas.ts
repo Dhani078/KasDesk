@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { SUPPORTED_CURRENCIES } from '@/lib/currency'
 
 export const CATEGORY_ENUM = [
   'MAKAN',
@@ -47,6 +48,7 @@ export const TransactionSchema = z
       .positive('Jumlah harus lebih dari 0')
       .max(100_000_000_000, 'Jumlah terlalu besar'),
     title: z.string().trim().min(1, 'Judul wajib diisi').max(120, 'Judul terlalu panjang'),
+    currency: z.enum(SUPPORTED_CURRENCIES).optional(),
     category_tag: z.enum(CATEGORY_ENUM).optional(),
     note: z.string().trim().max(500, 'Catatan terlalu panjang').optional(),
     occurred_at: z.string().datetime().optional(),
@@ -69,6 +71,7 @@ export const WalletSchema = z.object({
   name: z.string().trim().min(1, 'Nama wajib diisi').max(60),
   // Matches the values actually stored by seeding + the DB column.
   type: z.enum(['cash', 'bank', 'e_wallet', 'investment']),
+  currency: z.enum(SUPPORTED_CURRENCIES).default('IDR'),
   balance: z.number().int().min(0, 'Saldo tidak boleh negatif').max(100_000_000_000),
 })
 

@@ -10,12 +10,15 @@ import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 import { NewWalletSheet, TYPE_LABEL } from '@/components/wallets/NewWalletSheet'
 import { SyncWalletModal } from '@/components/wallets/SyncWalletModal'
+import { NetWorthCard } from '@/components/wallets/NetWorthCard'
+import { formatCurrency, convertToBase, type SupportedCurrency } from '@/lib/currency'
 
 type WalletLite = {
   id: string
   name: string
   type: string
   balance: number
+  currency?: string
 }
 
 export function WalletsClient({
@@ -58,6 +61,8 @@ export function WalletsClient({
         </div>
       </div>
 
+      <NetWorthCard wallets={wallets} />
+
       <Link
         href="/vaults"
         className="group mb-5 flex items-center justify-between rounded-2xl border border-border-outer bg-surface/80 p-3.5 shadow-sm transition hover:border-accent/40 active:scale-[0.99]"
@@ -90,7 +95,14 @@ export function WalletsClient({
                 className="flex min-w-0 flex-1 items-center gap-3 px-4 py-4 transition-colors hover:bg-white/[0.02]"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-text-primary">{w.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-medium text-text-primary">{w.name}</p>
+                    {w.currency && w.currency !== 'IDR' && (
+                      <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
+                        {w.currency}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs uppercase tracking-[0.06em] text-text-secondary">
                     {TYPE_LABEL[w.type] ?? w.type}
                     {total > 0 && w.balance > 0 && (
@@ -100,9 +112,22 @@ export function WalletsClient({
                     )}
                   </p>
                 </div>
-                <span className="font-mono text-sm tabular-nums text-text-primary">
-                  <PrivacyAmount value={w.balance} />
-                </span>
+                <div className="text-right">
+                  {w.currency && w.currency !== 'IDR' ? (
+                    <>
+                      <p className="font-mono text-sm font-semibold tabular-nums text-text-primary">
+                        {formatCurrency(w.balance, w.currency as SupportedCurrency)}
+                      </p>
+                      <p className="font-mono text-[11px] tabular-nums text-text-secondary">
+                        ≈ <PrivacyAmount value={convertToBase(w.balance, w.currency as SupportedCurrency)} />
+                      </p>
+                    </>
+                  ) : (
+                    <span className="font-mono text-sm tabular-nums text-text-primary">
+                      <PrivacyAmount value={w.balance} />
+                    </span>
+                  )}
+                </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-text-secondary" />
               </Link>
               <ArchiveButton id={w.id} name={w.name} balance={Number(w.balance ?? 0)} />

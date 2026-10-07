@@ -16,6 +16,7 @@ export default async function WalletsPage() {
       id: w.id,
       name: w.name,
       type: w.type,
+      currency: w.currency ?? 'IDR',
       balance: Number(w.balance ?? 0),
     }))
 
@@ -25,6 +26,7 @@ export default async function WalletsPage() {
       id: w.id,
       name: w.name,
       type: w.type,
+      currency: w.currency ?? 'IDR',
       balance: Number(w.balance ?? 0),
     }))
 
