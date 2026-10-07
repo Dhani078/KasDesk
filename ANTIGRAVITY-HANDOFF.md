@@ -17,9 +17,10 @@ Jalankan pada environment nyata: `npm ci`, `npm run release:check`, `npm run bui
   - Budget (`/planning`): Form manual + `AiBudgetModal.tsx` (rekomendasi 50/30/20 batch apply).
   - Target Tabungan (`/vaults`): Form manual + `AiVaultPlannerModal.tsx` (skor kelayakan finansial 0-100 & setoran berkala).
   - Utang & Piutang (`/debts`): Form manual + `AiDebtReminderModal.tsx` (generator draf WhatsApp anti-canggung gaya santun/santai/tegas).
+- **Micro-Savings "Celengan Pembulatan" & Spare-Change Round-Up (EPIC 5):** Modul `lib/micro-savings.ts` dan modal `RoundUpSettingsModal.tsx` di rute `/vaults` mengotomatisasi pembulatan receh transaksi belanja (ke Rp 1.000 / Rp 5.000 / Rp 10.000) langsung ke Vault target secara atomik di database tanpa mutasi ganda, dilengkapi chip kalkulasi langsung di `QuickLogSheet.tsx` dan rekomendasi *Pay Yourself First* pada pemasukan $\ge \text{Rp } 1.000.000$.
 - **AI Model Upgrade:** OCR dan AI Coach Chat menggunakan seri model Gemini Flash terbaru (`gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-2.5-flash`) dengan otomatis *fallback cascade*.
 - **AI Coach Chat:** Jalankan `npm run test:coach` untuk memverifikasi autentikasi 401/307, validasi input, guardrail coding, dan deteksi percakapan transaksi.
-- **Master Unit Tests (151 Checks):** Jalankan `npm run test:unit` untuk menjalankan seluruh 12 test suite offline mandiri secara instan.
+- **Master Unit Tests (169+ Checks across 13 Suites):** Jalankan `npm run test:unit` untuk menjalankan seluruh 13 test suite offline mandiri secara instan (termasuk `npm run test:micro-savings`).
 - **Audit Browser Headless Nyata:** Jalankan `npm run test:browser` (70 uji via Chrome CDP WebSocket): memverifikasi 0 horizontal overflow pada ultra-compact mobile (320x568 iPhone SE), mobile standar (390x844), PC desktop (1280x800), penutupan modal via Escape, toggle mode privasi, peralihan tema terang/gelap, shortcut keyboard `c` / `/` / `p` / `?`, dan rute `/install` PWA pada seluruh viewport.
 - **Timezone Makassar (UTC+8):** Jalankan `npm run test:timezone` untuk memastikan perhitungan batas awal bulan 00:00:00 Makassar tepat hingga satuan detik.
 - Pastikan route groups `(public)` dan `(dashboard)` ter-build tanpa konflik URL.
