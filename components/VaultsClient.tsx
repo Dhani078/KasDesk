@@ -9,6 +9,9 @@ import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { projectVault } from '@/lib/vaults/projection'
 import { EmptyState } from '@/components/EmptyState'
 import { AiVaultPlannerModal } from '@/components/vaults/AiVaultPlannerModal'
+import { RoundUpSettingsModal } from '@/components/vaults/RoundUpSettingsModal'
+import { getLocalRoundUpConfig, type RoundUpConfig } from '@/lib/micro-savings'
+import { Coins } from 'lucide-react'
 
 export type VaultLite = {
   id: string
@@ -40,19 +43,31 @@ export function VaultsClient({
 }) {
   const [open, setOpen] = useState(false)
   const [move, setMove] = useState<{ vault: VaultLite; dir: 'in' | 'out' } | null>(null)
+  const [roundUpConfig, setRoundUpConfig] = useState<RoundUpConfig>(() => getLocalRoundUpConfig())
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<RoundUpConfig>
+      if (custom.detail) setRoundUpConfig(custom.detail)
+    }
+    window.addEventListener('kasdesk:roundup-config-change', handler)
+    return () => window.removeEventListener('kasdesk:roundup-config-change', handler)
+  }, [])
 
   const total = vaults.reduce((s, v) => s + Number(v.currentAmount ?? 0), 0)
+  const activeRoundUpVault = vaults.find((v) => v.id === roundUpConfig?.targetVaultId)
 
   return (
     <>
-      <div className="mb-6 flex items-baseline justify-between gap-2">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-text-primary">Target Tabungan</h1>
           <p className="mt-1 font-mono text-sm tabular-nums text-text-secondary">
             Terkumpul <PrivacyAmount value={total} />
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <RoundUpSettingsModal vaults={vaults} />
           <AiVaultPlannerModal monthlyIncome={monthlyIncome} monthlyExpense={monthlyExpense} />
           <button
             type="button"
@@ -63,6 +78,17 @@ export function VaultsClient({
           </button>
         </div>
       </div>
+
+      {roundUpConfig?.enabled && activeRoundUpVault && (
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200 animate-fade-in-up">
+          <div className="flex items-center gap-2">
+            <Coins className="h-4 w-4 text-amber-400 shrink-0" />
+            <span>
+              Celengan Aktif: Pembulatan ke <b>{formatIDR(roundUpConfig.step)}</b> dialokasikan ke <b>{activeRoundUpVault.name}</b>
+            </span>
+          </div>
+        </div>
+      )}
 
       {vaults.length === 0 ? (
         <EmptyState
