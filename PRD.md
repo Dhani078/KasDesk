@@ -72,7 +72,7 @@ Modul-modul berikut **sudah beroperasi penuh dan terverifikasi** dalam codebase 
 │   ├── Monthly Recap: WhatsApp 1-klik share template & PDF print preview (@media print)
 │   └── Desktop Shortcuts: 'c' (catat), '/' (cari), 'p' (privasi), '?' (bantuan), Escape (tutup modal)
 └── Verification Gate:
-    ├── 22 TiDB Integration Suites (`npm run test:db`)
+    ├── 23 TiDB Integration Suites (`npm run test:db`)
     ├── 70 Browser CDP Audit Suites (`npm run test:browser` @ 320px, 390px, 1280px)
     └── Unit Tests & Timezone Boundary Suites (`npm run test:unit`)
 ```

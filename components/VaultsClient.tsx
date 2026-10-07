@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { Target, Plus, X, Loader2, ArrowDownToLine, ArrowUpFromLine, Trash2 } from 'lucide-react'
+import { Target, Plus, X, Loader2, ArrowDownToLine, ArrowUpFromLine, Trash2, Coins } from 'lucide-react'
 
 import { createVault, depositToVault, withdrawFromVault, deleteVault } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
@@ -11,7 +11,6 @@ import { EmptyState } from '@/components/EmptyState'
 import { AiVaultPlannerModal } from '@/components/vaults/AiVaultPlannerModal'
 import { RoundUpSettingsModal } from '@/components/vaults/RoundUpSettingsModal'
 import { getLocalRoundUpConfig, type RoundUpConfig } from '@/lib/micro-savings'
-import { Coins } from 'lucide-react'
 
 export type VaultLite = {
   id: string

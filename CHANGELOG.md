@@ -1,5 +1,30 @@
 # Changelog
 
+## Codebase Audit, Modular Architecture Refactor & Markdown Documentation Sync — 2026-10-07
+
+- Modularized god-file `lib/actions.ts` (984 LOC) into focused domain submodules (`lib/actions/`):
+  - `transactions.ts` (419 LOC): `createTransaction`, `deleteTransaction`, `updateTransaction`, `getRecentTransactions`.
+  - `wallets.ts` (115 LOC): `getWallets`, `getWalletsIncludingArchived`, `createWallet`, `archiveWallet`, `getCategories`.
+  - `vaults.ts` (233 LOC): `getVaults`, `createVault`, `depositToVault`, `withdrawFromVault`, `deleteVault`.
+  - `debts.ts` (125 LOC): `getDebts`, `createDebt`, `settleDebt`, `deleteDebt`.
+  - `dashboard.ts` (19 LOC): query wrappers `getDashboard`, `getSpendingFlow`, `getTopCategories`.
+  - `index.ts` & `lib/actions.ts`: 100% backward-compatible re-export barrel with 0 signature breakage.
+- Modularized `components/QuickLogSheet.tsx`:
+  - Extracted drag-and-drop state hook `components/quicklog/useQuickLogDragDrop.ts` (29 LOC).
+  - Extracted drag dropzone visual overlay `components/quicklog/QuickLogDropOverlay.tsx` (12 LOC).
+  - Extracted saved pop animation `components/quicklog/QuickLogSuccessView.tsx` (12 LOC).
+  - Extracted savings badges `components/quicklog/QuickLogSavingsBadges.tsx` (41 LOC).
+  - Extracted transaction type selector `components/quicklog/QuickLogTypeSelector.tsx` (31 LOC).
+  - Extracted error alert box `components/quicklog/QuickLogErrorAlert.tsx` (25 LOC).
+- Cleaned dead code & duplicate imports:
+  - Removed unreferenced component `components/VaultProjection.tsx`.
+  - Consolidated duplicate `lucide-react` import statement in `components/VaultsClient.tsx`.
+- Synchronized all documentation across the repository:
+  - Aligned unit test verification numbers to 173 checks across 13 suites in `CONTRIBUTING.md`, `RELEASE-CHECKLIST.md`, `README.md`, and `ANTIGRAVITY-HANDOFF.md`.
+  - Aligned TiDB database integration suite counts to 23 in `PRD.md`.
+  - Added port 3333 dev server instruction (`npm run dev -- -p 3333`) in `README.md` to match runtime test harnesses.
+- Verified 100% test gate passing: TypeScript strict typecheck (0 errors), ESLint (0 warnings), unit tests (173/173 passed), and release validation.
+
 ## Micro-Savings "Celengan Pembulatan" & Spare-Change Round-Up (EPIC 5) — 2026-10-07
 
 - Implemented pure mathematical micro-savings calculation engine (`lib/micro-savings.ts`):
