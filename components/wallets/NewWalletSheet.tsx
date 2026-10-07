@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { createWallet } from '@/lib/actions'
+import { SUPPORTED_CURRENCIES, CURRENCY_METAS } from '@/lib/currency'
 
 export const TYPE_LABEL: Record<string, string> = {
   cash: 'Tunai',
@@ -44,6 +45,7 @@ export function NewWalletSheet({ onClose }: { onClose: () => void }) {
     const res = await createWallet({
       name: String(fd.get('name') ?? ''),
       type: String(fd.get('type') ?? 'cash') as (typeof TYPES)[number],
+      currency: String(fd.get('currency') ?? 'IDR'),
       balance: Number(String(fd.get('balance') ?? '0').replace(/[^\d]/g, '')),
     })
     setPending(false)
@@ -85,18 +87,35 @@ export function NewWalletSheet({ onClose }: { onClose: () => void }) {
               className="w-full rounded-xl border border-border bg-canvas px-4 py-3 text-text-primary outline-none focus:border-accent"
             />
           </div>
-          <div>
-            <label htmlFor="w-type" className="mb-1 block text-xs text-text-secondary">Jenis</label>
-            <select
-              id="w-type"
-              name="type"
-              defaultValue="cash"
-              className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
-            >
-              {TYPES.map((t) => (
-                <option key={t} value={t}>{TYPE_LABEL[t]}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="w-type" className="mb-1 block text-xs text-text-secondary">Jenis</label>
+              <select
+                id="w-type"
+                name="type"
+                defaultValue="cash"
+                className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
+              >
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="w-curr" className="mb-1 block text-xs text-text-secondary">Mata Uang</label>
+              <select
+                id="w-curr"
+                name="currency"
+                defaultValue="IDR"
+                className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
+              >
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c} ({CURRENCY_METAS[c].symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             <label htmlFor="w-balance" className="mb-1 block text-xs text-text-secondary">

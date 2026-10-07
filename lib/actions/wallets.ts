@@ -58,6 +58,7 @@ export async function createWallet(
     userId,
     name: parsed.data.name,
     type: parsed.data.type,
+    currency: parsed.data.currency ?? 'IDR',
     balance: parsed.data.balance,
   })
 

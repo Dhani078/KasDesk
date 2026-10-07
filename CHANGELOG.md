@@ -1,5 +1,25 @@
 # Changelog
 
+## Multi-Currency, Forex, Emas & Crypto Net Worth Rollup (EPIC 1) — 2026-10-07
+
+- Implemented Multi-Currency Engine (`lib/currency.ts`):
+  - Supports 10 distinct currencies & asset classes: IDR, USD, SGD, EUR, JPY, MYR, XAU (Emas Antam Gram), USDT, BTC, and ETH.
+  - Native decimal precision & symbol formatting (`formatCurrency`) with proper negative sign positioning.
+  - Reference exchange rates table and conversion utilities (`convertToBase`, `convertFromBase`) with custom rate override support.
+  - Consolidated Net Worth Rollup algorithm (`calculateNetWorth`) partitioning assets into 4 classes (Kas IDR, Valas Forex, Emas Fisik, Crypto) with percentage allocations.
+- Created Database Migration `drizzle/0005_multi_currency_and_rates.sql`:
+  - Added `currency` column to `wallets` table.
+  - Added `currency`, `exchangeRate`, and `baseAmount` columns to `transactions` table.
+  - Created `exchangeRates` reference cache table with composite unique index (`fromCurrency`, `toCurrency`).
+  - Updated Drizzle ORM schema definitions in `lib/db/schema.ts` and Zod validation in `lib/schemas.ts`.
+- Integrated Server Actions & UI Components:
+  - Updated `createWallet` in `lib/actions/wallets.ts` and `createTransaction` in `lib/actions/transactions.ts` to persist currency and frozen exchange rates.
+  - Added currency selector dropdown to `NewWalletSheet.tsx`.
+  - Built interactive `NetWorthCard.tsx` and mounted in `WalletsClient.tsx`, displaying total consolidated net worth and asset class allocations.
+  - Rendered currency badge and Rupiah equivalent preview for non-IDR wallet rows.
+- Authored automated test suite `scripts/test-multi-currency.js` (27 checks), wired into `package.json` (`npm run test:multi-currency` and `npm run test:unit`).
+- Synchronized all repository documentation (`CONTRIBUTING.md`, `RELEASE-CHECKLIST.md`, `README.md`, `ANTIGRAVITY-HANDOFF.md`, `PRD.md`) to 221 unit checks across 15 suites.
+
 ## Native PWA Superpowers (EPIC 8) & Amplop Digital ZBB 50/30/20 (EPIC 5.1) — 2026-10-07
 
 - Implemented Native PWA Tactile Haptic Vibration Engine (`lib/haptics.ts`):

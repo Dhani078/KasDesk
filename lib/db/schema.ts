@@ -1,6 +1,6 @@
 import {
   mysqlTable, char, varchar, bigint, tinyint,
-  timestamp, index, uniqueIndex,
+  timestamp, index, uniqueIndex, decimal,
 } from 'drizzle-orm/mysql-core';
 
 /**
@@ -87,6 +87,7 @@ export const wallets = mysqlTable('wallets', {
   userId: char('userId', { length: 36 }).notNull(),
   name: varchar('name', { length: 60 }).notNull(),
   type: varchar('type', { length: 12 }).notNull(),
+  currency: varchar('currency', { length: 10 }).notNull().default('IDR'),
   balance: bigint('balance', { mode: 'number' }).notNull().default(0),
   isArchived: tinyint('isArchived').notNull().default(0),
   createdAt: createdAt(),
@@ -104,6 +105,9 @@ export const transactions = mysqlTable('transactions', {
   toWalletId: char('toWalletId', { length: 36 }),
   type: varchar('type', { length: 8 }).notNull(),
   amount: bigint('amount', { mode: 'number' }).notNull(),
+  currency: varchar('currency', { length: 10 }).notNull().default('IDR'),
+  exchangeRate: decimal('exchangeRate', { precision: 18, scale: 6 }).notNull().default('1.000000'),
+  baseAmount: bigint('baseAmount', { mode: 'number' }).notNull().default(0),
   title: varchar('title', { length: 120 }).notNull(),
   categoryTag: varchar('categoryTag', { length: 32 }),
   note: varchar('note', { length: 500 }),
@@ -183,6 +187,19 @@ export const recurringRules = mysqlTable('recurringRules', {
   index('recurring_user_next_idx').on(t.userId, t.nextRunAt),
 ]);
 
+// ───────────────────────────────────────────────────────── exchangeRates
+export const exchangeRates = mysqlTable('exchangeRates', {
+  id: pk(),
+  fromCurrency: varchar('fromCurrency', { length: 10 }).notNull(),
+  toCurrency: varchar('toCurrency', { length: 10 }).notNull().default('IDR'),
+  rate: decimal('rate', { precision: 18, scale: 6 }).notNull(),
+  provider: varchar('provider', { length: 32 }).notNull().default('system'),
+  updatedAt: updatedAt(),
+}, (t) => [
+  uniqueIndex('exchange_rates_pair_uq').on(t.fromCurrency, t.toCurrency),
+  index('exchange_rates_lookup_idx').on(t.fromCurrency, t.toCurrency, t.updatedAt),
+]);
+
 export type User = typeof users.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
@@ -191,3 +208,4 @@ export type Debt = typeof debts.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Budget = typeof budgets.$inferSelect;
 export type RecurringRule = typeof recurringRules.$inferSelect;
+export type ExchangeRate = typeof exchangeRates.$inferSelect;

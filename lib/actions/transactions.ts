@@ -7,6 +7,7 @@ import { wallets, transactions, vaults } from '@/lib/db/schema'
 import { TransactionSchema } from '@/lib/schemas'
 import { isArchivedWallet } from '@/lib/wallet-guard'
 import { requireUserId } from '@/lib/auth/session'
+import { convertToBase, DEFAULT_EXCHANGE_RATES, type SupportedCurrency } from '@/lib/currency'
 import type { ActionResponse } from '@/lib/types'
 
 /**
@@ -47,7 +48,7 @@ export async function createTransaction(
       }
 
       const [wallet] = await tx
-        .select({ id: wallets.id, balance: wallets.balance, isArchived: wallets.isArchived })
+        .select({ id: wallets.id, balance: wallets.balance, isArchived: wallets.isArchived, currency: wallets.currency })
         .from(wallets)
         .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId)))
         .limit(1)
@@ -80,6 +81,10 @@ export async function createTransaction(
       }
 
       const txId = crypto.randomUUID()
+      const txCurrency = (data.currency ?? wallet.currency ?? 'IDR') as SupportedCurrency
+      const rate = DEFAULT_EXCHANGE_RATES[txCurrency] ?? 1
+      const baseAmount = convertToBase(data.amount, txCurrency)
+
       await tx.insert(transactions).values({
         id: txId,
         userId,
@@ -88,6 +93,9 @@ export async function createTransaction(
         clientMutationId: data.client_mutation_id ?? null,
         type: data.type,
         amount: data.amount,
+        currency: txCurrency,
+        exchangeRate: String(rate),
+        baseAmount,
         title: data.title,
         categoryTag: data.category_tag ?? null,
         note: data.note ?? null,
