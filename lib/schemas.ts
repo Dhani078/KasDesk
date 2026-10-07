@@ -51,6 +51,8 @@ export const TransactionSchema = z
     note: z.string().trim().max(500, 'Catatan terlalu panjang').optional(),
     occurred_at: z.string().datetime().optional(),
     client_mutation_id: z.string().uuid().optional(),
+    round_up_vault_id: z.string().optional(),
+    round_up_amount: z.number().int().nonnegative().optional(),
   })
   .refine((d) => d.type !== 'transfer' || !!d.to_wallet_id, {
     message: 'Transfer memerlukan dompet tujuan',
