@@ -22,7 +22,7 @@ function loadEnv(f) {
   }
   return o
 }
-const env = loadEnv(path.join(__dirname, '..', '.env.local'))
+const env = { ...process.env, ...loadEnv(path.join(__dirname, '..', '.env.local')) }
 const BASE = process.env.BASE_URL || 'http://localhost:3333'
 
 let pass = 0, fail = 0
