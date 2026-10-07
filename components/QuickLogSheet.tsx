@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2, Calculator, Sparkles } from 'lucide-react'
+import { X, Loader2, Calculator, Sparkles, Coins, PiggyBank } from 'lucide-react'
+import {
+  getLocalRoundUpConfig,
+  calculateRoundUp,
+  calculatePayYourselfFirst,
+  type RoundUpConfig,
+} from '@/lib/micro-savings'
 
 import { createTransaction } from '@/lib/actions'
 import { usePendingTx } from '@/components/pending-tx'
@@ -244,6 +250,26 @@ function Sheet({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
+  const [roundUpConfig, setRoundUpConfig] = useState<RoundUpConfig>(() => getLocalRoundUpConfig())
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<RoundUpConfig>
+      if (custom.detail) setRoundUpConfig(custom.detail)
+    }
+    window.addEventListener('kasdesk:roundup-config-change', handler)
+    return () => window.removeEventListener('kasdesk:roundup-config-change', handler)
+  }, [])
+
+  const parsedAmount = Number(amountText.replace(/[^\d]/g, '')) || 0
+  const roundUpInfo = (txType === 'expense' && roundUpConfig?.enabled && roundUpConfig.targetVaultId && parsedAmount > 0)
+    ? calculateRoundUp(parsedAmount, roundUpConfig.step)
+    : null
+
+  const payFirstSuggestion = (txType === 'income' && parsedAmount >= 1_000_000)
+    ? calculatePayYourselfFirst(parsedAmount, 15)
+    : null
+
   const [isDragging, setIsDragging] = useState(false)
 
   function handleDragOver(e: React.DragEvent) {
@@ -319,6 +345,10 @@ function Sheet({
     const occurredDate = new Date(year, (month || 1) - 1, day || 1, hours, minutes, seconds)
     const occurredAtIso = occurredDate.toISOString()
 
+    const activeRoundUp = (type === 'expense' && roundUpConfig?.enabled && roundUpConfig.targetVaultId)
+      ? calculateRoundUp(amount, roundUpConfig.step)
+      : null
+
     const payload = {
       client_mutation_id: crypto.randomUUID(),
       wallet_id: walletSel,
@@ -329,6 +359,8 @@ function Sheet({
       category_tag: type === 'transfer' ? 'LAINNYA' : categoryTag,
       note,
       occurred_at: occurredAtIso,
+      round_up_vault_id: activeRoundUp && activeRoundUp.spareChange > 0 ? (roundUpConfig?.targetVaultId ?? undefined) : undefined,
+      round_up_amount: activeRoundUp && activeRoundUp.spareChange > 0 ? activeRoundUp.spareChange : undefined,
     }
 
     // FR-OFF-2/6: offline does not mean failure — park the op in the
@@ -543,6 +575,30 @@ function Sheet({
                 onAddQuickAmount={addQuickAmount}
                 onClear={() => setAmountText('')}
               />
+
+              {roundUpInfo && roundUpInfo.spareChange > 0 && (
+                <div className="mt-2 flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200 animate-fade-in-up">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Coins className="h-3.5 w-3.5 text-amber-400" />
+                    Celengan ({formatIDR(roundUpConfig?.step ?? 5000)}):
+                  </span>
+                  <span className="font-mono font-semibold text-amber-300">
+                    +{formatIDR(roundUpInfo.spareChange)} ke Tabungan
+                  </span>
+                </div>
+              )}
+
+              {payFirstSuggestion && payFirstSuggestion.isEligible && (
+                <div className="mt-2 flex items-center justify-between rounded-xl border border-accent-income/30 bg-accent-income/10 px-3 py-1.5 text-xs text-accent-income animate-fade-in-up">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <PiggyBank className="h-3.5 w-3.5" />
+                    Saran Tabung Dulu (15%):
+                  </span>
+                  <span className="font-mono font-semibold">
+                    {formatIDR(payFirstSuggestion.recommendedAmount)}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
