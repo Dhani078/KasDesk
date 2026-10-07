@@ -124,10 +124,11 @@ npm run db:push
 # (Opsional) Isi data contoh untuk pengujian
 npm run seed:demo
 
-# Jalankan server pengembangan
+# Jalankan server pengembangan (port 3000 default, atau port 3333 untuk test suite)
 npm run dev
+# atau: npm run dev -- -p 3333
 ```
-Buka **[http://localhost:3000](http://localhost:3000)** di browser Anda! 🚀
+Buka **[http://localhost:3000](http://localhost:3000)** (atau port 3333 jika menggunakan `-p 3333`) di browser Anda! 🚀
 
 ---
 
@@ -163,11 +164,11 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 169 unit checks + AI Coach cascade + cursor pagination
+# = typecheck + lint + 173 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
 
-# Menjalankan seluruh 169+ Unit Tests (offline & deterministik)
+# Menjalankan seluruh 173 Unit Tests (offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:

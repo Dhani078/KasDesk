@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2, Calculator, Sparkles, Coins, PiggyBank } from 'lucide-react'
+import { X, Loader2, Calculator } from 'lucide-react'
 import {
   getLocalRoundUpConfig,
   calculateRoundUp,
@@ -22,6 +22,12 @@ import { NoteWithTags } from '@/components/quicklog/NoteWithTags'
 import { ScanWarningBanner } from '@/components/quicklog/ScanWarningBanner'
 import { CalculatorBar } from '@/components/quicklog/CalculatorBar'
 import { TransferWalletsBox } from '@/components/quicklog/TransferWalletsBox'
+import { useQuickLogDragDrop } from '@/components/quicklog/useQuickLogDragDrop'
+import { QuickLogDropOverlay } from '@/components/quicklog/QuickLogDropOverlay'
+import { QuickLogSuccessView } from '@/components/quicklog/QuickLogSuccessView'
+import { QuickLogSavingsBadges } from '@/components/quicklog/QuickLogSavingsBadges'
+import { QuickLogTypeSelector } from '@/components/quicklog/QuickLogTypeSelector'
+import { QuickLogErrorAlert } from '@/components/quicklog/QuickLogErrorAlert'
 
 const ScanReceiptButton = dynamic(
   () => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton),
@@ -270,29 +276,7 @@ function Sheet({
     ? calculatePayYourselfFirst(parsedAmount, 15)
     : null
 
-  const [isDragging, setIsDragging] = useState(false)
-
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!isDragging) setIsDragging(true)
-  }
-
-  function handleDragLeave(e: React.DragEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      window.dispatchEvent(new CustomEvent('kasdesk:scan-file', { detail: file }))
-    }
-  }
+  const { isDragging, handleDragOver, handleDragLeave, handleDrop } = useQuickLogDragDrop()
 
   const mathLiveResult = hasMathOperator(amountText)
     ? evaluateMathExpression(amountText)
@@ -436,13 +420,7 @@ function Sheet({
           isDragging ? 'ring-2 ring-accent' : ''
         }`}
       >
-        {isDragging && (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-3xl bg-surface/95 backdrop-blur-md p-6 text-center border-2 border-dashed border-accent">
-            <Sparkles className="h-10 w-10 text-accent animate-bounce mb-2" />
-            <p className="font-semibold text-text-primary text-sm">Lepaskan gambar struk di sini</p>
-            <p className="text-xs text-text-secondary mt-1">Gemini 3.8 Flash akan memindai transaksi otomatis</p>
-          </div>
-        )}
+        <QuickLogDropOverlay isDragging={isDragging} />
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">Catat Transaksi</h2>
           <div className="flex items-center gap-2">
@@ -473,61 +451,17 @@ function Sheet({
 
         <ScanWarningBanner scan={activeScan} />
 
-        {error && (
-          <div
-            role="alert"
-            className="mb-4 flex items-start justify-between gap-2 rounded-2xl border border-danger/30 bg-danger/10 p-3 text-xs font-medium text-danger animate-fade-in-up"
-          >
-            <span>{error}</span>
-            <button
-              type="button"
-              onClick={() => setError(null)}
-              className="text-danger hover:opacity-70 p-0.5 cursor-pointer"
-              aria-label="Tutup pesan error"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+        <QuickLogErrorAlert error={error} onClear={() => setError(null)} />
 
         {saved ? (
-          <div className="flex flex-col items-center gap-3 py-8">
-            <div className="animate-success-pop grid h-14 w-14 place-items-center rounded-full bg-accent-income/15">
-              <svg className="h-7 w-7 text-accent-income" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-            </div>
-            <p className="animate-fade-in-up text-sm font-semibold text-accent-income">Tersimpan!</p>
-          </div>
+          <QuickLogSuccessView />
         ) : wallets.length === 0 ? (
           <p className="py-6 text-center text-sm text-text-secondary">
             Buat dompet dulu sebelum mencatat.
           </p>
         ) : (
           <form id="ql-form" onSubmit={onSubmit} className="space-y-4">
-            <div className="grid grid-cols-3 gap-2">
-              {(['expense', 'income', 'transfer'] as const).map((t) => (
-                <label key={t} className="cursor-pointer">
-                  <input
-                    type="radio"
-                    name="type"
-                    value={t}
-                    checked={txType === t}
-                    onChange={() => setTxType(t)}
-                    className="peer sr-only"
-                  />
-                  <span
-                    className={`block rounded-xl border px-2 py-2 text-center text-xs capitalize transition ${
-                      txType === t
-                        ? 'border-accent bg-accent/15 font-semibold text-accent'
-                        : 'border-border-outer text-text-secondary hover:text-text-primary'
-                    }`}
-                  >
-                    {t === 'expense' ? 'Keluar' : t === 'income' ? 'Masuk' : 'Transfer'}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <QuickLogTypeSelector txType={txType} onChange={setTxType} />
 
             <div>
               <label htmlFor="amount" className="mb-1 block text-xs text-text-secondary">
@@ -576,29 +510,11 @@ function Sheet({
                 onClear={() => setAmountText('')}
               />
 
-              {roundUpInfo && roundUpInfo.spareChange > 0 && (
-                <div className="mt-2 flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200 animate-fade-in-up">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Coins className="h-3.5 w-3.5 text-amber-400" />
-                    Celengan ({formatIDR(roundUpConfig?.step ?? 5000)}):
-                  </span>
-                  <span className="font-mono font-semibold text-amber-300">
-                    +{formatIDR(roundUpInfo.spareChange)} ke Tabungan
-                  </span>
-                </div>
-              )}
-
-              {payFirstSuggestion && payFirstSuggestion.isEligible && (
-                <div className="mt-2 flex items-center justify-between rounded-xl border border-accent-income/30 bg-accent-income/10 px-3 py-1.5 text-xs text-accent-income animate-fade-in-up">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <PiggyBank className="h-3.5 w-3.5" />
-                    Saran Tabung Dulu (15%):
-                  </span>
-                  <span className="font-mono font-semibold">
-                    {formatIDR(payFirstSuggestion.recommendedAmount)}
-                  </span>
-                </div>
-              )}
+              <QuickLogSavingsBadges
+                roundUpInfo={roundUpInfo}
+                roundUpStep={roundUpConfig?.step ?? 5000}
+                payFirstSuggestion={payFirstSuggestion}
+              />
             </div>
 
             <div>

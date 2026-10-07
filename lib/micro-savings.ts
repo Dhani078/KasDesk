@@ -11,6 +11,14 @@
 
 export type RoundUpStep = 1000 | 5000 | 10000
 
+export type RoundUpResult = { roundedTotal: number; spareChange: number }
+
+export type PayYourselfFirstResult = {
+  isEligible: boolean
+  recommendedAmount: number
+  percentage: number
+}
+
 export type RoundUpConfig = {
   enabled: boolean
   step: RoundUpStep
