@@ -66,7 +66,7 @@ for (const script of SCRIPTS) {
   const scriptPath = path.join(__dirname, script)
   process.stdout.write(`• Running ${script.padEnd(35)} `)
   try {
-    const isTs = script.endsWith('.ts')
+    const isTs = script.endsWith('.ts') || script === 'test-balance-sync.js'
     const tsxCli = path.join(__dirname, '..', 'node_modules', 'tsx', 'dist', 'cli.mjs')
     const cmd = 'node'
     const args = isTs ? [tsxCli, '--env-file=.env.local', scriptPath] : [scriptPath]
