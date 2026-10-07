@@ -126,11 +126,56 @@ export async function createTransaction(
           .set({ balance: sql`${wallets.balance} + ${data.amount}` })
           .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
       } else if (data.type === 'expense') {
+        const roundUpAmt = (data.round_up_amount && data.round_up_amount > 0 && data.round_up_vault_id) ? data.round_up_amount : 0
+        const totalDebit = data.amount + roundUpAmt
+
         const debit = await tx
           .update(wallets)
-          .set({ balance: sql`${wallets.balance} - ${data.amount}` })
-          .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId), eq(wallets.isArchived, 0), gte(wallets.balance, data.amount)))
+          .set({ balance: sql`${wallets.balance} - ${totalDebit}` })
+          .where(and(eq(wallets.id, data.wallet_id), eq(wallets.userId, userId), eq(wallets.isArchived, 0), gte(wallets.balance, totalDebit)))
         if (!debit[0].affectedRows) throw new Error('INSUFFICIENT_BALANCE')
+
+        // If round-up micro-savings is attached, deposit into vault & record audit ledger
+        if (roundUpAmt > 0 && data.round_up_vault_id) {
+          const [targetVault] = await tx
+            .select({ id: vaults.id, targetAmount: vaults.targetAmount })
+            .from(vaults)
+            .where(and(eq(vaults.id, data.round_up_vault_id), eq(vaults.userId, userId)))
+            .limit(1)
+
+          if (targetVault) {
+            await tx
+              .update(vaults)
+              .set({ currentAmount: sql`${vaults.currentAmount} + ${roundUpAmt}` })
+              .where(eq(vaults.id, data.round_up_vault_id))
+
+            const [vAfter] = await tx
+              .select({ currentAmount: vaults.currentAmount })
+              .from(vaults)
+              .where(eq(vaults.id, data.round_up_vault_id))
+              .limit(1)
+
+            if (vAfter && Number(vAfter.currentAmount) >= Number(targetVault.targetAmount)) {
+              await tx
+                .update(vaults)
+                .set({ isCompleted: 1 })
+                .where(eq(vaults.id, data.round_up_vault_id))
+            }
+
+            // Create ledger entry for the round-up so wallet balance and transaction history reconcile 100%
+            await tx.insert(transactions).values({
+              id: crypto.randomUUID(),
+              userId,
+              walletId: data.wallet_id,
+              type: 'expense',
+              amount: roundUpAmt,
+              title: `Celengan: ${data.title}`,
+              categoryTag: 'LAINNYA',
+              note: 'Alokasi Celengan Pembulatan',
+              occurredAt: data.occurred_at ? new Date(data.occurred_at) : new Date(),
+            })
+          }
+        }
       } else {
         // transfer: deduct source, credit destination — both atomically
         const debit = await tx
@@ -152,13 +197,16 @@ export async function createTransaction(
     revalidatePath('/')
     revalidatePath('/wallets')
     revalidatePath('/insights')
-      // Detail pages for both legs of a transfer must refresh too, or the
-      // balances shown there go stale.
-      revalidatePath(`/wallets/${data.wallet_id}`)
-      if (data.type === 'transfer' && data.to_wallet_id) {
-        revalidatePath(`/wallets/${data.to_wallet_id}`)
-      }
-      return { success: true, data: { id } }
+    if (data.round_up_vault_id && data.round_up_amount) {
+      revalidatePath('/vaults')
+    }
+    // Detail pages for both legs of a transfer must refresh too, or the
+    // balances shown there go stale.
+    revalidatePath(`/wallets/${data.wallet_id}`)
+    if (data.type === 'transfer' && data.to_wallet_id) {
+      revalidatePath(`/wallets/${data.to_wallet_id}`)
+    }
+    return { success: true, data: { id } }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'UNKNOWN'
     if (msg === 'INSUFFICIENT_BALANCE') {
