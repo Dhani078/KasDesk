@@ -11,6 +11,7 @@ import { deleteBudget, deleteRecurring, toggleRecurring, executeRecurringAction 
 import { getBudgetAlerts } from '@/lib/planning/insights'
 import { BudgetForm, RecurringForm } from '@/components/PlanningForms'
 import { AiBudgetModal } from '@/components/planning/AiBudgetModal'
+import { DigitalEnvelopesCard } from '@/components/planning/DigitalEnvelopesCard'
 import { getDashboardSummary } from '@/lib/analytics/actions'
 import { getMonthWindow } from '@/lib/timezone'
 
@@ -59,6 +60,11 @@ export default async function PlanningPage() {
     <header className="page-header"><div><p className="eyebrow">Rencana</p><h1>Budget & pengingat</h1><p>Buat batas yang realistis dan jangan lewatkan pembayaran penting.</p></div><span className="icon-tile"><PiggyBank className="h-5 w-5" aria-hidden /></span></header>
 
     {warningAlerts.length > 0 && <section className="mb-6 rounded-3xl border border-danger/25 bg-danger/5 p-5"><div className="flex gap-3"><ShieldAlert className="h-5 w-5 shrink-0 text-danger" aria-hidden /><div><h2 className="font-semibold text-danger">Budget perlu perhatian</h2><p className="mt-1 text-sm text-text-secondary">{warningAlerts[0].category} sudah {warningAlerts[0].percent}% terpakai bulan ini.</p></div></div></section>}
+
+    <DigitalEnvelopesCard
+      monthlyIncome={dash.monthlyIncome}
+      categorySpendings={Object.fromEntries(alerts.map((a) => [a.category, a.spent]))}
+    />
 
     <section className="mb-7 grid grid-cols-2 gap-3 sm:grid-cols-3"><article className="surface-card rounded-2xl p-4"><p className="text-xs text-text-secondary">Total budget</p><p className="mt-2 font-mono font-semibold"><PrivacyAmount value={totalBudget} /></p></article><article className="surface-card rounded-2xl p-4"><p className="text-xs text-text-secondary">Terpakai</p><p className="mt-2 font-mono font-semibold text-accent-expense"><PrivacyAmount value={totalSpent} /></p></article><article className="surface-card col-span-2 rounded-2xl p-4 sm:col-span-1"><p className="text-xs text-text-secondary">Tersisa</p><p className="mt-2 font-mono font-semibold text-accent-income"><PrivacyAmount value={remaining} /></p></article></section>
 

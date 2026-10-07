@@ -23,9 +23,20 @@
   ],
   "shortcuts": [
     {
-      "name": "Catat Transaksi",
+      "name": "Catat Cepat (QuickLog)",
       "short_name": "Catat",
-      "url": "/",
+      "url": "/?action=quicklog",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Scan Struk AI",
+      "short_name": "Scan Struk",
+      "url": "/?action=scan",
       "icons": [
         {
           "src": "/icons/icon-192.png",
@@ -45,7 +56,7 @@
       ]
     },
     {
-      "name": "Dompet",
+      "name": "Dompet & Saldo",
       "short_name": "Dompet",
       "url": "/wallets",
       "icons": [
@@ -56,18 +67,7 @@
       ]
     },
     {
-      "name": "Utang & Piutang",
-      "short_name": "Utang",
-      "url": "/debts",
-      "icons": [
-        {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Laporan",
+      "name": "Laporan Finansial",
       "short_name": "Laporan",
       "url": "/insights",
       "icons": [

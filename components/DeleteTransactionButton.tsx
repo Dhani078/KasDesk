@@ -5,6 +5,7 @@ import { Trash2, Loader2, X } from 'lucide-react'
 
 import { deleteTransaction } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
+import { hapticDelete } from '@/lib/haptics'
 
 export type TxnRow = {
   id: string
@@ -34,6 +35,7 @@ export function DeleteTransactionButton({ txn }: { txn: TxnRow }) {
   }, [confirm])
 
   function onDelete() {
+    hapticDelete()
     setError(null)
     start(async () => {
       const r = await deleteTransaction(txn.id)

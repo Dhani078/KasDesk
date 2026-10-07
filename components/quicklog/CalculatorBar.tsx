@@ -1,5 +1,7 @@
 'use client'
 
+import { hapticTap } from '@/lib/haptics'
+
 export function CalculatorBar({
   mathLiveResult,
   amountText,
@@ -22,7 +24,10 @@ export function CalculatorBar({
           <button
             key={op}
             type="button"
-            onClick={() => onApplyOperator(op === '−' ? '-' : op === '×' ? '*' : op === '÷' ? '/' : op)}
+            onClick={() => {
+              hapticTap()
+              onApplyOperator(op === '−' ? '-' : op === '×' ? '*' : op === '÷' ? '/' : op)
+            }}
             className="flex h-6 w-6 items-center justify-center rounded text-xs font-semibold text-text-secondary hover:bg-white/[0.08] hover:text-text-primary active:scale-95"
             aria-label={`Operator ${op}`}
           >
@@ -32,7 +37,10 @@ export function CalculatorBar({
         {mathLiveResult !== null && (
           <button
             type="button"
-            onClick={onEvaluate}
+            onClick={() => {
+              hapticTap()
+              onEvaluate()
+            }}
             className="flex h-6 px-1.5 items-center justify-center rounded bg-accent/20 text-xs font-bold text-accent hover:bg-accent hover:text-white active:scale-95"
             aria-label="Hitung"
           >
@@ -45,7 +53,10 @@ export function CalculatorBar({
         <button
           key={amt}
           type="button"
-          onClick={() => onAddQuickAmount(amt)}
+          onClick={() => {
+            hapticTap()
+            onAddQuickAmount(amt)
+          }}
           className="rounded-lg border border-border-outer bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95"
         >
           +{amt >= 1000000 ? `${amt / 1000000}jt` : `${amt / 1000}rb`}

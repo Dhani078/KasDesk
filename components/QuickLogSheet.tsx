@@ -17,6 +17,7 @@ import type { ScanResult } from '@/components/ScanReceiptButton'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
+import { hapticSuccess } from '@/lib/haptics'
 import { DateTransactionPicker, getLocalDateString } from '@/components/quicklog/DateTransactionPicker'
 import { NoteWithTags } from '@/components/quicklog/NoteWithTags'
 import { ScanWarningBanner } from '@/components/quicklog/ScanWarningBanner'
@@ -390,9 +391,7 @@ function Sheet({
 
       resolvePending(clientId, true)
       setSaved(true)
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        try { navigator.vibrate([15, 30, 20]) } catch {}
-      }
+      hapticSuccess()
       setTimeout(() => {
         onClose()
       }, 350)

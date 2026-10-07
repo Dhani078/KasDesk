@@ -1,5 +1,19 @@
 # Changelog
 
+## Native PWA Superpowers (EPIC 8) & Amplop Digital ZBB 50/30/20 (EPIC 5.1) — 2026-10-07
+
+- Implemented Native PWA Tactile Haptic Vibration Engine (`lib/haptics.ts`):
+  - Subtle feedback patterns for `hapticTap` (10ms), `hapticSuccess` (15/40/20ms), `hapticWarning` (30/60/30ms), and `hapticDelete` (40/80/50ms).
+  - Integrated into calculator quick buttons, transaction save actions, and destructive deletion confirmations with zero-exception fallback.
+- Added PWA App Shortcuts & Action Listener:
+  - Configured deep shortcuts in `public/manifest.json`: Catat Cepat (`/?action=quicklog`), Scan Struk AI (`/?action=scan`), Dompet, dan Laporan.
+  - Wired URL action listener into `components/AppShell.tsx` to automatically trigger QuickLog and scan dialogs from OS home screen long-press.
+- Implemented Digital Envelopes & Zero-Based Budgeting (ZBB 50/30/20, EPIC 5.1):
+  - Pure calculation engine (`lib/planning/digital-envelopes.ts`) enforcing zero-unassigned revenue allocation across Needs (50%), Wants (30%), and Savings (20%).
+  - Real-time burn-rate tracking, overspending detection, and interactive visual cards (`components/planning/DigitalEnvelopesCard.tsx`) mounted in `/planning`.
+  - Authored automated test suite `scripts/test-digital-envelopes.js` (21 checks), wired into `package.json` (`npm run test:digital-envelopes` and `npm run test:unit`).
+- Synchronized all repository documentation (`CONTRIBUTING.md`, `RELEASE-CHECKLIST.md`, `README.md`, `ANTIGRAVITY-HANDOFF.md`, `PRD.md`) to 194 unit checks across 14 suites.
+
 ## Codebase Audit, Modular Architecture Refactor & Markdown Documentation Sync — 2026-10-07
 
 - Modularized god-file `lib/actions.ts` (984 LOC) into focused domain submodules (`lib/actions/`):

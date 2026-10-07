@@ -91,7 +91,8 @@ Berikut adalah 9 Epic fitur unggulan baru yang harus diimplementasikan secara be
 │ EPIC 2: Smart Split-Bill & WhatsApp Social Settlement Engine   [DONE]  │
 │ EPIC 3: Predictive Cashflow Forecast & Financial Autopilot     [DONE]  │
 │ EPIC 4: Bank Statement & E-Wallet PDF/CSV Import Engine        [DONE]  │
-│ EPIC 5: Digital Envelopes (ZBB) & Micro-Savings Auto-Rules     [DONE*] │
+│   ├── Micro-Savings Celengan Pembulatan (EPIC 5)                 [DONE]  │
+│   └── Amplop Digital & Zero-Based Budgeting (ZBB 50/30/20, EPIC 5.1)[DONE]│
 │ EPIC 6: Shared Financial Spaces (Mode Rumah Tangga & Pasutri)          │
 │ EPIC 7: AI Financial Coach v2 (Conversational & Tax Simulator) [DONE]  │
 │ EPIC 8: Native PWA Superpowers (Web Push, Share Target, Icons)         │
