@@ -60,6 +60,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // PWA App Shortcuts action listener (?action=quicklog, ?action=scan)
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const action = urlParams.get('action')
+      if (action === 'quicklog') {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog')), 100)
+      } else if (action === 'scan') {
+        setTimeout(() => window.dispatchEvent(new CustomEvent('kasdesk:scan-file')), 100)
+      }
+    } catch {}
+
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [shortcutsOpen])

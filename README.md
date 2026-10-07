@@ -164,14 +164,15 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 173 unit checks + AI Coach cascade + cursor pagination
+# = typecheck + lint + 194 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
 
-# Menjalankan seluruh 173 Unit Tests (offline & deterministik)
+# Menjalankan seluruh 194 Unit Tests (offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:
+npm run test:digital-envelopes # Amplop Digital ZBB 50/30/20 & Dynamic Burn Rate
 npm run test:micro-savings     # Algoritma Celengan Pembulatan & Pay Yourself First
 npm run test:tax               # Kalkulator PPh 21 Freelancer NPPN 50%
 npm run test:split-bill         # Algoritma Smart Split-Bill & PB1 Proportional
