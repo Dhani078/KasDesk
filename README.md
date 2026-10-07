@@ -30,6 +30,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 🤖 **AI Scan Struk (OCR)** | Foto struk belanjaan, Gemini 3.8 Flash otomatis mendeteksi nominal & tanggal transaksi. *Fallback cascade* otomatis ke 3.7 / 3.6 / 3.5 / 2.5 Flash. |
 | 📷 **AI Scan Saldo Screenshot Bank** | Ekstraksi saldo rekening langsung dari tangkapan layar m-Banking (BCA, Mandiri, SeaBank, GoPay, DANA) & auto-reconcile `#PENYESUAIAN`. |
 | 📥 **Bank Statement & Mutasi Importer (EPIC 4)** | Urai mutasi CSV/Teks (BCA KlikBCA, Mandiri Livin, SeaBank, BRImo, SMS) dengan SHA-256 deduplikasi & batch commit atomik. |
+| 🪙 **Micro-Savings "Celengan Pembulatan" (EPIC 5)** | Otomatisasi pembulatan receh belanja (ke Rp 1.000 / Rp 5.000 / Rp 10.000) langsung ke Vault target secara atomik & dialog *Pay Yourself First* alokasi gaji. |
 | 👥 **Smart Split-Bill & WhatsApp Settlement (EPIC 2)** | Bagi tagihan pesanan per orang, distribusi proporsional pajak PB1/Service, zero-difference rounding, dan tautan WA otomatis. |
 | 📈 **Proyeksi Arus Kas & Tanggal Kritis (EPIC 3)** | Simulasi kurva saldo harian 30/60/90 hari dengan deteksi tanggal kritis, overdraft warning, dan simulator pengeluaran dadakan (What-If Shock). |
 | 🛡️ **Meteran Runway Kas & Dana Darurat** | Ukur daya tahan likuiditas kas (Survival Index dalam bulan/hari) terhadap monthly burn rate aktual. |
@@ -161,14 +162,15 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 151 unit checks + AI Coach cascade + cursor pagination
-#   + 70 browser audit (CDP) + 22 DB integration suites + release validation
+# = typecheck + lint + 169 unit checks + AI Coach cascade + cursor pagination
+#   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
 
-# Menjalankan seluruh 151 Unit Tests (offline & deterministik)
+# Menjalankan seluruh 169+ Unit Tests (offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:
+npm run test:micro-savings     # Algoritma Celengan Pembulatan & Pay Yourself First
 npm run test:tax               # Kalkulator PPh 21 Freelancer NPPN 50%
 npm run test:split-bill         # Algoritma Smart Split-Bill & PB1 Proportional
 npm run test:encrypted-backup   # AES-256-GCM + PBKDF2 100k Zero-Knowledge Backup
