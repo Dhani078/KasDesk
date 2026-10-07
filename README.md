@@ -33,6 +33,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 🪙 **Micro-Savings "Celengan Pembulatan" (EPIC 5)** | Otomatisasi pembulatan receh belanja (ke Rp 1.000 / Rp 5.000 / Rp 10.000) langsung ke Vault target secara atomik & dialog *Pay Yourself First* alokasi gaji. |
 | 🌍 **Multi-Currency & Net Worth Rollup (EPIC 1)** | Dukungan 10 mata uang/aset (IDR, USD, SGD, EUR, JPY, MYR, Emas Antam XAU, USDT, BTC, ETH) dengan kartu konsolidasi kekayaan bersih (*Net Worth Card*). |
 | ✉️ **Amplop Digital ZBB 50/30/20 (EPIC 5.1)** | Zero-Based Budgeting dengan pelacakan real-time burn rate Kebutuhan (50%), Keinginan (30%), dan Tabungan (20%). |
+| 🏠 **Shared Spaces Mode Rumah Tangga (EPIC 6)** | Dual-ledger keuangan bersama pasangan/rekan kost dengan pemisahan dompet pribadi, hak akses RBAC (owner, editor, viewer), dan jejak audit pencatat. |
 | 👥 **Smart Split-Bill & WhatsApp Settlement (EPIC 2)** | Bagi tagihan pesanan per orang, distribusi proporsional pajak PB1/Service, zero-difference rounding, dan tautan WA otomatis. |
 | 📈 **Proyeksi Arus Kas & Tanggal Kritis (EPIC 3)** | Simulasi kurva saldo harian 30/60/90 hari dengan deteksi tanggal kritis, overdraft warning, dan simulator pengeluaran dadakan (What-If Shock). |
 | 🛡️ **Meteran Runway Kas & Dana Darurat** | Ukur daya tahan likuiditas kas (Survival Index dalam bulan/hari) terhadap monthly burn rate aktual. |
@@ -166,14 +167,15 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 221 unit checks + AI Coach cascade + cursor pagination
+# = typecheck + lint + 240 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
 
-# Menjalankan seluruh 221 Unit Tests (offline & deterministik)
+# Menjalankan seluruh 240 Unit Tests (offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:
+npm run test:shared-spaces     # Mode Rumah Tangga & RBAC Dual-Ledger
 npm run test:multi-currency    # Mesin Multi-Currency, Kurs & Net Worth Rollup
 npm run test:digital-envelopes # Amplop Digital ZBB 50/30/20 & Dynamic Burn Rate
 npm run test:micro-savings     # Algoritma Celengan Pembulatan & Pay Yourself First

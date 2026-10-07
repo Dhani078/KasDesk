@@ -85,6 +85,7 @@ export const categories = mysqlTable('categories', {
 export const wallets = mysqlTable('wallets', {
   id: pk(),
   userId: char('userId', { length: 36 }).notNull(),
+  spaceId: char('spaceId', { length: 36 }),
   name: varchar('name', { length: 60 }).notNull(),
   type: varchar('type', { length: 12 }).notNull(),
   currency: varchar('currency', { length: 10 }).notNull().default('IDR'),
@@ -95,12 +96,15 @@ export const wallets = mysqlTable('wallets', {
 }, (t) => [
   index('wallets_user_idx').on(t.userId),
   index('wallets_user_archived_idx').on(t.userId, t.isArchived),
+  index('wallets_space_idx').on(t.spaceId),
 ]);
 
 // ──────────────────────────────────────────────────── transactions
 export const transactions = mysqlTable('transactions', {
   id: pk(),
   userId: char('userId', { length: 36 }).notNull(),
+  spaceId: char('spaceId', { length: 36 }),
+  createdByUserId: char('createdByUserId', { length: 36 }),
   walletId: char('walletId', { length: 36 }).notNull(),
   toWalletId: char('toWalletId', { length: 36 }),
   type: varchar('type', { length: 8 }).notNull(),
@@ -120,6 +124,7 @@ export const transactions = mysqlTable('transactions', {
   index('tx_user_date_idx').on(t.userId, t.occurredAt),
   index('tx_wallet_date_idx').on(t.walletId, t.occurredAt),
   index('tx_user_wallet_idx').on(t.userId, t.walletId),
+  index('tx_space_date_idx').on(t.spaceId, t.occurredAt),
 ]);
 
 // ────────────────────────────────────────────────────────── vaults
@@ -200,6 +205,30 @@ export const exchangeRates = mysqlTable('exchangeRates', {
   index('exchange_rates_lookup_idx').on(t.fromCurrency, t.toCurrency, t.updatedAt),
 ]);
 
+// ──────────────────────────────────────────────────────── sharedSpaces
+export const sharedSpaces = mysqlTable('sharedSpaces', {
+  id: pk(),
+  name: varchar('name', { length: 80 }).notNull(),
+  description: varchar('description', { length: 255 }),
+  ownerUserId: char('ownerUserId', { length: 36 }).notNull(),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [
+  index('shared_spaces_owner_idx').on(t.ownerUserId),
+]);
+
+// ───────────────────────────────────────────────────────── spaceMembers
+export const spaceMembers = mysqlTable('spaceMembers', {
+  id: pk(),
+  spaceId: char('spaceId', { length: 36 }).notNull(),
+  userId: char('userId', { length: 36 }).notNull(),
+  role: varchar('role', { length: 16 }).notNull().default('editor'),
+  joinedAt: createdAt(),
+}, (t) => [
+  uniqueIndex('space_members_pair_uq').on(t.spaceId, t.userId),
+  index('space_members_user_idx').on(t.userId),
+]);
+
 export type User = typeof users.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
@@ -209,3 +238,5 @@ export type Category = typeof categories.$inferSelect;
 export type Budget = typeof budgets.$inferSelect;
 export type RecurringRule = typeof recurringRules.$inferSelect;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
+export type SharedSpace = typeof sharedSpaces.$inferSelect;
+export type SpaceMember = typeof spaceMembers.$inferSelect;

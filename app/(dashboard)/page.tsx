@@ -4,6 +4,8 @@ import { TrendingUp, TrendingDown, Wallet, Settings, ShieldCheck, Sparkles, Plus
 import { auth } from '@/auth'
 import { getRecentTransactions, getWallets } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
+import { getSharedSpaces } from '@/lib/spaces/actions'
+import { SpaceSwitcher } from '@/components/navigation/SpaceSwitcher'
 import { formatIDR } from '@/lib/format'
 import { QuickLogButton } from '@/components/QuickLogSheet'
 import { EmptyState } from '@/components/EmptyState'
@@ -18,11 +20,12 @@ import { DashboardQuickActions } from '@/components/DashboardQuickActions'
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const [session, dash, recent, wallets] = await Promise.all([
+  const [session, dash, recent, wallets, spaces] = await Promise.all([
     auth(),
     getDashboardSummary(),
     getRecentTransactions(20),
     getWallets(),
+    getSharedSpaces(),
   ])
 
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Kawan'
@@ -36,7 +39,23 @@ export default async function HomePage() {
   return (
     <main className="mx-auto min-h-dvh w-full max-w-2xl px-5 pt-7 pb-32 sm:px-8 sm:pt-10">
       <header className="mb-5">
-        <div className="mb-4 flex items-center justify-between gap-4"><div className="min-w-0"><p className="shimmer-text text-[11px] font-semibold uppercase tracking-[0.16em]">{greeting}</p><h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-text-primary capitalize">{userName} 👋</h2><p className="mt-1 text-sm leading-6 text-text-secondary">Ringkasan uangmu hari ini. Fokus ke hal penting, tanpa ribet.</p></div><div className="flex shrink-0 items-center gap-2"><PrivacyToggle /><Link href="/settings" aria-label="Pengaturan" className="grid h-11 w-11 place-items-center rounded-xl border border-border-outer bg-surface text-text-secondary transition hover:border-accent/35 hover:text-text-primary active:scale-95"><Settings className="h-4 w-4" aria-hidden /></Link><LogoutButton /></div></div>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="mb-2">
+              <SpaceSwitcher initialSpaces={spaces} />
+            </div>
+            <p className="shimmer-text text-[11px] font-semibold uppercase tracking-[0.16em]">{greeting}</p>
+            <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-text-primary capitalize">{userName} 👋</h2>
+            <p className="mt-1 text-sm leading-6 text-text-secondary">Ringkasan uangmu hari ini. Fokus ke hal penting, tanpa ribet.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <PrivacyToggle />
+            <Link href="/settings" aria-label="Pengaturan" className="grid h-11 w-11 place-items-center rounded-xl border border-border-outer bg-surface text-text-secondary transition hover:border-accent/35 hover:text-text-primary active:scale-95">
+              <Settings className="h-4 w-4" aria-hidden />
+            </Link>
+            <LogoutButton />
+          </div>
+        </div>
 
         {!hasAnyData && <section className="mb-4 rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/15 to-accent/5 p-5"><div className="flex gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent/15 text-accent"><Sparkles className="h-5 w-5" aria-hidden /></span><div><h1 className="text-lg font-semibold text-text-primary">Mulai dari dompet pertama</h1><p className="mt-1 text-sm leading-6 text-text-secondary">Tambahkan cash, bank, atau e-wallet. Setelah itu dashboard otomatis menampilkan Aman Harian dan laporan.</p><Link href="/wallets" className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent-solid px-4 text-sm font-semibold text-white"><PlusCircle className="h-4 w-4" aria-hidden /> Buat dompet</Link></div></div></section>}
 
