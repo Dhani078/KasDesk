@@ -1,5 +1,24 @@
 # Changelog
 
+## Shared Financial Spaces & Dual-Ledger Mode Rumah Tangga (EPIC 6) — 2026-10-07
+
+- Implemented Shared Spaces RBAC Engine (`lib/spaces.ts`):
+  - 3 standard roles with strict permissions: `owner` (create, invite, remove, delete space), `editor` (record & edit transactions, budgets), `viewer` (read-only audit).
+  - Attribution generator (`formatAttribution`) creating multi-user transaction audit trail (*"Dicatat oleh Anda"*, *"Dicatat oleh Sarah"*).
+  - Zod schemas for space creation (`CreateSpaceSchema`) and member invitations (`AddMemberSchema`).
+- Created Database Migration `drizzle/0006_shared_spaces.sql`:
+  - `sharedSpaces` table with `ownerUserId`.
+  - `spaceMembers` table with composite unique index (`spaceId`, `userId`) and role check constraints (`owner`, `editor`, `viewer`).
+  - Added `spaceId` column to `wallets` table.
+  - Added `spaceId` and `createdByUserId` columns to `transactions` table.
+  - Updated Drizzle ORM schema definitions in `lib/db/schema.ts`.
+- Server Actions & UI Navigation:
+  - Created server actions (`lib/spaces/actions.ts`): `getSharedSpaces`, `createSharedSpace`, `addSpaceMember`, and `deleteSharedSpace`.
+  - Built interactive workspace switcher (`components/navigation/SpaceSwitcher.tsx`) with modal for creating new shared spaces.
+  - Mounted `SpaceSwitcher` directly in the dashboard header on `/` (`app/(dashboard)/page.tsx`).
+- Authored automated test suite `scripts/test-shared-spaces.js` (19 checks), wired into `package.json` (`npm run test:shared-spaces` and `npm run test:unit`).
+- Synchronized all repository documentation (`CONTRIBUTING.md`, `RELEASE-CHECKLIST.md`, `README.md`, `ANTIGRAVITY-HANDOFF.md`, `PRD.md`) to 240 unit checks across 16 suites.
+
 ## Multi-Currency, Forex, Emas & Crypto Net Worth Rollup (EPIC 1) — 2026-10-07
 
 - Implemented Multi-Currency Engine (`lib/currency.ts`):
