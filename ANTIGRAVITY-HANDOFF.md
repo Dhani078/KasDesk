@@ -30,7 +30,7 @@ Jalankan pada environment nyata: `npm ci`, `npm run release:check`, `npm run bui
 - Jalankan bundle analyzer dan pastikan landing/login tidak memuat offline queue, bottom navigation, atau OCR chunk.
 - Pastikan OCR menggunakan distributed quota pada deployment multi-instance.
 - **Cursor Pagination & Query Resilience:** Jalankan `npm run test:transactions` untuk memverifikasi paging 30 transaksi, kontinuitas cursor base64url, dan ketahanan terhadap query string/cursor/tanggal rusak tanpa crash.
-- **Database Schema & Index Integrity:** Jalankan `npm run test:db-integrity` untuk memverifikasi 10 tabel penting, kolom hardened, dan composite index (`tx_user_date_idx`, `tx_wallet_date_idx`, `tx_user_client_mutation_uq`, `budgets_user_month_category_uq`).
+- **Database Schema & Index Integrity:** Jalankan `npm run test:db-integrity` untuk memverifikasi 13 tabel penting, kolom hardened, dan composite index (`tx_user_date_idx`, `tx_wallet_date_idx`, `tx_user_client_mutation_uq`, `budgets_user_month_category_uq`, `exchange_rates_pair_uq`, `space_members_pair_uq`).
 - **Data Export & Zero Secret Leakage:** Jalankan `npm run test:export` untuk memverifikasi endpoint JSON & CSV, attachment header, isolasi data, dan pembuktian mutlak zero-leak password hash/secret.
 - **Planning & Budget Invariants:** Jalankan `npm run test:planning` untuk memverifikasi upsert budget, eksekusi pengingat rutin dengan debit saldo otomatis, majunya jadwal tanggal, dan proteksi isolasi data.
 - **Account Lifecycle & Cascading Purge:** Jalankan `npm run test:lifecycle` untuk memverifikasi validasi ganti password, invalidasi sesi lama via `sessionInvalidBefore`, dan penghapusan atomik seluruh data akun lintas 7 tabel saat konfirmasi "HAPUS AKUN".

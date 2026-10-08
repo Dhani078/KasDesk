@@ -217,27 +217,29 @@ npm audit --omit=dev --audit-level=high
 ```
 KasDesk/
 ├── PRD.md                # Spesifikasi Lengkap & Arsitektur v2.0/v3.0 untuk Agen AI
-├── app/                  # Rute Next.js App Router
-│   ├── (dashboard)/      # Halaman terautentikasi (Home, Wallets, Insights, Planning, dll.)
-│   ├── (public)/         # Halaman publik (Welcome, Login, Register, Terms)
-│   ├── api/              # API Endpoints (Health, OCR Scan, Export, Auth)
-│   └── globals.css       # Token warna tema, utility CSS, & print layout
+├── app/                  # Rute Next.js App Router (Dashboard, Public, API)
 ├── components/           # Komponen UI Reusable
-│   ├── AppLock.tsx               # Gerbang lock screen PIN & Sidik Jari
-│   ├── FinancialHealthScoreCard  # Kartu gamifikasi skor & checklist level
-│   ├── MonthlyRecapModal.tsx     # Modal rekap bulanan WhatsApp & cetak PDF
-│   ├── QuickLogSheet.tsx         # Input cepat transaksi + kalkulator & tag
-│   └── EditTransactionButton.tsx # Edit transaksi + kalkulator & tag
-├── lib/                  # Logika Bisnis & Helper
-│   ├── db/               # Skema Drizzle ORM & konfigurasi pool database
-│   ├── auth/             # Sesi, validasi rate limit, password hashing, dan registrasi seed pipeline (`register.ts`)
-│   ├── analytics/        # Kalkulasi Skor Kesehatan, Aman Harian, dan Ringkasan
-│   ├── calculator.ts     # Parser aritmatika aman untuk input nominal
-│   ├── tags.ts           # Helper ekstraksi dan toggle tag (#Tag)
-│   ├── offline/          # Antrean sinkronisasi IndexedDB saat offline
-│   └── app-lock.ts       # Logika kriptografi kunci PIN & biometrik
-├── public/               # Aset statis PWA (Icons, Manifest, Robots, Service Worker)
-└── scripts/              # Skrip pengujian otomatis, migrasi, dan validasi rilis
+│   ├── navigation/       # SpaceSwitcher (Mode Rumah Tangga) & BottomNav
+│   ├── planning/         # DigitalEnvelopesCard (ZBB 50/30/20) & AiBudgetModal
+│   ├── vaults/           # RoundUpSettingsModal, VaultSheets, AiVaultPlanner
+│   ├── debts/            # DebtRow, NewDebtSheet, AiDebtReminderModal
+│   ├── wallets/          # NetWorthCard (10 Aset Valas/Emas/Kripto), SyncWalletModal
+│   ├── quicklog/         # Sub-komponen modular QuickLog, kalkulator, dan chip
+│   ├── coach/            # FloatingCoachBubble, AI Coach Chat, TaxEstimator
+│   ├── importer/         # StatementImportModal (BCA/Mandiri/SeaBank/CSV)
+│   └── splitbill/        # Smart Split-Bill & Settlement Modal
+├── lib/                  # Logika Bisnis & Domain Modules
+│   ├── actions/          # Modular Server Actions (transactions, wallets, vaults, debts)
+│   ├── currency.ts       # Multi-Currency, Forex, Emas & Net Worth Engine
+│   ├── planning/         # Digital Envelopes ZBB 50/30/20 Engine
+│   ├── spaces.ts         # Shared Financial Spaces & RBAC Engine
+│   ├── micro-savings.ts  # Celengan Pembulatan & Pay Yourself First Engine
+│   ├── haptics.ts        # Tactile Haptic Vibration Engine PWA
+│   ├── crypto/           # AES-256-GCM + PBKDF2 Zero-Knowledge Encrypted Backup
+│   └── db/               # Skema Drizzle ORM (TiDB MySQL 8)
+├── drizzle/              # Migrasi SQL (0000_init s/d 0006_shared_spaces)
+├── public/               # Aset statis PWA (Icons, Manifest, Service Worker)
+└── scripts/              # 16 Unit Test Suites (240 Checks) & Database Integration Runners
 ```
 
 ---
