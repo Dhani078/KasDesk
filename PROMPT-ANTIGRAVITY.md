@@ -75,11 +75,13 @@ Pastikan migrasi berikut tercatat dan checksum valid:
 0002_distributed_rate_limit.sql
 0003_session_invalidation.sql
 0004_planning.sql
+0005_multi_currency_and_rates.sql
+0006_shared_spaces.sql
 ```
 
 Uji dua jalur:
 
-- Database kosong: `0000` sampai `0004`.
+- Database kosong: `0000` sampai `0006`.
 - Upgrade database lama ke migrasi terbaru.
 
 Verifikasi tabel/kolom/index penting:
@@ -91,10 +93,20 @@ users.sessionInvalidBefore
 transactions.clientMutationId
 budgets
 recurringRules
+exchangeRates
+sharedSpaces
+spaceMembers
+wallets.currency
+transactions.currency
+transactions.baseAmount
+wallets.spaceId
+transactions.spaceId
 tx_user_client_mutation_uq
 tx_user_date_idx
 tx_wallet_date_idx
 budgets_user_month_category_uq
+exchange_rates_pair_uq
+space_members_pair_uq
 ```
 
 ## Tahap 4 — production build
@@ -149,7 +161,7 @@ Jika target gagal, perbaiki penyebabnya dan ulangi pengukuran.
 
 ## Tahap 6 — database dan keamanan
 
-Jalankan seluruh test yang membutuhkan TiDB hanya pada staging/fixture disposable. Cara tercepat: `npm run test:db` menjalankan 22 suite database secara sekuensial dengan pembersihan fixture otomatis. Rincian per-suite:
+Jalankan seluruh test yang membutuhkan TiDB hanya pada staging/fixture disposable. Cara tercepat: `npm run test:db` menjalankan 23 suite database secara sekuensial dengan pembersihan fixture otomatis. Rincian per-suite:
 
 ```bash
 npm run test:auth

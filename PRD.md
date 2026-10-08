@@ -51,7 +51,7 @@ Modul-modul berikut **sudah beroperasi penuh dan terverifikasi** dalam codebase 
 [ EXISTING AUDIT MATRIX ]
 ├── Core Engine:
 │   ├── Next.js 16.3.5 (App Router, Webpack/Turbopack) + React 19.2.8 + Tailwind CSS v4
-│   ├── TiDB Cloud MySQL 8 via Drizzle ORM (schema: users, accounts, sessions, categories, wallets, transactions, vaults, debts, budgets, recurringRules)
+│   ├── TiDB Cloud MySQL 8 via Drizzle ORM (schema: users, accounts, sessions, categories, wallets, transactions, vaults, debts, budgets, recurringRules, exchangeRates, sharedSpaces, spaceMembers)
 │   └── Node.js >=22 runtime dengan strict TypeScript 5.0
 ├── Authentication & Hardening:
 │   ├── Auth.js (NextAuth v5 beta) + Password hashing (bcryptjs) + CSRF protection

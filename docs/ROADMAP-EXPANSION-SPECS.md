@@ -6,7 +6,7 @@
 | **Metadata** | **Specification** |
 | :--- | :--- |
 | **Document ID** | `SPEC-2026-EXPANSION-01` |
-| **Status** | **APPROVED FOR IMPLEMENTATION** |
+| **Status** | **IMPLEMENTED & VERIFIED (v2.0 PROD)** |
 | **Target Codebase** | KasDesk v2.0+ (Next.js 16 App Router, React 19, Tailwind v4, TiDB MySQL 8) |
 | **Author** | Senior Full-Stack & Fintech Solutions Architect |
 | **Related Documents** | [`PRD.md`](../PRD.md), [`CHANGELOG.md`](../CHANGELOG.md), [`README.md`](../README.md) |
@@ -44,7 +44,7 @@ Dokumen ini merupakan panduan implementasi teknis detail (*Technical Blueprint*)
 │    └── 1.4 Invarian Kurs Historis Transaksi (exchangeRateAtOccurred)         │
 │                                                                              │
 │ 4. EPIC 6: Shared Financial Spaces (Mode Rumah Tangga & Kas Pasutri)         │
-│    ├── 4.1 Migrasi Skema 0008 (sharedSpaces, spaceMembers, spaceId)          │
+│    ├── 4.1 Migrasi Skema 0006 (sharedSpaces, spaceMembers, spaceId)          │
 │    ├── 4.2 Isolasi Dual-Ledger (Dompet Pribadi vs Kas Rumah Tangga)          │
 │    ├── 4.3 Workspace Switcher di Header Navigasi                             │
 │    └── 4.4 Multi-User Audit Trail & Rekam Jejak Pencatat Transaksi           │
