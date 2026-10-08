@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { transactions, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { CATEGORY_ENUM } from '@/lib/schemas'
+import { convertToBase, DEFAULT_EXCHANGE_RATES, type SupportedCurrency } from '@/lib/currency'
 
 export interface StatementImportItem {
   fingerprint: string
@@ -38,7 +39,7 @@ export async function importStatementBatchAction(params: {
     const inserted = await db.transaction(async (tx) => {
       // 1. Verify wallet ownership
       const [wallet] = await tx
-        .select({ id: wallets.id, balance: wallets.balance })
+        .select({ id: wallets.id, balance: wallets.balance, currency: wallets.currency })
         .from(wallets)
         .where(and(eq(wallets.id, walletId), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
         .limit(1)
@@ -49,6 +50,8 @@ export async function importStatementBatchAction(params: {
 
       let netBalanceDelta = 0
       let successCount = 0
+      const curr = (wallet.currency ?? 'IDR') as SupportedCurrency
+      const rate = DEFAULT_EXCHANGE_RATES[curr] ?? 1
 
       for (const item of items) {
         if (!item.amount || item.amount <= 0) continue
@@ -59,6 +62,7 @@ export async function importStatementBatchAction(params: {
 
         const occurredDate = new Date(`${item.date}T12:00:00Z`)
         const txId = crypto.randomUUID()
+        const baseAmount = convertToBase(item.amount, curr)
 
         await tx.insert(transactions).values({
           id: txId,
@@ -66,6 +70,9 @@ export async function importStatementBatchAction(params: {
           walletId: wallet.id,
           type: item.type,
           amount: item.amount,
+          currency: curr,
+          exchangeRate: String(rate),
+          baseAmount,
           title: item.title.slice(0, 120),
           categoryTag: validCat,
           note: `Impor Mutasi Rekening (#${item.fingerprint.slice(0, 8)})`,
@@ -89,6 +96,9 @@ export async function importStatementBatchAction(params: {
             .where(and(eq(wallets.id, wallet.id), eq(wallets.userId, userId)))
         } else {
           const debit = Math.abs(netBalanceDelta)
+          if (Number(wallet.balance) < debit) {
+            throw new Error('Saldo dompet tidak mencukupi untuk total pengeluaran mutasi')
+          }
           await tx
             .update(wallets)
             .set({ balance: sql`${wallets.balance} - ${debit}`, updatedAt: new Date() })

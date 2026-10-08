@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Receipt, Sparkles } from 'lucide-react'
 
 export function ScanProgressModal({
@@ -11,6 +12,13 @@ export function ScanProgressModal({
   scanStep: number
   onCancel: () => void
 }) {
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onCancel])
   return (
     <div
       role="dialog"

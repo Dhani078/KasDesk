@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Sparkles, Check, RefreshCw, X, ArrowRight, AlertCircle } from 'lucide-react'
 import { evaluateVaultFeasibility, type VaultFeasibilityResult } from '@/lib/vaults/ai-planner'
 import { createVault } from '@/lib/actions'
@@ -22,6 +22,15 @@ export function AiVaultPlannerModal({
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const router = useRouter()
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isPending) setIsOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen, isPending])
 
   const result: VaultFeasibilityResult = evaluateVaultFeasibility({
     targetAmount,

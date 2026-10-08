@@ -50,7 +50,8 @@ async function main() {
 
     const REQUIRED_TABLES = [
       'users', 'wallets', 'transactions', 'vaults', 'debts',
-      'categories', 'budgets', 'recurringRules', 'authRateLimits', 'schema_migrations'
+      'categories', 'budgets', 'recurringRules', 'authRateLimits', 'schema_migrations',
+      'exchangeRates', 'sharedSpaces', 'spaceMembers'
     ]
 
     for (const tbl of REQUIRED_TABLES) {
@@ -65,6 +66,14 @@ async function main() {
     const [txCols] = await db.execute('DESCRIBE transactions')
     const txColNames = new Set(txCols.map((c) => c.Field))
     check('transactions.clientMutationId column exists', txColNames.has('clientMutationId'))
+    check('transactions.currency column exists', txColNames.has('currency'))
+    check('transactions.baseAmount column exists', txColNames.has('baseAmount'))
+    check('transactions.spaceId column exists', txColNames.has('spaceId'))
+
+    const [wCols] = await db.execute('DESCRIBE wallets')
+    const wColNames = new Set(wCols.map((c) => c.Field))
+    check('wallets.currency column exists', wColNames.has('currency'))
+    check('wallets.spaceId column exists', wColNames.has('spaceId'))
 
     // 3. Indexes on transactions
     const [txIndexes] = await db.execute('SHOW INDEX FROM transactions')

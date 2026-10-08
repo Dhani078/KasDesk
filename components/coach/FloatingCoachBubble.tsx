@@ -63,6 +63,15 @@ export function FloatingCoachBubble() {
     }
   }, [isOpen, messages, isPending])
 
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen])
+
   const handleSend = () => {
     const clean = input.trim()
     if (!clean || isPending) return

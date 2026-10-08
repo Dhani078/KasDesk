@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useEffect, useTransition } from 'react'
 import { FileSpreadsheet, Upload, Check, AlertCircle, RefreshCw, X, ArrowRight, CheckSquare, Square } from 'lucide-react'
 import {
   parseBankStatement,
@@ -41,6 +41,18 @@ export function StatementImportModal({ wallets }: { wallets: WalletOption[] }) {
     setSuccessMsg('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isPending) {
+        resetState()
+        setIsOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen, isPending])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
