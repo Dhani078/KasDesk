@@ -210,8 +210,12 @@ export async function createTransaction(
   }
 }
 
-/** Delete a transaction and reverse its effect on the wallet balance. */
+/**
+ * Delete a transaction and reverse its effect on the wallet balance.
+ * This REVERSES an existing transaction and is deliberately NOT blocked by the archived guard so reversal never strands money.
+ */
 export async function deleteTransaction(id: string): Promise<ActionResponse<null>> {
+  // deleteTransaction REVERSES an existing transaction and is deliberately NOT blocked by the archived guard so reversal never strands money.
   const userId = await requireUserId()
   if (!userId) {
     return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }

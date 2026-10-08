@@ -27,14 +27,23 @@ const check = (n, c, d = '') => {
   else { fail++; console.log(`  FAIL  ${n} ${d ? '-> ' + d : ''}`) }
 }
 
-const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'actions.ts'), 'utf8')
+const actionsDir = path.join(__dirname, '..', 'lib', 'actions')
+const modularFiles = fs.existsSync(actionsDir)
+  ? fs.readdirSync(actionsDir).filter((f) => f.endsWith('.ts')).map((f) => fs.readFileSync(path.join(actionsDir, f), 'utf8'))
+  : []
+const barrelSrc = fs.readFileSync(path.join(__dirname, '..', 'lib', 'actions.ts'), 'utf8')
+const allSources = [...modularFiles, barrelSrc]
 
 /** Extract the body of `export async function <name>(`. */
 function fnBody(name) {
-  const start = src.indexOf(`export async function ${name}(`)
-  if (start < 0) return ''
-  const next = src.indexOf('\nexport async function ', start + 10)
-  return src.slice(start, next > 0 ? next : start + 4000)
+  for (const s of allSources) {
+    const start = s.indexOf(`export async function ${name}(`)
+    if (start >= 0) {
+      const next = s.indexOf('\nexport async function ', start + 10)
+      return s.slice(start, next > 0 ? next : start + 4000)
+    }
+  }
+  return ''
 }
 
 // Functions that CREATE a money movement must refuse archived wallets.
@@ -97,7 +106,7 @@ for (const fn of EXEMPT) {
 check('helper lives in lib/wallet-guard.ts (not actions.ts)',
   fs.existsSync(path.join(__dirname, '..', 'lib', 'wallet-guard.ts')))
 check('actions.ts does not define isArchivedWallet inline',
-  !/export function isArchivedWallet/.test(src),
+  !/export function isArchivedWallet/.test(barrelSrc),
   'inline export would break the build ("Server Actions must be async")')
 
 console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)

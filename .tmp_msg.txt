@@ -1,0 +1,7 @@
+fix: sequential alter table migrations and modular test path sync
+
+- Separate ADD COLUMN statements in drizzle 0005 & 0006 for TiDB compatibility
+- Apply pending schema migrations (0005, 0006) to TiDB via db:push
+- Update test-debt-partial.js and test-archived-coverage.js to scan lib/actions submodules
+- Re-document deleteTransaction balance reversal exemption in transactions.ts
+- Synchronize CHANGELOG.md with 100% full gate passing verification
