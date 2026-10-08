@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Users, User, Plus, Check, ChevronDown, X, Loader2 } from 'lucide-react'
 import {
   ACTIVE_SPACE_STORAGE_KEY,
@@ -31,6 +31,18 @@ export function SpaceSwitcher({
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!dropdownOpen && !modalOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (modalOpen) setModalOpen(false)
+        if (dropdownOpen) setDropdownOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [dropdownOpen, modalOpen])
 
   function switchSpace(id: string | null) {
     setActiveSpaceId(id)

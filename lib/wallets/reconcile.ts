@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { wallets, transactions } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
+import { convertToBase, DEFAULT_EXCHANGE_RATES, type SupportedCurrency } from '@/lib/currency'
 import { revalidatePath } from 'next/cache'
 
 export interface ReconcileResult {
@@ -30,7 +31,7 @@ export async function reconcileWalletBalance(params: {
   try {
     const res = await db.transaction(async (tx) => {
       const [wallet] = await tx
-        .select({ id: wallets.id, balance: wallets.balance, name: wallets.name })
+        .select({ id: wallets.id, balance: wallets.balance, name: wallets.name, currency: wallets.currency })
         .from(wallets)
         .where(and(eq(wallets.id, walletId), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
         .limit(1)
@@ -48,6 +49,9 @@ export async function reconcileWalletBalance(params: {
 
       const txType = diff > 0 ? 'income' : 'expense'
       const txAmount = Math.abs(diff)
+      const curr = (wallet.currency ?? 'IDR') as SupportedCurrency
+      const rate = DEFAULT_EXCHANGE_RATES[curr] ?? 1
+      const baseAmount = convertToBase(txAmount, curr)
 
       // Insert audit transaction row
       const txId = crypto.randomUUID()
@@ -57,6 +61,9 @@ export async function reconcileWalletBalance(params: {
         walletId: wallet.id,
         type: txType,
         amount: txAmount,
+        currency: curr,
+        exchangeRate: String(rate),
+        baseAmount,
         title: 'Rekonsiliasi Saldo',
         categoryTag: 'PENYESUAIAN',
         note: `${note} (${diff > 0 ? '+' : '-'}Rp ${txAmount.toLocaleString('id-ID')})`,
@@ -74,6 +81,7 @@ export async function reconcileWalletBalance(params: {
 
     revalidatePath('/')
     revalidatePath('/wallets')
+    revalidatePath('/insights')
     revalidatePath(`/wallets/${walletId}`)
     return { success: true, data: res }
   } catch (err) {

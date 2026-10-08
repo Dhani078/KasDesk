@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { budgets, recurringRules, transactions, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { CATEGORY_ENUM } from '@/lib/schemas'
+import { convertToBase, DEFAULT_EXCHANGE_RATES, type SupportedCurrency } from '@/lib/currency'
 
 export type PlanningState = { error?: string; success?: string } | null
 const budgetSchema = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/), category: z.enum(CATEGORY_ENUM), amount: z.coerce.number().int().positive().max(100_000_000_000) })
@@ -84,7 +85,7 @@ export async function executeRecurringAction(formData: FormData) {
   if (!targetWalletId) return
 
   const [targetWallet] = await db
-    .select({ id: wallets.id, balance: wallets.balance, isArchived: wallets.isArchived })
+    .select({ id: wallets.id, balance: wallets.balance, isArchived: wallets.isArchived, currency: wallets.currency })
     .from(wallets)
     .where(and(eq(wallets.id, targetWalletId), eq(wallets.userId, userId), eq(wallets.isArchived, 0)))
     .limit(1)
@@ -94,12 +95,19 @@ export async function executeRecurringAction(formData: FormData) {
     return
   }
 
+  const curr = (targetWallet.currency ?? 'IDR') as SupportedCurrency
+  const rate = DEFAULT_EXCHANGE_RATES[curr] ?? 1
+  const baseAmount = convertToBase(rule.amount, curr)
+
   await db.transaction(async (tx) => {
     await tx.insert(transactions).values({
       userId,
       walletId: targetWalletId,
       type: rule.type,
       amount: rule.amount,
+      currency: curr,
+      exchangeRate: String(rate),
+      baseAmount,
       title: rule.title,
       categoryTag: rule.categoryTag ?? 'TAGIHAN',
       note: `Transaksi rutin otomatis (${rule.frequency === 'monthly' ? 'Bulanan' : 'Mingguan'})`,
@@ -135,8 +143,10 @@ export async function executeRecurringAction(formData: FormData) {
 
   revalidatePath('/planning')
   revalidatePath('/')
+  revalidatePath('/wallets')
   revalidatePath('/insights')
   revalidatePath('/transactions')
+  revalidatePath(`/wallets/${targetWalletId}`)
 }
 
 export async function applyAiBudgetBatchAction(params: {

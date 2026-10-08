@@ -149,6 +149,9 @@ export async function createTransaction(
               walletId: data.wallet_id,
               type: 'expense',
               amount: roundUpAmt,
+              currency: txCurrency,
+              exchangeRate: String(rate),
+              baseAmount: convertToBase(roundUpAmt, txCurrency),
               title: `Celengan: ${data.title}`,
               categoryTag: 'LAINNYA',
               note: 'Alokasi Celengan Pembulatan',
@@ -271,6 +274,10 @@ export async function deleteTransaction(id: string): Promise<ActionResponse<null
     if (affectedToWalletId) revalidatePath(`/wallets/${affectedToWalletId}`)
     return { success: true, data: null }
   } catch (e) {
+    const msg = e instanceof Error ? e.message : 'UNKNOWN'
+    if (msg.includes('CHECK_CONSTRAINT_VIOLATED') || msg.includes('balance_nonnegative') || msg === 'INSUFFICIENT_BALANCE') {
+      return { success: false, error: { code: 'INSUFFICIENT_BALANCE', message: 'Saldo dompet tidak mencukupi untuk membatalkan pemasukan ini.' } }
+    }
     console.error('[deleteTransaction]', e instanceof Error ? e.message : e)
     return { success: false, error: { code: 'UNKNOWN', message: 'Gagal menghapus transaksi.' } }
   }
@@ -333,7 +340,7 @@ export async function updateTransaction(
       const newTo = isTransfer ? oldTo : (data.type === 'transfer' ? data.to_wallet_id ?? null : null)
 
       const [ws] = await tx
-        .select({ id: wallets.id, isArchived: wallets.isArchived })
+        .select({ id: wallets.id, isArchived: wallets.isArchived, currency: wallets.currency })
         .from(wallets)
         .where(and(eq(wallets.id, newSource), eq(wallets.userId, userId)))
         .limit(1)
@@ -371,10 +378,17 @@ export async function updateTransaction(
         await tx.update(wallets).set({ balance: sql`${wallets.balance} + ${data.amount}` }).where(eq(wallets.id, newTo))
       }
 
+      const curr = (data.currency ?? ws.currency ?? txRow.currency ?? 'IDR') as SupportedCurrency
+      const rate = DEFAULT_EXCHANGE_RATES[curr] ?? 1
+      const baseAmount = convertToBase(data.amount, curr)
+
       await tx.update(transactions).set({
         walletId: newSource,
         toWalletId: newTo,
         amount: data.amount,
+        currency: curr,
+        exchangeRate: String(rate),
+        baseAmount,
         title: data.title,
         categoryTag: data.category_tag ?? txRow.categoryTag,
         note: data.note ?? txRow.note,

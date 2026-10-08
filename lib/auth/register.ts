@@ -21,6 +21,7 @@ export async function seedNewUser(
     userId,
     name: 'Tunai',
     type: 'cash',
+    currency: 'IDR',
     balance: 0,
   })
 

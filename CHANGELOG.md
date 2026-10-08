@@ -1,5 +1,32 @@
 # Changelog
 
+## Codebase Hardening, Currency BaseAmount Integrity & Modal Accessibility — 2026-10-07
+
+- Fixed Currency BaseAmount & Frozen Rate Integrity across all transaction insertion and update paths:
+  - `updateTransaction` (`lib/actions/transactions.ts`): recomputes `baseAmount` and preserves frozen `exchangeRate` when modifying amounts or currencies.
+  - Celengan Ledger Entry (`lib/actions/transactions.ts`): correctly applies source wallet currency and base conversion.
+  - `reconcileWalletBalance` (`lib/wallets/reconcile.ts`): persists wallet currency, exchange rate, and base amount on balance adjustments; added missing cache revalidation for `/insights`.
+  - `executeRecurringAction` (`lib/planning/actions.ts`): persists target wallet currency, exchange rate, and base amount on automated recurring rule debits; added revalidation for `/wallets` and detail views.
+  - `importStatementBatchAction` (`lib/importer/actions.ts`): persists wallet currency, exchange rate, and base amount on imported statement batches; added preventive balance overdraft check before batch debit and cache revalidation for `/insights`.
+- Added Keyboard Escape Key Dismissal across 10 interactive modals & sheets:
+  - `components/navigation/SpaceSwitcher.tsx`
+  - `components/planning/AiBudgetModal.tsx`
+  - `components/vaults/RoundUpSettingsModal.tsx`
+  - `components/vaults/AiVaultPlannerModal.tsx`
+  - `components/debts/AiDebtReminderModal.tsx`
+  - `components/wallets/SyncWalletModal.tsx`
+  - `components/importer/StatementImportModal.tsx`
+  - `components/coach/FloatingCoachBubble.tsx`
+  - `components/scanner/ScanProgressModal.tsx`
+  - `components/WalletsClient.tsx` (Archive confirmation dialog)
+- Hardened Error Transparency:
+  - `deleteTransaction` (`lib/actions/transactions.ts`): maps database check constraint violation on income deletion to clear user-facing error `INSUFFICIENT_BALANCE` ("Saldo dompet tidak mencukupi untuk membatalkan pemasukan ini").
+  - `seedNewUser` (`lib/auth/register.ts`): explicitly sets `currency: 'IDR'` on starter wallet insertion.
+- Expanded Automated Test Coverage:
+  - `scripts/test-input-bounds.ts`: added currency boundary checks for `WalletSchema` and `TransactionSchema` (33 total checks).
+  - `scripts/test-db-schema-integrity.js`: added verification for `exchangeRates`, `sharedSpaces`, `spaceMembers`, and columns `currency`, `baseAmount`, `spaceId`.
+- Verified 100% Passing Gate: TypeScript strict typecheck (0 errors), ESLint (0 errors/warnings), unit tests (240/240 passed), and release validation.
+
 ## Shared Financial Spaces & Dual-Ledger Mode Rumah Tangga (EPIC 6) — 2026-10-07
 
 - Implemented Shared Spaces RBAC Engine (`lib/spaces.ts`):

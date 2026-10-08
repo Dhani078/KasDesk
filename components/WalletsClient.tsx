@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, ChevronRight, X, Loader2, Archive, ArchiveRestore, Target, ArrowRightLeft } from 'lucide-react'
 
@@ -181,6 +181,15 @@ function ArchiveButton({ id, name, balance }: { id: string; name: string; balanc
   const [confirming, setConfirming] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!confirming) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setConfirming(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [confirming])
 
   async function run() {
     setError(null)

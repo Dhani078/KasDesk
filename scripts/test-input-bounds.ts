@@ -69,6 +69,7 @@ const GOOD: [string, any][] = [
   ['title at the 120-char limit', { ...base, title: 'x'.repeat(120) }],
   ['with a category tag', { ...base, category_tag: 'MAKAN' }],
   ['with a note', { ...base, note: 'catatan' }],
+  ['with valid currency (USD)', { ...base, currency: 'USD' }],
 ]
 
 for (const [label, payload] of GOOD) {
@@ -76,13 +77,18 @@ for (const [label, payload] of GOOD) {
   check(`accepts ${label}`, r.success === true, r.success ? '' : JSON.stringify(r.error.issues[0]))
 }
 
+check('rejects transaction with invalid currency', TransactionSchema.safeParse({ ...base, currency: 'FAKE' }).success === false)
+
 console.log('\n=== WalletSchema / DebtSchema boundaries ===')
 
 check('rejects wallet with empty name', WalletSchema.safeParse({ name: '', type: 'cash' }).success === false)
 check('rejects wallet with bad type', WalletSchema.safeParse({ name: 'BCA', type: 'crypto' }).success === false)
 check('rejects wallet with negative balance',
   WalletSchema.safeParse({ name: 'BCA', type: 'bank', balance: -1 }).success === false)
+check('rejects wallet with bad currency',
+  WalletSchema.safeParse({ name: 'BCA', type: 'bank', balance: 0, currency: 'FAKE' }).success === false)
 check('accepts a valid wallet', WalletSchema.safeParse({ name: 'BCA', type: 'bank', balance: 0 }).success === true)
+check('accepts wallet with USD currency', WalletSchema.safeParse({ name: 'Wise', type: 'bank', balance: 100, currency: 'USD' }).success === true)
 
 const debtBase = { direction: 'utang' as const, person_name: 'Budi', amount: 50000 }
 check('rejects debt with negative amount',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef, useEffect, useTransition } from 'react'
 import { Camera, Upload, Check, AlertCircle, RefreshCw, X, ArrowRight } from 'lucide-react'
 import { reconcileWalletBalance } from '@/lib/wallets/reconcile'
 import { formatIDR } from '@/lib/format'
@@ -33,8 +33,6 @@ export function SyncWalletModal({ wallets }: { wallets: WalletOption[] }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  const currentWallet = wallets.find((w) => w.id === selectedWalletId)
-
   const resetState = () => {
     setPreviewUrl(null)
     setIsScanning(false)
@@ -43,6 +41,20 @@ export function SyncWalletModal({ wallets }: { wallets: WalletOption[] }) {
     setSuccessMsg('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isPending && !isScanning) {
+        resetState()
+        setIsOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen, isPending, isScanning])
+
+  const currentWallet = wallets.find((w) => w.id === selectedWalletId)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

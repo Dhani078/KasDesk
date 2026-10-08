@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sparkles, Coins, X, Check, ArrowRight } from 'lucide-react'
 import { formatIDR } from '@/lib/format'
 import {
@@ -23,6 +23,15 @@ export function RoundUpSettingsModal({ vaults }: { vaults: VaultLite[] }) {
   const [config, setConfig] = useState<RoundUpConfig>(() => getLocalRoundUpConfig())
   const [savedSuccess, setSavedSuccess] = useState(false)
   const sampleAmount = 23000
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   function handleOpen() {
     setConfig(getLocalRoundUpConfig())

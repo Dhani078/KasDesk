@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sparkles, MessageCircle, Copy, Check, X, ExternalLink } from 'lucide-react'
 import {
   generateDebtReminderMessage,
@@ -27,6 +27,15 @@ export function AiDebtReminderModal({
   const [bankOrWallet, setBankOrWallet] = useState('BCA / SeaBank')
   const [accountNumber, setAccountNumber] = useState('')
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isOpen])
 
   const selectedDebt = receivables.find((r) => r.id === selectedId) || receivables[0]
   const remaining = selectedDebt ? Math.max(0, Number(selectedDebt.amount) - Number(selectedDebt.paidAmount || 0)) : 0
