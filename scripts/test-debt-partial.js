@@ -37,7 +37,11 @@ const check = (n, c, d = '') => {
 
 async function main() {
   console.log('=== A. settleDebt contract (structural) ===')
-  const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'actions.ts'), 'utf8')
+  const actionsDir = path.join(__dirname, '..', 'lib', 'actions')
+  const debtsFile = path.join(actionsDir, 'debts.ts')
+  const src = fs.existsSync(debtsFile)
+    ? fs.readFileSync(debtsFile, 'utf8')
+    : fs.readFileSync(path.join(__dirname, '..', 'lib', 'actions.ts'), 'utf8')
   const i0 = src.indexOf('export async function settleDebt')
   const block = src.slice(i0, src.indexOf('\nexport async function ', i0 + 10))
 

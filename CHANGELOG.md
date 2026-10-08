@@ -1,5 +1,22 @@
 # Changelog
 
+## Database Schema Migration Fix & Test Suite Modular Path Synchronization — 2026-10-08
+
+- Fixed SQL migrations execution on TiDB:
+  - `drizzle/0005_multi_currency_and_rates.sql`: separated sequential `ALTER TABLE` statements so newly added columns (`currency`, `exchangeRate`) resolve properly during `AFTER` clause evaluation.
+  - `drizzle/0006_shared_spaces.sql`: separated sequential `ALTER TABLE` statements for `spaceId` and `createdByUserId`.
+  - Applied migrations 0005 and 0006 cleanly to TiDB via `npm run db:push`.
+- Synchronized structural test suites with modular `lib/actions/` architecture:
+  - `scripts/test-debt-partial.js`: updated to inspect `lib/actions/debts.ts` directly.
+  - `scripts/test-archived-coverage.js`: updated to inspect all submodules under `lib/actions/`.
+  - `lib/actions/transactions.ts`: added inline doc comment clarifying `deleteTransaction` reversal exemption for archived wallets.
+- Verified 100% passing across the full release gate (`npm run test:full`):
+  - 240 unit checks across 16 test suites (`npm run test:unit`)
+  - 23 database integration suites (`npm run test:db`)
+  - 70 headless Chrome CDP browser audit tests (`npm run test:browser`)
+  - Strict TypeScript typecheck (0 errors) and ESLint (0 errors)
+  - Release artifact validation (`release:check`)
+
 ## Codebase Hardening, Currency BaseAmount Integrity & Modal Accessibility — 2026-10-07
 
 - Fixed Currency BaseAmount & Frozen Rate Integrity across all transaction insertion and update paths:
