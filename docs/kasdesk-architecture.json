@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "KasDesk v2.0 Production Architecture",
+    "output": "kasdesk-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "pwa_client", "type": "external", "label": "PWA Client", "sublabel": "React 19 / Tailwind v4", "pos": [40, 300], "size": [130, 60] },
+    { "id": "auth_layer", "type": "security", "label": "Auth & Security", "sublabel": "Auth.js v5 + WebAuthn", "pos": [260, 150], "size": [130, 60], "tag": "SHA-256 App Lock" },
+    { "id": "service_worker", "type": "backend", "label": "Service Worker", "sublabel": "PWA / Share Target", "pos": [260, 300], "size": [130, 60] },
+    { "id": "offline_idb", "type": "database", "label": "IndexedDB", "sublabel": "Offline Queue & Cache", "pos": [260, 450], "size": [130, 60] },
+    { "id": "gemini_ai", "type": "cloud", "label": "Gemini AI Engine", "sublabel": "Flash 3.8/3.7 Cascade", "pos": [510, 150], "size": [130, 60], "tag": "OCR & Copilot" },
+    { "id": "next_server", "type": "backend", "label": "Next.js App Server", "sublabel": "Server Actions / API", "pos": [510, 300], "size": [130, 60] },
+    { "id": "push_service", "type": "messagebus", "label": "Web Push VAPID", "sublabel": "RFC 8292 / RFC 8291", "pos": [510, 450], "size": [130, 60] },
+    { "id": "tidb_cloud", "type": "database", "label": "TiDB Cloud Serverless", "sublabel": "MySQL 8 / Drizzle ORM", "pos": [760, 300], "size": [140, 60], "tag": "14 Core Tables" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Browser Client Environment", "wraps": ["pwa_client", "auth_layer", "service_worker", "offline_idb"] },
+    { "kind": "security-group", "label": "Cloud Infrastructure & Backend", "wraps": ["gemini_ai", "next_server", "push_service", "tidb_cloud"] }
+  ],
+  "connections": [
+    { "id": "client-to-sw", "from": "pwa_client", "to": "service_worker", "label": "Fetch / Share" },
+    { "id": "client-auth", "from": "pwa_client", "to": "auth_layer", "label": "PIN / Session", "variant": "security", "fromSide": "top", "toSide": "left" },
+    { "id": "client-idb", "from": "pwa_client", "to": "offline_idb", "label": "Queue ops", "variant": "dashed", "fromSide": "bottom", "toSide": "left" },
+    { "id": "sw-to-server", "from": "service_worker", "to": "next_server", "label": "HTTPS API", "variant": "emphasis" },
+    { "id": "server-to-ai", "from": "next_server", "to": "gemini_ai", "label": "Vision OCR", "fromSide": "top", "toSide": "bottom" },
+    { "id": "server-to-push", "from": "next_server", "to": "push_service", "label": "H-3 & 20:00 Alert", "fromSide": "bottom", "toSide": "top" },
+    { "id": "server-to-db", "from": "next_server", "to": "tidb_cloud", "label": "Atomic SQL", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Client & Offline", "items": ["Next.js 16 App Router & React 19 PWA", "Web Share Target langsung kirim struk ke OCR", "IndexedDB antrian transaksi offline otomatis replay"] },
+    { "dot": "emerald", "title": "Core Ledger & Storage", "items": ["TiDB Cloud Serverless (14 tabel terpadu)", "Multi-Currency Net Worth & Kurs Valas/Emas", "Shared Spaces Mode Rumah Tangga dengan RBAC"] },
+    { "dot": "rose", "title": "Keamanan & Intelijen", "items": ["Zero-Knowledge Client-Side AES-256-GCM Backup", "Web Push RFC 8292/8291 zero-dependency", "Gemini 3.8 Flash cascade OCR & Copilot Finansial"] }
+  ]
+}
