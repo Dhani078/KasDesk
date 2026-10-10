@@ -23,6 +23,7 @@ import { ChangePasswordForm } from '@/components/ChangePasswordForm'
 import { AppLockSettings } from '@/components/AppLockSettings'
 import { LogoutButton } from '@/components/LogoutButton'
 import { EncryptedBackupModal } from '@/components/backup/EncryptedBackupModal'
+import { PushNotificationToggle } from '@/components/settings/PushNotificationToggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -187,6 +188,11 @@ export default async function SettingsPage() {
       <section className="mb-8 animate-fade-in-up" style={{ animationDelay: '120ms' }}>
         <h2 className="section-title mb-3">Tampilan & Privasi</h2>
         <SettingsAppearance />
+      </section>
+
+      {/* 2.5 Notifikasi Web Push */}
+      <section className="surface-card mb-8 rounded-3xl overflow-hidden border border-border-outer bg-surface animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        <PushNotificationToggle />
       </section>
 
       {/* 3. Keamanan Aplikasi */}

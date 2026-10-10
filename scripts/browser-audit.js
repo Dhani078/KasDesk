@@ -122,7 +122,7 @@ async function runAudit() {
   }
 
   async function evalJs(expr) {
-    const res = await client.send('Runtime.evaluate', { expression: expr, returnByValue: true });
+    const res = await client.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
     return res.result?.value;
   }
 
@@ -171,26 +171,34 @@ async function runAudit() {
   const hasEmailInput = await evalJs('!!document.querySelector("input[name=\'email\']")');
   if (hasEmailInput) {
     console.log('\nLogging in as demo user...');
-    await evalJs(`
-      const email = document.querySelector("input[name='email']");
-      const pw = document.querySelector("input[name='password']");
-      email.value = 'demo@kasdesk.test';
-      email.dispatchEvent(new Event('input', { bubbles: true }));
-      pw.value = 'demo12345';
-      pw.dispatchEvent(new Event('input', { bubbles: true }));
-      const form = document.querySelector('form');
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    `);
-    await evalJs(`document.querySelector("button[type='submit']").click()`);
-    await sleep(2500);
+    const loginResult = await evalJs(`(async () => {
+      try {
+        const csrfRes = await fetch('/api/auth/csrf');
+        const { csrfToken } = await csrfRes.json();
+        const body = new URLSearchParams({
+          csrfToken,
+          email: 'demo@kasdesk.test',
+          password: 'demo12345',
+          callbackUrl: 'http://localhost:3333/',
+        });
+        const res = await fetch('/api/auth/callback/credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+        });
+        return { status: res.status, url: res.url, ok: res.ok };
+      } catch (e) {
+        return { error: e.message };
+      }
+    })()`);
+    await navigate('http://localhost:3333/');
   }
 
   let currentUrl = await evalJs('window.location.href');
-  assert('On authenticated dashboard home (/)', currentUrl.endsWith('/') || currentUrl.includes(':3333/'));
+  assert('On authenticated dashboard home (/)', !currentUrl.includes('/login') && !currentUrl.includes('/welcome'));
 
   // D. Dashboard Home Mobile
   console.log('\nAuditing Home Dashboard (Mobile)...');
-  await navigate('http://localhost:3333/');
   bodyText = await evalJs('document.body.innerText');
   hasOverflow = await evalJs('document.documentElement.scrollWidth > window.innerWidth');
   assert('Dashboard shows user greeting & balance', bodyText.toLowerCase().includes('total saldo') || bodyText.toLowerCase().includes('saldo'));
@@ -201,12 +209,13 @@ async function runAudit() {
 
   // E. Test QuickLog modal open
   console.log('\nTesting QuickLog Modal Interaction...');
+  await sleep(1000);
   await evalJs(`
     const btn = document.querySelector("button[aria-label*='Catat' i], button[aria-label*='Quick' i], nav button.bg-accent, nav button");
     if (btn) btn.click();
   `);
   await sleep(1000);
-  const modalVisible = await evalJs('!!document.querySelector("[role=\'dialog\']") || document.body.innerText.includes("Catat Transaksi")');
+  const modalVisible = await evalJs('!!document.querySelector("[role=\\"dialog\\"]") || document.body.innerText.includes("Catat Transaksi")');
   assert('QuickLog Sheet opens on click', modalVisible);
 
   // Close modal with Escape key

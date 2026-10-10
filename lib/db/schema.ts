@@ -229,6 +229,21 @@ export const spaceMembers = mysqlTable('spaceMembers', {
   index('space_members_user_idx').on(t.userId),
 ]);
 
+// ────────────────────────────────────────────────── pushSubscriptions
+export const pushSubscriptions = mysqlTable('pushSubscriptions', {
+  id: pk(),
+  userId: char('userId', { length: 36 }).notNull(),
+  endpoint: varchar('endpoint', { length: 500 }).notNull(),
+  p256dh: varchar('p256dh', { length: 255 }).notNull(),
+  auth: varchar('auth', { length: 255 }).notNull(),
+  userAgent: varchar('userAgent', { length: 255 }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [
+  uniqueIndex('push_endpoint_uq').on(t.endpoint),
+  index('push_user_idx').on(t.userId),
+]);
+
 export type User = typeof users.$inferSelect;
 export type Wallet = typeof wallets.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
@@ -240,3 +255,4 @@ export type RecurringRule = typeof recurringRules.$inferSelect;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type SharedSpace = typeof sharedSpaces.$inferSelect;
 export type SpaceMember = typeof spaceMembers.$inferSelect;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;

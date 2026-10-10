@@ -7,6 +7,7 @@ import { BottomNav } from './BottomNav'
 import { OfflineIndicator } from './OfflineIndicator'
 import { PendingTxProvider } from './pending-tx'
 import { FloatingCoachBubble } from '@/components/coach/FloatingCoachBubble'
+import { SharedReceiptBridge } from '@/components/scanner/SharedReceiptBridge'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -79,6 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <AppLock>
       <PendingTxProvider>
         {children}
+        <SharedReceiptBridge />
         <OfflineIndicator />
         <BottomNav />
         <FloatingCoachBubble />

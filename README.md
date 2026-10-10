@@ -167,14 +167,15 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 240 unit checks + AI Coach cascade + cursor pagination
+# = typecheck + lint + 270 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
 
-# Menjalankan seluruh 240 Unit Tests (offline & deterministik)
+# Menjalankan seluruh 270 Unit Tests (offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:
+npm run test:web-push         # Web Push Notifications (VAPID) & Web Share Target
 npm run test:shared-spaces     # Mode Rumah Tangga & RBAC Dual-Ledger
 npm run test:multi-currency    # Mesin Multi-Currency, Kurs & Net Worth Rollup
 npm run test:digital-envelopes # Amplop Digital ZBB 50/30/20 & Dynamic Burn Rate
@@ -235,11 +236,13 @@ KasDesk/
 │   ├── spaces.ts         # Shared Financial Spaces & RBAC Engine
 │   ├── micro-savings.ts  # Celengan Pembulatan & Pay Yourself First Engine
 │   ├── haptics.ts        # Tactile Haptic Vibration Engine PWA
+│   ├── push/             # Web Push Notifications RFC 8292 & VAPID Engine
+│   ├── scanner/          # Web Share Target & OCR Bridge
 │   ├── crypto/           # AES-256-GCM + PBKDF2 Zero-Knowledge Encrypted Backup
 │   └── db/               # Skema Drizzle ORM (TiDB MySQL 8)
-├── drizzle/              # Migrasi SQL (0000_init s/d 0006_shared_spaces)
+├── drizzle/              # Migrasi SQL (0000_init s/d 0007_push_subscriptions)
 ├── public/               # Aset statis PWA (Icons, Manifest, Service Worker)
-└── scripts/              # 16 Unit Test Suites (240 Checks) & Database Integration Runners
+└── scripts/              # 17 Unit Test Suites (270 Checks) & Database Integration Runners
 ```
 
 ---

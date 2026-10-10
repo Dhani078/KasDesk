@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "next start -p 3333",
     "lint": "eslint .",
     "db:push": "node scripts/migrate.js",
     "seed:demo": "node scripts/seed-demo.js",
@@ -68,7 +68,8 @@
     "test:digital-envelopes": "npx tsx scripts/test-digital-envelopes.js",
     "test:multi-currency": "npx tsx scripts/test-multi-currency.js",
     "test:shared-spaces": "npx tsx scripts/test-shared-spaces.js",
-    "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js && npx tsx scripts/test-tax.js && npx tsx scripts/test-split-bill.js && npx tsx scripts/test-encrypted-backup.js && npx tsx scripts/test-forecast.js && npx tsx scripts/test-nlp-parser.js && npx tsx scripts/test-dual-mode-ai.js && npx tsx scripts/test-statement-parser.js && npx tsx scripts/test-micro-savings.js && npx tsx scripts/test-digital-envelopes.js && npx tsx scripts/test-multi-currency.js && npx tsx scripts/test-shared-spaces.js",
+    "test:web-push": "npx tsx scripts/test-web-push.js",
+    "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js && npx tsx scripts/test-tax.js && npx tsx scripts/test-split-bill.js && npx tsx scripts/test-encrypted-backup.js && npx tsx scripts/test-forecast.js && npx tsx scripts/test-nlp-parser.js && npx tsx scripts/test-dual-mode-ai.js && npx tsx scripts/test-statement-parser.js && npx tsx scripts/test-micro-savings.js && npx tsx scripts/test-digital-envelopes.js && npx tsx scripts/test-multi-currency.js && npx tsx scripts/test-shared-spaces.js && npx tsx scripts/test-web-push.js",
     "test:all": "npm run test:unit && npm run typecheck && npm run lint",
     "release:check": "npm run test:all && node scripts/validate-release.js",
     "test:feature-max": "node scripts/test-feature-max.js"

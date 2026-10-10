@@ -1,5 +1,23 @@
 # Changelog
 
+## Native Web Push Notifications & Web Share Target Integration (EPIC 8.1 & 8.4) — 2026-10-08
+
+- Implemented Web Push Notifications (EPIC 8.4):
+  - Zero-dependency RFC 8292 VAPID token generation and RFC 8291 aes128gcm payload encryption in `lib/push/vapid.ts` using Node.js crypto stdlib.
+  - Added push subscription database schema `pushSubscriptions` (`drizzle/0007_push_subscriptions.sql`) and Drizzle model (`lib/db/schema.ts`).
+  - Added server actions in `lib/push/actions.ts` and automated triggers (H-3 bill reminder, evening logging prompt 20:00, 90% budget warning) in `lib/push/notifications.ts`.
+  - Added user settings UI component `PushNotificationToggle.tsx` under `/settings`.
+- Implemented Web Share Target API (EPIC 8.1):
+  - Configured `share_target` in `public/manifest.json`.
+  - Added service worker background handler in `worker/index.ts` storing incoming files in IndexedDB (`lib/scanner/shared-receipt.ts`).
+  - Added server fallback route `/share-target` in `app/share-target/route.ts`.
+  - Mounted `SharedReceiptBridge.tsx` in `AppShell.tsx` to automatically bridge shared receipts into the OCR scanning pipeline.
+- Synchronized Test Suite & Quality Gate:
+  - Added `scripts/test-web-push.js` (30 checks) wired into `package.json` (`npm run test:web-push` and `npm run test:unit`).
+  - Updated `scripts/test-db-schema-integrity.js` to verify `pushSubscriptions` table and columns (28 checks).
+  - Expanded unit test count to 270 checks across 17 suites (`npm run test:unit`).
+  - Verified 100% full release gate (`npm run test:full`): 270 unit checks (17 suites), 23 database integration suites, 70 headless Chrome CDP browser audit tests, 0 TS errors, 0 ESLint warnings.
+
 ## Database Schema Migration Fix & Test Suite Modular Path Synchronization — 2026-10-08
 
 - Fixed SQL migrations execution on TiDB:
