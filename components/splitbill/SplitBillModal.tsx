@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { Users, Plus, Trash2, X, Copy, Check, MessageCircle, Wallet } from 'lucide-react'
+import { Users, X } from 'lucide-react'
 import {
   calculateSplitBill,
   generateWhatsAppSettlementMessage,
   type SplitMember,
   type SplitItem,
 } from '@/lib/split-bill'
-import { formatIDR } from '@/lib/format'
 import { createDebt } from '@/lib/actions'
+import { SplitBillMembersSection } from '@/components/splitbill/SplitBillMembersSection'
+import { SplitBillItemsSection } from '@/components/splitbill/SplitBillItemsSection'
+import { SplitBillResultsSection } from '@/components/splitbill/SplitBillResultsSection'
 
 export function SplitBillModal({ defaultTitle = 'Makan Bersama' }: { defaultTitle?: string }) {
   const [open, setOpen] = useState(false)
@@ -207,131 +209,27 @@ export function SplitBillModal({ defaultTitle = 'Makan Bersama' }: { defaultTitl
             </div>
 
             {/* Participants Section */}
-            <div className="space-y-2 text-xs">
-              <span className="font-semibold text-text-secondary uppercase tracking-wider text-[11px]">
-                Partisipan ({members.length})
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {members.map((m) => (
-                  <span
-                    key={m.id}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1 text-xs border border-border-outer text-text-primary"
-                  >
-                    <span>{m.name}</span>
-                    {members.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(m.id)}
-                        className="text-text-secondary hover:text-danger cursor-pointer ml-0.5"
-                        aria-label={`Hapus ${m.name}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="text"
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleAddMember()
-                    }
-                  }}
-                  placeholder="Nama teman baru..."
-                  className="flex-1 rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddMember}
-                  className="inline-flex items-center gap-1 rounded-xl bg-white/[0.06] border border-border-outer px-3 py-1.5 text-xs font-semibold text-text-primary hover:bg-white/[0.1] active:scale-95 cursor-pointer"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Tambah
-                </button>
-              </div>
-            </div>
+            <SplitBillMembersSection
+              members={members}
+              onRemoveMember={handleRemoveMember}
+              newMemberName={newMemberName}
+              onNewMemberNameChange={setNewMemberName}
+              onAddMember={handleAddMember}
+            />
 
             {/* Line Items Section */}
-            <div className="space-y-2 text-xs">
-              <span className="font-semibold text-text-secondary uppercase tracking-wider text-[11px]">
-                Daftar Pesanan ({items.length})
-              </span>
-              <div className="max-h-36 overflow-y-auto divide-y divide-border-inner rounded-2xl border border-border-outer bg-canvas/60">
-                {items.map((it) => {
-                  const targetName =
-                    it.assignedMemberIds.length === 0
-                      ? 'Bagi Rata Semua'
-                      : members.find((m) => m.id === it.assignedMemberIds[0])?.name || 'Tertentu'
-                  return (
-                    <div key={it.id} className="flex items-center justify-between p-2.5">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-text-primary truncate">{it.name}</p>
-                        <p className="text-[11px] text-text-secondary">
-                          Untuk: <span className="text-accent font-medium">{targetName}</span>
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono text-xs font-semibold text-text-primary">
-                          {formatIDR(it.price * Math.max(1, it.quantity))}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(it.id)}
-                          className="text-text-secondary hover:text-danger p-1 cursor-pointer"
-                          aria-label={`Hapus ${it.name}`}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Add Item Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                <input
-                  type="text"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  placeholder="Nama menu..."
-                  className="rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-                />
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={newItemPrice}
-                  onChange={(e) => setNewItemPrice(formatDots(e.target.value))}
-                  placeholder="Harga (Rp)..."
-                  className="rounded-xl border border-border bg-canvas px-3 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-                />
-                <div className="flex items-center gap-1.5">
-                  <select
-                    value={newItemAssign}
-                    onChange={(e) => setNewItemAssign(e.target.value)}
-                    className="flex-1 rounded-xl border border-border bg-canvas px-2.5 py-1.5 text-xs text-text-primary outline-none focus:border-accent"
-                  >
-                    <option value="all">Bagi Rata</option>
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    className="rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 active:scale-95 cursor-pointer shrink-0"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
+            <SplitBillItemsSection
+              items={items}
+              members={members}
+              onRemoveItem={handleRemoveItem}
+              newItemName={newItemName}
+              onNewItemNameChange={setNewItemName}
+              newItemPrice={newItemPrice}
+              onNewItemPriceChange={(val) => setNewItemPrice(formatDots(val))}
+              newItemAssign={newItemAssign}
+              onNewItemAssignChange={setNewItemAssign}
+              onAddItem={handleAddItem}
+            />
 
             {/* Extra Charges (Tax, Service, Voucher) */}
             <div className="grid grid-cols-3 gap-2 border-t border-border-inner pt-3 text-xs">
@@ -373,81 +271,15 @@ export function SplitBillModal({ defaultTitle = 'Makan Bersama' }: { defaultTitl
             </div>
 
             {/* Split Results Summary */}
-            <div className="space-y-3 rounded-2xl border border-accent/20 bg-accent/[0.04] p-4">
-              <div className="flex items-center justify-between border-b border-border-inner pb-2 text-xs">
-                <div>
-                  <span className="text-text-secondary">Total Tagihan Keseluruhan</span>
-                  <p className="font-mono text-base font-bold text-text-primary">{formatIDR(splitResult.grandTotal)}</p>
-                </div>
-                <div className="text-right text-[11px] text-text-secondary">
-                  <span>Pajak: {formatIDR(splitResult.taxAmount)}</span>
-                  {splitResult.serviceAmount > 0 && <span> · Service: {formatIDR(splitResult.serviceAmount)}</span>}
-                </div>
-              </div>
-
-              {/* Individual Breakdown Cards */}
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {splitResult.memberBreakdowns.map((mb) => {
-                  const isSavedDebt = savedDebtIds[mb.memberId]
-                  const isCopied = copiedId === mb.memberId
-                  const isSelf = mb.name.toLowerCase() === 'saya'
-
-                  return (
-                    <div
-                      key={mb.memberId}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-border-outer bg-surface p-3 text-xs"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-text-primary">{mb.name}</p>
-                          <span className="font-mono font-bold text-accent text-sm">{formatIDR(mb.totalDue)}</span>
-                        </div>
-                        <p className="text-[11px] text-text-secondary mt-0.5">
-                          Subtotal: {formatIDR(mb.subtotal)}
-                          {mb.taxShare > 0 && ` + Pajak: ${formatIDR(mb.taxShare)}`}
-                          {mb.serviceShare > 0 && ` + Svc: ${formatIDR(mb.serviceShare)}`}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyWA(mb)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-border-outer bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary active:scale-95 cursor-pointer"
-                          title="Salin rincian teks"
-                        >
-                          {isCopied ? <Check className="h-3 w-3 text-accent-income" /> : <Copy className="h-3 w-3" />}
-                          {isCopied ? 'Tersalin' : 'Salin'}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleShareWA(mb)}
-                          className="inline-flex items-center gap-1 rounded-lg bg-[#25D366]/15 border border-[#25D366]/30 px-2.5 py-1.5 text-[11px] font-semibold text-[#25D366] hover:bg-[#25D366]/25 active:scale-95 cursor-pointer"
-                          title="Kirim ke WhatsApp"
-                        >
-                          <MessageCircle className="h-3 w-3" />
-                          WhatsApp
-                        </button>
-
-                        {!isSelf && (
-                          <button
-                            type="button"
-                            disabled={isSavedDebt || isPendingDebt}
-                            onClick={() => handleSaveAsDebt(mb)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-border-outer bg-white/[0.03] px-2 py-1.5 text-[11px] font-medium text-text-secondary hover:text-accent hover:border-accent/40 active:scale-95 disabled:opacity-50 cursor-pointer"
-                            title="Simpan sebagai piutang aktif"
-                          >
-                            <Wallet className="h-3 w-3" />
-                            {isSavedDebt ? 'Tercatat ✓' : 'Piutang'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <SplitBillResultsSection
+              splitResult={splitResult}
+              savedDebtIds={savedDebtIds}
+              isPendingDebt={isPendingDebt}
+              copiedId={copiedId}
+              onCopyWA={handleCopyWA}
+              onShareWA={handleShareWA}
+              onSaveAsDebt={handleSaveAsDebt}
+            />
           </div>
         </div>
       )}

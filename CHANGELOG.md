@@ -1,5 +1,19 @@
 # Changelog
 
+## Modular Architecture Hardening: QuickLogSheet & SplitBillModal Refactoring — 2026-10-08
+
+- Decomposed monolithic UI files to strictly enforce `<300-500 LOC` clean architecture:
+  - `components/QuickLogSheet.tsx`: reduced from 636 LOC to 440 LOC by extracting:
+    - `components/quicklog/QuickLogAmountSection.tsx` (amount input, inline math live result, calculator bar, and savings badges).
+    - `components/quicklog/QuickLogWalletCategoryFields.tsx` (source wallet select and category chips radio group).
+    - `components/quicklog/useQuickLogSubmit.ts` (offline queuing, optimistic pending transition, and error handling).
+  - `components/splitbill/SplitBillModal.tsx`: reduced from 456 LOC to 290 LOC by extracting:
+    - `components/splitbill/SplitBillMembersSection.tsx` (participant tags, addition, and deletion).
+    - `components/splitbill/SplitBillItemsSection.tsx` (order line items, per-person allocation, and add-item inputs).
+    - `components/splitbill/SplitBillResultsSection.tsx` (individual dues, WhatsApp settlement sharing, and 1-click debt persistence).
+- Synchronized structural test suites (`scripts/test-quicklog.js` and `scripts/test-optimistic.js`) to bundle modular subcomponents.
+- Verified 100% full release gate: 270 unit checks (17 suites), 23 database integration suites, 70 headless Chrome CDP browser audit tests, 0 TS errors, 0 ESLint warnings.
+
 ## Native Web Push Notifications & Web Share Target Integration (EPIC 8.1 & 8.4) — 2026-10-08
 
 - Implemented Web Push Notifications (EPIC 8.4):

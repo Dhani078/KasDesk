@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Loader2, Calculator } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 import {
   getLocalRoundUpConfig,
   calculateRoundUp,
@@ -10,25 +10,22 @@ import {
   type RoundUpConfig,
 } from '@/lib/micro-savings'
 
-import { createTransaction } from '@/lib/actions'
-import { usePendingTx } from '@/components/pending-tx'
-import { enqueueOp } from '@/lib/offline/queue'
 import type { ScanResult } from '@/components/ScanReceiptButton'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
-import { hapticSuccess } from '@/lib/haptics'
 import { DateTransactionPicker, getLocalDateString } from '@/components/quicklog/DateTransactionPicker'
 import { NoteWithTags } from '@/components/quicklog/NoteWithTags'
 import { ScanWarningBanner } from '@/components/quicklog/ScanWarningBanner'
-import { CalculatorBar } from '@/components/quicklog/CalculatorBar'
 import { TransferWalletsBox } from '@/components/quicklog/TransferWalletsBox'
 import { useQuickLogDragDrop } from '@/components/quicklog/useQuickLogDragDrop'
+import { useQuickLogSubmit } from '@/components/quicklog/useQuickLogSubmit'
 import { QuickLogDropOverlay } from '@/components/quicklog/QuickLogDropOverlay'
 import { QuickLogSuccessView } from '@/components/quicklog/QuickLogSuccessView'
-import { QuickLogSavingsBadges } from '@/components/quicklog/QuickLogSavingsBadges'
 import { QuickLogTypeSelector } from '@/components/quicklog/QuickLogTypeSelector'
 import { QuickLogErrorAlert } from '@/components/quicklog/QuickLogErrorAlert'
+import { QuickLogAmountSection } from '@/components/quicklog/QuickLogAmountSection'
+import { QuickLogWalletCategoryFields } from '@/components/quicklog/QuickLogWalletCategoryFields'
 
 const ScanReceiptButton = dynamic(
   () => import('@/components/ScanReceiptButton').then((module) => module.ScanReceiptButton),
@@ -122,8 +119,6 @@ function Sheet({
   initialType?: 'income' | 'expense' | 'transfer'
   onClose: () => void
 }) {
-  const { addPending, resolvePending } = usePendingTx()
-  const [pending, setPending] = useState(false)
   const [activeScan, setActiveScan] = useState<ScanResult | null>(prefill)
   const [dateText, setDateText] = useState(() => {
     if (prefill?.detected_date) return prefill.detected_date
@@ -246,8 +241,6 @@ function Sheet({
 
   const [titleText, setTitleText] = useState(() => prefill?.merchant_name ?? '')
   const [noteText, setNoteText] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -283,124 +276,20 @@ function Sheet({
     ? evaluateMathExpression(amountText)
     : null
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError(null)
-
-    let finalAmountText = amountText
-    if (mathLiveResult !== null && mathLiveResult > 0) {
-      finalAmountText = String(mathLiveResult)
-    }
-
-    const clean = finalAmountText.replace(/[^\d]/g, '')
-    const amount = Number(clean)
-    if (!clean || !Number.isFinite(amount) || amount <= 0) {
-      setError('Masukkan jumlah yang valid')
-      return
-    }
-
-    if (txType === 'transfer') {
-      if (wallets.length < 2) {
-        setError('Dibutuhkan minimal 2 dompet untuk transfer saldo.')
-        return
-      }
-      if (!effectiveToWallet || walletSel === effectiveToWallet) {
-        setError('Dompet asal dan tujuan tidak boleh sama.')
-        return
-      }
-    }
-
-    setPending(true)
-    const fd = new FormData(e.currentTarget)
-    const type = String(fd.get('type') ?? txType) as 'income' | 'expense' | 'transfer'
-    const sourceName = wallets.find((w) => w.id === walletSel)?.name ?? 'Dompet Asal'
-    const toName = wallets.find((w) => w.id === effectiveToWallet)?.name ?? 'Dompet Tujuan'
-    const defaultTitle = type === 'transfer' ? `Transfer: ${sourceName} ke ${toName}` : 'Transaksi Baru'
-    const rawTitle = String(fd.get('title') ?? '').trim()
-    const title = rawTitle || defaultTitle
-    const categoryTag = catSel
-    const note = noteText.trim() ? noteText.trim() : undefined
-
-    const [year, month, day] = dateText.split('-').map(Number)
-    const isToday = dateText === getLocalDateString()
-    const now = new Date()
-    const hours = isToday ? now.getHours() : 12
-    const minutes = isToday ? now.getMinutes() : 0
-    const seconds = isToday ? now.getSeconds() : 0
-    const occurredDate = new Date(year, (month || 1) - 1, day || 1, hours, minutes, seconds)
-    const occurredAtIso = occurredDate.toISOString()
-
-    const activeRoundUp = (type === 'expense' && roundUpConfig?.enabled && roundUpConfig.targetVaultId)
-      ? calculateRoundUp(amount, roundUpConfig.step)
-      : null
-
-    const payload = {
-      client_mutation_id: crypto.randomUUID(),
-      wallet_id: walletSel,
-      to_wallet_id: type === 'transfer' ? effectiveToWallet : undefined,
-      type,
-      amount,
-      title,
-      category_tag: type === 'transfer' ? 'LAINNYA' : categoryTag,
-      note,
-      occurred_at: occurredAtIso,
-      round_up_vault_id: activeRoundUp && activeRoundUp.spareChange > 0 ? (roundUpConfig?.targetVaultId ?? undefined) : undefined,
-      round_up_amount: activeRoundUp && activeRoundUp.spareChange > 0 ? activeRoundUp.spareChange : undefined,
-    }
-
-    // FR-OFF-2/6: offline does not mean failure — park the op in the
-    // IndexedDB queue and optimistic-render as usual. When the connection
-    // returns, sync.ts will replay it.
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      try {
-        await enqueueOp({ kind: 'create-transaction', payload })
-        addPending({
-          walletId: payload.wallet_id,
-          type: payload.type,
-          amount: payload.amount,
-          title: payload.title,
-          categoryTag: payload.category_tag ?? 'LAINNYA',
-          createdAt: occurredDate,
-        })
-        onClose()
-        return
-      } catch {
-        // IndexedDB unavailable: fall through to normal submission and let
-        // the fetch fail with its natural network error.
-      }
-    }
-
-    const clientId = addPending({
-      title: payload.title,
-      amount: payload.amount,
-      type: payload.type,
-      walletId: payload.wallet_id,
-      categoryTag: payload.category_tag ?? 'LAINNYA',
-      createdAt: occurredDate,
-    })
-
-    try {
-      const res = await createTransaction(payload)
-
-      if (!res.success) {
-        resolvePending(clientId, false)
-        setError(res.error.message)
-        setPending(false)
-        return
-      }
-
-      resolvePending(clientId, true)
-      setSaved(true)
-      hapticSuccess()
-      setTimeout(() => {
-        onClose()
-      }, 350)
-    } catch {
-      resolvePending(clientId, false)
-      setError('Tidak dapat menyimpan transaksi. Coba lagi.')
-      setPending(false)
-    }
-  }
+  const { pending, saved, error, setError, handleSubmit } = useQuickLogSubmit({
+    amountText,
+    mathLiveResult,
+    txType,
+    wallets,
+    walletSel,
+    effectiveToWallet,
+    titleText,
+    catSel,
+    noteText,
+    dateText,
+    roundUpConfig,
+    onClose,
+  })
 
   return (
     <div
@@ -459,62 +348,21 @@ function Sheet({
             Buat dompet dulu sebelum mencatat.
           </p>
         ) : (
-          <form id="ql-form" onSubmit={onSubmit} className="space-y-4">
+          <form id="ql-form" onSubmit={handleSubmit} className="space-y-4">
             <QuickLogTypeSelector txType={txType} onChange={setTxType} />
 
-            <div>
-              <label htmlFor="amount" className="mb-1 block text-xs text-text-secondary">
-                Jumlah (Rp)
-              </label>
-              <input
-                id="amount"
-                name="amount"
-                inputMode="numeric"
-                autoFocus
-                required
-                placeholder="0"
-                value={amountText}
-                onChange={(e) => onAmountChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && mathLiveResult !== null) {
-                    e.preventDefault()
-                    evaluateAndSetAmount()
-                  }
-                }}
-                className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
-              />
-
-              {mathLiveResult !== null && (
-                <div className="mt-1.5 flex items-center justify-between rounded-xl border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs text-accent">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Calculator className="h-3.5 w-3.5" />
-                    Hasil: = {formatIDR(mathLiveResult)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={evaluateAndSetAmount}
-                    className="rounded-lg bg-accent px-2.5 py-0.5 text-[11px] font-semibold text-white transition hover:opacity-90 active:scale-95"
-                  >
-                    Gunakan
-                  </button>
-                </div>
-              )}
-
-              <CalculatorBar
-                mathLiveResult={mathLiveResult}
-                amountText={amountText}
-                onApplyOperator={applyOperator}
-                onEvaluate={evaluateAndSetAmount}
-                onAddQuickAmount={addQuickAmount}
-                onClear={() => setAmountText('')}
-              />
-
-              <QuickLogSavingsBadges
-                roundUpInfo={roundUpInfo}
-                roundUpStep={roundUpConfig?.step ?? 5000}
-                payFirstSuggestion={payFirstSuggestion}
-              />
-            </div>
+            <QuickLogAmountSection
+              amountText={amountText}
+              onAmountChange={onAmountChange}
+              mathLiveResult={mathLiveResult}
+              evaluateAndSetAmount={evaluateAndSetAmount}
+              applyOperator={applyOperator}
+              addQuickAmount={addQuickAmount}
+              onClear={() => setAmountText('')}
+              roundUpInfo={roundUpInfo}
+              roundUpConfig={roundUpConfig}
+              payFirstSuggestion={payFirstSuggestion}
+            />
 
             <div>
               <label htmlFor="title" className="mb-1 block text-xs text-text-secondary">
@@ -558,60 +406,14 @@ function Sheet({
                 categoryTag={catSel}
               />
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="wallet_id" className="mb-1 block text-xs text-text-secondary">
-                    Dompet
-                  </label>
-                  <select
-                    id="wallet_id"
-                    name="wallet_id"
-                    value={walletSel}
-                    onChange={(e) => {
-                      setWalletSel(e.target.value)
-                      try {
-                        localStorage.setItem('kasdesk:last-wallet', e.target.value)
-                      } catch {}
-                    }}
-                    required
-                    className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
-                  >
-                    {wallets.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name} · {formatIDR(w.balance)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="category_tag" className="mb-1 block text-xs text-text-secondary">
-                    Kategori
-                  </label>
-                  <input type="hidden" name="category_tag" value={catSel} />
-                  <div
-                    role="radiogroup"
-                    aria-label="Kategori"
-                    className="flex flex-wrap gap-1.5"
-                  >
-                    {catOrder.map((c) => (
-                      <button
-                        type="button"
-                        key={c}
-                        role="radio"
-                        aria-checked={catSel === c}
-                        onClick={() => pickCat(c)}
-                        className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
-                          catSel === c
-                            ? 'bg-accent-solid text-white'
-                            : 'bg-white/[0.04] text-text-secondary ring-1 ring-border-outer'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <QuickLogWalletCategoryFields
+                wallets={wallets}
+                walletSel={walletSel}
+                onWalletChange={handleWalletChange}
+                catSel={catSel}
+                catOrder={catOrder}
+                onPickCat={pickCat}
+              />
             )}
 
             {error && (
