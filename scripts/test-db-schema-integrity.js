@@ -51,7 +51,7 @@ async function main() {
     const REQUIRED_TABLES = [
       'users', 'wallets', 'transactions', 'vaults', 'debts',
       'categories', 'budgets', 'recurringRules', 'authRateLimits', 'schema_migrations',
-      'exchangeRates', 'sharedSpaces', 'spaceMembers'
+      'exchangeRates', 'sharedSpaces', 'spaceMembers', 'pushSubscriptions'
     ]
 
     for (const tbl of REQUIRED_TABLES) {
@@ -74,6 +74,12 @@ async function main() {
     const wColNames = new Set(wCols.map((c) => c.Field))
     check('wallets.currency column exists', wColNames.has('currency'))
     check('wallets.spaceId column exists', wColNames.has('spaceId'))
+
+    const [pushCols] = await db.execute('DESCRIBE pushSubscriptions')
+    const pushColNames = new Set(pushCols.map((c) => c.Field))
+    check('pushSubscriptions.endpoint column exists', pushColNames.has('endpoint'))
+    check('pushSubscriptions.p256dh column exists', pushColNames.has('p256dh'))
+    check('pushSubscriptions.auth column exists', pushColNames.has('auth'))
 
     // 3. Indexes on transactions
     const [txIndexes] = await db.execute('SHOW INDEX FROM transactions')

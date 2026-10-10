@@ -351,8 +351,8 @@ Pengguna mobile sering lupa mencatat pengeluaran setelah bertransaksi di kasir a
    - Haptic vibration patterns berbeda untuk aksi sukses (`[15ms]`), hapus (`[30ms, 50ms, 30ms]`), dan warning.
 
 #### 3.8.3 Acceptance Criteria
-- [ ] Push notification berhasil diterima di background saat browser dalam kondisi tertutup (Chrome Android & Safari iOS 16.4+).
-- [ ] File gambar dari galeri berhasil dioper via Web Share Target langsung ke pipeline OCR.
+- [x] Push notification berhasil diterima di background saat browser dalam kondisi tertutup (Chrome Android & Safari iOS 16.4+).
+- [x] File gambar dari galeri berhasil dioper via Web Share Target langsung ke pipeline OCR.
 
 ---
 

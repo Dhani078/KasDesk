@@ -7,6 +7,7 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   { files: ['scripts/**/*.{js,cjs,ts}'], rules: { '@typescript-eslint/no-require-imports': 'off', '@typescript-eslint/no-explicit-any': 'off', '@typescript-eslint/no-unused-vars': 'off' } },
+  { files: ['worker/**/*.{js,ts}'], rules: { '@typescript-eslint/no-explicit-any': 'off' } },
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
@@ -15,6 +16,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "public/sw.js",
     "public/workbox-*",
+    "public/worker-*",
   ]),
 ]);
 
