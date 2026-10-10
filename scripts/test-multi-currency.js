@@ -14,8 +14,7 @@ import {
   convertFromBase,
   calculateNetWorth,
   SUPPORTED_CURRENCIES,
-  DEFAULT_EXCHANGE_RATES,
-} from '../lib/currency.ts'
+} from "../lib/currency.ts";
 
 let passCount = 0
 function t(name, ok) {

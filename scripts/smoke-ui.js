@@ -24,7 +24,7 @@ function curl(args) {
   const out = execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL',
     '-b', JAR, '-c', JAR, '--max-time', '60', ...args], { encoding: 'utf8' })
   const lines = out.split(/\r?\n/)
-  const status = parseInt((lines.find((l) => /^HTTP\//.test(l)) || '').split(' ')[1] || '0', 10)
+  const status = parseInt((lines.find((l) => l.startsWith('HTTP/')) || '').split(' ')[1] || '0', 10)
   return { status, raw: out }
 }
 function body(url) {

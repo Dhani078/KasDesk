@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { LoginForm } from './LoginForm'
 import { GoogleSignInButton } from '@/components/GoogleSignInButton'
 import { isGoogleEnabled } from '@/lib/auth/google-enabled'
@@ -40,9 +41,9 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-text-secondary">
           Belum punya akun?{' '}
-          <a href="/register" className="text-accent hover:underline">
+          <Link href="/register" className="text-accent hover:underline">
             Daftar
-          </a>
+          </Link>
         </p>
       </div>
     </main>

@@ -136,7 +136,7 @@ async function main() {
       )
     }
     await c2.commit()
-  } catch (e) {
+  } catch (_e) {
     await c2.rollback()
   } finally {
     c2.release()

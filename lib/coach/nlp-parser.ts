@@ -99,14 +99,12 @@ export function parseCoachMessageNlp(text: string): NlpParseResult {
   // 2. Parse Amount
   let detectedAmount: number | null = null
 
-  // Check jt / juta first
   const jtMatch = clean.match(AMOUNT_PATTERNS[0])
   if (jtMatch) {
     const num = parseFloat(jtMatch[1].replace(',', '.'))
     if (!Number.isNaN(num)) detectedAmount = Math.round(num * 1_000_000)
   }
 
-  // Check k / rb / ribu
   if (!detectedAmount) {
     const kMatch = clean.match(AMOUNT_PATTERNS[1])
     if (kMatch) {
@@ -115,7 +113,6 @@ export function parseCoachMessageNlp(text: string): NlpParseResult {
     }
   }
 
-  // Check numeric / IDR standard format
   if (!detectedAmount) {
     const rawMatch = clean.match(AMOUNT_PATTERNS[2])
     if (rawMatch) {
@@ -168,7 +165,6 @@ export function parseCoachMessageNlp(text: string): NlpParseResult {
     return { isOffTopicCoding: false, isTransactionIntent: false }
   }
 
-  // Clean notes
   let notes = clean
   // Truncate to reasonable length
   if (notes.length > 80) {

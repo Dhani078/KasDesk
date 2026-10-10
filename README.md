@@ -167,11 +167,11 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 270 unit checks + AI Coach cascade + cursor pagination
+# = typecheck + lint + 271 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
 
-# Menjalankan seluruh 270 Unit Tests (offline & deterministik)
+# Menjalankan seluruh 271 Unit Tests (offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:
@@ -242,7 +242,7 @@ KasDesk/
 │   └── db/               # Skema Drizzle ORM (TiDB MySQL 8)
 ├── drizzle/              # Migrasi SQL (0000_init s/d 0007_push_subscriptions)
 ├── public/               # Aset statis PWA (Icons, Manifest, Service Worker)
-└── scripts/              # 17 Unit Test Suites (270 Checks) & Database Integration Runners
+└── scripts/              # 17 Unit Test Suites (271 Checks) & Database Integration Runners
 ```
 
 ---

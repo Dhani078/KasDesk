@@ -15,7 +15,7 @@ if (fs.existsSync(envFile)) {
 
 const { db } = require('../lib/db')
 const { wallets, transactions, users } = require('../lib/db/schema')
-const { eq, and } = require('drizzle-orm')
+const { eq, and: _and } = require('drizzle-orm')
 
 let pass = 0
 let fail = 0

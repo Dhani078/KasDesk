@@ -100,12 +100,12 @@ async function main() {
   try {
     const probe = execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}',
       '--max-time', '15', `${BASE}/api/auth/csrf`], { encoding: 'utf8', env })
-    if (!/^2/.test(String(probe).trim())) {
+    if (!String(probe).trim().startsWith('2')) {
       console.error(`ERROR: server not responding at ${BASE} (got ${String(probe).trim()})`)
       console.error('Start it with: npx next start -p 3333')
       process.exit(1)
     }
-  } catch (e) {
+  } catch (_e) {
     console.error(`ERROR: cannot reach ${BASE} — is the server running?`)
     console.error('Start it with: npx next start -p 3333')
     process.exit(1)

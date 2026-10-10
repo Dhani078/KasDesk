@@ -53,7 +53,7 @@ async function main() {
       [crypto.randomUUID(), 'Attacker', email, await bcrypt.hash('other', 12)]
     )
     dupe = true
-  } catch (e) {
+  } catch (_e) {
     dupe = false
   }
   check('UNIQUE constraint on email blocks duplicate insert', !dupe)

@@ -8,10 +8,7 @@
  * - Overspent envelope identification and negative remaining balance detection.
  * - Custom envelope allocation override.
  */
-import {
-  calculateDigitalEnvelopes,
-  ENVELOPE_DEFINITIONS,
-} from '../lib/planning/digital-envelopes.ts'
+import { calculateDigitalEnvelopes } from "../lib/planning/digital-envelopes.ts";
 
 let passCount = 0
 function t(name, ok) {

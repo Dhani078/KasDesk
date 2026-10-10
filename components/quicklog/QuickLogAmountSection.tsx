@@ -38,7 +38,6 @@ export function QuickLogAmountSection({
         id="amount"
         name="amount"
         inputMode="numeric"
-        autoFocus
         required
         placeholder="0"
         value={amountText}

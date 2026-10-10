@@ -62,7 +62,7 @@ export async function depositToVault(
     return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
   }
 
-  const amt = Math.trunc(Number(amount))
+  const amt = Math.trunc(amount)
   if (!Number.isFinite(amt) || amt <= 0) {
     return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Jumlah harus lebih dari 0' } }
   }
@@ -139,7 +139,7 @@ export async function withdrawFromVault(
     return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
   }
 
-  const amt = Math.trunc(Number(amount))
+  const amt = Math.trunc(amount)
   if (!Number.isFinite(amt) || amt <= 0) {
     return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Jumlah harus lebih dari 0' } }
   }

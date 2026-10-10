@@ -43,7 +43,7 @@ function curl(args) {
 function status(url) {
   const out = execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL', '-b', jar, '-c', jar,
     '--max-time', '60', url], { encoding: 'utf8' })
-  return parseInt((out.split(/\r?\n/).find((l) => /^HTTP\//.test(l)) || '').split(' ')[1] || '0', 10)
+  return parseInt((out.split(/\r?\n/).find((l) => l.startsWith('HTTP/')) || '').split(' ')[1] || '0', 10)
 }
 function login(email, pw) {
   const csrf = JSON.parse(curl([`${BASE}/api/auth/csrf`])).csrfToken

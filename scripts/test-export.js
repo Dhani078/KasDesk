@@ -44,9 +44,6 @@ function curlWithHeaders(args) {
   return execFileSync('curl', ['-s', '-D', '-', '-b', jar, '-c', jar, '--max-time', '45', ...args], { encoding: 'utf8', env })
 }
 
-function curlStatus(args) {
-  return execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}', '-b', jar, '-c', jar, '--max-time', '45', ...args], { encoding: 'utf8', env }).trim()
-}
 
 async function login(email, pw) {
   const csrf = JSON.parse(curl([`${BASE}/api/auth/csrf`])).csrfToken

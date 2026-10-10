@@ -1,9 +1,3 @@
-/**
- * Native IndexedDB storage for Web Share Target receipts.
- *
- * Stores shared receipts received from external apps (WhatsApp, Gallery, Files)
- * via PWA share_target until the OCR scanning pipeline processes them.
- */
 
 export interface SharedReceiptItem {
   id: string

@@ -59,7 +59,7 @@ function renderFormattedText(text: string) {
       return (
         <ul key={pIdx} className="my-2 list-disc pl-5 space-y-1">
           {lines.map((line, lIdx) => {
-            const clean = line.replace(/^[\*\-]\s+/, '')
+            const clean = line.replace(/^[*-]\s+/, '')
             return <li key={lIdx}>{formatInline(clean)}</li>
           })}
         </ul>

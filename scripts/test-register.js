@@ -33,7 +33,7 @@ function curl(args) {
 }
 function curlStatus(args) {
   const out = execFileSync('curl', ['-s', '-i', '-b', jar, '-c', jar, '--max-time', '60', ...args], { encoding: 'utf8', env })
-  const statusLine = out.split(/\r?\n/).find(l => /^HTTP\//.test(l))
+  const statusLine = out.split(/\r?\n/).find(l => l.startsWith('HTTP/'))
   const status = statusLine ? parseInt(statusLine.split(' ')[1], 10) : 0
   return { status, body: out }
 }
