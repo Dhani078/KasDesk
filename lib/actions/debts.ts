@@ -63,7 +63,7 @@ export async function settleDebt(id: string, amount?: number): Promise<ActionRes
     return { success: false, error: { code: 'UNAUTHENTICATED', message: 'Sesi berakhir. Silakan masuk lagi.' } }
   }
 
-  const amt = amount === undefined ? null : Math.trunc(Number(amount))
+  const amt = amount === undefined ? null : Math.trunc(amount)
   if (amt !== null && (!Number.isFinite(amt) || amt <= 0)) {
     return { success: false, error: { code: 'VALIDATION_ERROR', message: 'Jumlah harus lebih dari 0' } }
   }

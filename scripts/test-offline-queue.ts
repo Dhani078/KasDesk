@@ -20,7 +20,7 @@
  *
  * Run: npx tsx --env-file=.env.local scripts/test-offline-queue.ts
  */
-import { SyncResult, syncOfflineQueue } from '../lib/offline/sync'
+import { syncOfflineQueue } from "../lib/offline/sync";
 import { enqueueOp, listOps, removeOp } from '../lib/offline/queue'
 import * as fs from 'fs'
 import * as path from 'path'

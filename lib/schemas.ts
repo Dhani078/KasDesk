@@ -69,7 +69,6 @@ export type TransactionInput = z.infer<typeof TransactionSchema>
 
 export const WalletSchema = z.object({
   name: z.string().trim().min(1, 'Nama wajib diisi').max(60),
-  // Matches the values actually stored by seeding + the DB column.
   type: z.enum(['cash', 'bank', 'e_wallet', 'investment']),
   currency: z.enum(SUPPORTED_CURRENCIES).default('IDR'),
   balance: z.number().int().min(0, 'Saldo tidak boleh negatif').max(100_000_000_000),
@@ -107,4 +106,4 @@ export const GeminiOCRResponseSchema = z.object({
   detected_date: z.string().nullable().optional(),
 })
 
-export type GeminiOCRResponse = z.infer<typeof GeminiOCRResponseSchema>
+export type { GeminiOCRResponse } from '@/lib/ocr/contract'

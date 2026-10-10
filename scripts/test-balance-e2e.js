@@ -49,17 +49,6 @@ function login() {
   return /authjs\.session-token=/.test(out)
 }
 
-/**
- * Calls the createTransaction Server Action the way the browser does:
- * POST the action id with the serialized arguments.
- */
-let actionId = null
-function discoverActionId() {
-  const html = curl([`${BASE}/`])
-  // Next embeds action ids in the client reference manifest
-  const m = html.match(/"([0-9a-f]{40,})"/g) || []
-  return m.map((s) => s.replace(/"/g, ''))
-}
 
 ;(async () => {
   const db = await mysql.createPool({
@@ -114,7 +103,7 @@ function discoverActionId() {
     const [orphan] = await db.execute(
       'SELECT COUNT(*) c FROM transactions WHERE userId<>?', [userId])
     console.log(`  (informational) transactions from other users: ${orphan[0].c}`)
-    const [mine] = await db.execute(
+    const [_mine] = await db.execute(
       'SELECT COUNT(*) c FROM transactions WHERE userId=?', [userId])
     check('user has own transactions only', Number(orphan[0].c) >= 0)
 

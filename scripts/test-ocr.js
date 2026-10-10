@@ -41,7 +41,7 @@ function curl(args) {
 function statusOnly(args) {
   const out = execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL', '-b', jar, '-c', jar,
     '--max-time', '60', ...args], { encoding: 'utf8' })
-  return parseInt((out.split(/\r?\n/).find((l) => /^HTTP\//.test(l)) || '').split(' ')[1] || '0', 10)
+  return parseInt((out.split(/\r?\n/).find((l) => l.startsWith('HTTP/')) || '').split(' ')[1] || '0', 10)
 }
 function login(email, pw) {
   const csrf = JSON.parse(curl([`${BASE}/api/auth/csrf`])).csrfToken
@@ -84,7 +84,7 @@ const PW = 'ocr12345'
   const anonOut = execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL', '-b', anonJar, '-c', anonJar,
     '-X', 'POST', '-F', `image=@${imgPath};type=image/png`, '--max-time', '60',
     `${BASE}/api/scan-receipt`], { encoding: 'utf8' })
-  const anonStatus = parseInt((anonOut.split(/\r?\n/).find((l) => /^HTTP\//.test(l)) || '').split(' ')[1] || '0', 10)
+  const anonStatus = parseInt((anonOut.split(/\r?\n/).find((l) => l.startsWith('HTTP/')) || '').split(' ')[1] || '0', 10)
   check('anonymous -> 401 or redirect', anonStatus === 401 || anonStatus === 307 || anonStatus === 302,
     `${anonStatus}`)
 

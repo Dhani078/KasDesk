@@ -36,7 +36,7 @@ async function main() {
   let shortRejected = false
   try {
     await encryptBackup(samplePayload, '123')
-  } catch (e) {
+  } catch (_e) {
     shortRejected = true
   }
   check('passphrase < 6 chars rejected', shortRejected)
@@ -62,7 +62,7 @@ async function main() {
   let wrongPassRejected = false
   try {
     await decryptBackup(armored, wrongPass)
-  } catch (e) {
+  } catch (_e) {
     wrongPassRejected = true
   }
   check('wrong passphrase throws decryption rejection', wrongPassRejected)
@@ -73,7 +73,7 @@ async function main() {
   let tamperedRejected = false
   try {
     await decryptBackup(tamperedArmored, goodPass)
-  } catch (e) {
+  } catch (_e) {
     tamperedRejected = true
   }
   check('tampered ciphertext fails integrity check', tamperedRejected)

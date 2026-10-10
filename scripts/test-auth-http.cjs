@@ -44,7 +44,7 @@ function curl(args) {
     '-b', JAR, '-c', JAR, '--max-time', '60', ...args,
   ], { encoding: 'utf8' })
   const lines = out.split(/\r?\n/)
-  const status = parseInt((lines.find((l) => /^HTTP\//.test(l)) || '').split(' ')[1] || '0', 10)
+  const status = parseInt((lines.find((l) => l.startsWith('HTTP/')) || '').split(' ')[1] || '0', 10)
   const headers = {}
   for (const l of lines) {
     const m = l.match(/^([A-Za-z-]+):\s*(.*)$/)

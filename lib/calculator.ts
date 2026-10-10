@@ -51,7 +51,6 @@ export function evaluateMathExpression(expr: string): number | null {
       return tokens[0]
     }
 
-    // Step 1: Handle * and /
     const higherPrecedence: (number | string)[] = []
     let idx = 0
     while (idx < tokens.length) {
@@ -70,7 +69,6 @@ export function evaluateMathExpression(expr: string): number | null {
       }
     }
 
-    // Step 2: Handle + and -
     let total = higherPrecedence[0]
     if (typeof total !== 'number') return null
 

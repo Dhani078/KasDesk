@@ -21,7 +21,6 @@ function loadEnv(f) {
 }
 const env = loadEnv(path.join(__dirname, '..', '.env.local'))
 const BASE = process.env.BASE_URL || 'http://localhost:3333'
-const HAS_KEY = !!env.GEMINI_API_KEY
 
 const receiptPath = path.join(__dirname, '..', 'scripts/fixtures/test_receipt.png')
 if (!fs.existsSync(receiptPath)) {
@@ -42,7 +41,7 @@ function curl(args) {
 function curlWithStatus(args) {
   const out = execFileSync('curl', ['-s', '-i', '-b', jar, '-c', jar, '--max-time', '120', ...args], { encoding: 'utf8', env })
   // -i includes headers in output, body follows after \r\n\r\n
-  const statusLine = out.split(/\r?\n/).find(l => /^HTTP\//.test(l))
+  const statusLine = out.split(/\r?\n/).find(l => l.startsWith('HTTP/'))
   const status = statusLine ? parseInt(statusLine.split(' ')[1], 10) : 0
   const bodyStart = out.indexOf('\r\n\r\n')
   const body = bodyStart >= 0 ? out.slice(bodyStart + 4) : out
@@ -89,7 +88,7 @@ const PW = 'ocr12345'
   try {
     const lines = resp.body.trim().split('\n')
     data = JSON.parse(lines[lines.length - 1].trim() || '{}')
-  } catch (e) {
+  } catch (_e) {
     data = {}
   }
 

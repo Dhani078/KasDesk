@@ -41,7 +41,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{if(localStorage.getItem('kasdesk:theme')==='light'){document.documentElement.dataset.theme='light'}if(localStorage.getItem('kasdesk:privacy')==='hidden'){document.documentElement.classList.add('privacy-mode')}if(localStorage.getItem('kasdesk:lock_enabled')==='true'&&sessionStorage.getItem('kasdesk:unlocked')!=='true'){document.documentElement.classList.add('app-locked')}}catch(e){}try{window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__deferredPwaPrompt=e;});}catch(e){}",
+              "try{if(localStorage.getItem('kasdesk:theme')==='light'){document.documentElement.dataset.theme='light'}if(localStorage.getItem('kasdesk:privacy')==='hidden'){document.documentElement.classList.add('privacy-mode')}if(localStorage.getItem('kasdesk:lock_enabled')==='true'&&sessionStorage.getItem('kasdesk:unlocked')!=='true'){document.documentElement.classList.add('app-locked')}}catch(_e){/*storage access restricted*/}try{window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__deferredPwaPrompt=e;});}catch(_e){/*pwa prompt restricted*/}",
           }}
         />
       </head>

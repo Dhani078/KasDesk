@@ -56,6 +56,7 @@ async function main() {
   const unsignedData = Buffer.from(`${hB64}.${pB64}`, 'utf8')
   const sigBuf = Buffer.from(sigB64, 'base64url')
   check('Signature length is 64 bytes (IEEE P1363 ES256)', sigBuf.length === 64)
+  check('Unsigned token buffer is valid', unsignedData.length > 20)
 
   // ────────────────────────────────────────────────── 2. RFC 8291 Encryption
   const clientEcdh = crypto.createECDH('prime256v1')

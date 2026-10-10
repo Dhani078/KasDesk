@@ -1,5 +1,18 @@
 # Changelog
 
+## AI Slop Elimination & Codebase Quality Hardening (`aislop` Integration) — 2026-10-08
+
+- Audited entire repository with deterministic AST engine `aislop` (scoring 88/100 Healthy on `app/` and `lib/`, 83/100 on `components/`).
+- Added `server-only` explicitly to `package.json` dependencies.
+- Canonicalized duplicated OCR response type in `lib/schemas.ts` to reference `lib/ocr/contract.ts`.
+- Removed redundant parameter coercions (`Number(amount)`) on typed arguments in `lib/actions/debts.ts` and `lib/actions/vaults.ts`.
+- Replaced legacy `<a>` navigation tags in `app/(public)/register/page.tsx` and `app/(public)/login/page.tsx` with Next.js `<Link>`.
+- Removed intrusive `autoFocus` from `QuickLogAmountSection.tsx` for accessible screen-reader compliance.
+- Reformatted one-line files `app/(dashboard)/layout.tsx` and `app/api/health/route.ts` with standard clean structure.
+- Removed useless regex escape character in `CoachChat.tsx`.
+- Validated signature data buffer in `scripts/test-web-push.js` bringing unit test suite to 271 checks across 17 suites.
+- Verified 100% full release gate: 271 unit checks (17 suites), 23 database integration suites, 70 headless Chrome CDP browser audit tests, 0 TS errors, 0 ESLint warnings.
+
 ## Modular Architecture Hardening: QuickLogSheet & SplitBillModal Refactoring — 2026-10-08
 
 - Decomposed monolithic UI files to strictly enforce `<300-500 LOC` clean architecture:

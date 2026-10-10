@@ -79,7 +79,7 @@ for (const script of SCRIPTS) {
       console.log('✅ PASS')
       suitesPassed++
     }
-  } catch (err) {
+  } catch (_err) {
     console.log('💥 ERROR')
     suitesFailed++
     failedSuites.push(script)
