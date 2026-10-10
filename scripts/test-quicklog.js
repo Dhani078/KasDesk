@@ -17,7 +17,11 @@ const check = (n, c, d = '') => {
   else { fail++; console.log(`  FAIL  ${n} ${d ? '-> ' + d : ''}`) }
 }
 
-const sheet = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8')
+const quicklogDir = path.join(__dirname, '..', 'components', 'quicklog')
+const submodules = fs.existsSync(quicklogDir)
+  ? fs.readdirSync(quicklogDir).map(f => fs.readFileSync(path.join(quicklogDir, f), 'utf8')).join('\n')
+  : ''
+const sheet = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8') + '\n' + submodules
 const home = fs.readFileSync(path.join(__dirname, '..', 'app', '(dashboard)', 'page.tsx'), 'utf8')
 
 // Raw strings: the source contains backslashes (regex classes) that a regex

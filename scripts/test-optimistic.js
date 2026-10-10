@@ -23,7 +23,11 @@ const check = (n, c, d = '') => {
 const has = (s, needle) => s.includes(needle)
 
 const ctx = fs.readFileSync(path.join(__dirname, '..', 'components', 'pending-tx.tsx'), 'utf8')
-const sheet = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8')
+const quicklogDir = path.join(__dirname, '..', 'components', 'quicklog')
+const submodules = fs.existsSync(quicklogDir)
+  ? fs.readdirSync(quicklogDir).map(f => fs.readFileSync(path.join(quicklogDir, f), 'utf8')).join('\n')
+  : ''
+const sheet = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8') + '\n' + submodules
 const feed = fs.readFileSync(path.join(__dirname, '..', 'components', 'HomeFeed.tsx'), 'utf8')
 const shell = fs.readFileSync(path.join(__dirname, '..', 'components', 'AppShell.tsx'), 'utf8')
 
