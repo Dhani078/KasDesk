@@ -1,5 +1,18 @@
 # Changelog
 
+## Interactive Architecture Maps & Multi-Skill Hardening Verification — 2026-10-08
+
+- Compiled and verified interactive standalone system architecture and workflow diagrams via `archify`:
+  - `docs/kasdesk-architecture.html`: interactive full-stack component architecture map (PWA Client, Service Worker, Auth.js, Next.js Server, Gemini AI, TiDB Cloud).
+  - `docs/kasdesk-quicklog-workflow.html`: interactive 2-tap transaction, OCR vision prefill, optimistic sub-50ms loop, and atomic TiDB commit workflow diagram.
+- Security Audit Hardening (`security-audit`):
+  - Verified tenant data isolation across all Drizzle ORM mutations (`where(eq(..., userId))`).
+  - Verified distributed brute-force rate limits on `/api/auth` and `/api/scan-receipt`.
+  - Confirmed zero secret leakage on JSON/CSV exports and AES-256-GCM zero-knowledge client encryption.
+- Design Quality & Anti-Slop Audit (`taste-skill` / `aislop`):
+  - Calibrated visual density, dark canvas hierarchy (`#0D0D0F`), monospace tabular numbers, and tactile haptic vibration patterns.
+- Verified 100% full release gate: 271 unit checks (17 suites), 23 database integration suites, 70 headless Chrome CDP browser audit tests, 0 TS errors, 0 ESLint warnings.
+
 ## AI Slop Elimination & Codebase Quality Hardening (`aislop` Integration) — 2026-10-08
 
 - Audited entire repository with deterministic AST engine `aislop` (scoring 88/100 Healthy on `app/` and `lib/`, 83/100 on `components/`).

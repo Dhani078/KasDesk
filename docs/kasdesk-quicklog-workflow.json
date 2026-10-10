@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "KasDesk 2-Tap QuickLog & Transaction Pipeline",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "output": "kasdesk-quicklog-workflow.html"
+  },
+  "lanes": [
+    { "id": "client", "label": "Client Interface (PWA)" },
+    { "id": "server", "label": "Next.js Server Actions & OCR" },
+    { "id": "storage", "label": "TiDB Database & Ledger" }
+  ],
+  "phases": [
+    { "id": "entry", "label": "Input & OCR", "fromCol": 0, "toCol": 1 },
+    { "id": "sheet_phase", "label": "Optimistic UI", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "commit_phase", "label": "Atomic Commit", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "optimistic_loop", "label": "Sub-50ms Optimistic Loop", "lane": "client", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "database_tx", "label": "Atomic tx.transaction", "lane": "storage", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["user_input", "gemini_ocr", "quicklog_sheet", "optimistic_feed", "server_action", "tidb_atomic"],
+  "nodes": [
+    { "id": "user_input", "lane": "client", "col": 0, "type": "external", "label": "Pengguna", "sublabel": "2-Tap / Share Struk", "width": 132 },
+    { "id": "gemini_ocr", "lane": "server", "col": 1, "type": "cloud", "label": "Gemini 3.8 Flash", "sublabel": "OCR Vision Parser", "tag": "Zero Slop", "width": 132 },
+    { "id": "quicklog_sheet", "lane": "client", "col": 2, "type": "frontend", "label": "QuickLog Sheet", "sublabel": "Inline Math Calc", "width": 132 },
+    { "id": "optimistic_feed", "lane": "client", "col": 3, "type": "frontend", "label": "Optimistic UI", "sublabel": "Feed updates <50ms", "tag": "Zero Lag", "width": 132 },
+    { "id": "server_action", "lane": "server", "col": 4, "type": "backend", "label": "createTransaction", "sublabel": "Zod Validation + RBAC", "width": 132 },
+    { "id": "tidb_atomic", "lane": "storage", "col": 5, "type": "database", "label": "TiDB Atomik", "sublabel": "tx.transaction block", "tag": "No Overdraft", "width": 132 }
+  ],
+  "edges": [
+    { "id": "user-to-ocr", "from": "user_input", "to": "gemini_ocr", "label": "Bagikan struk", "variant": "dashed" },
+    { "id": "ocr-to-sheet", "from": "gemini_ocr", "to": "quicklog_sheet", "label": "Prefill form", "variant": "default" },
+    { "id": "user-to-sheet", "from": "user_input", "to": "quicklog_sheet", "label": "2-tap log", "variant": "default" },
+    { "id": "sheet-optimistic", "from": "quicklog_sheet", "to": "optimistic_feed", "label": "addPending()", "variant": "emphasis" },
+    { "id": "optimistic-server", "from": "optimistic_feed", "to": "server_action", "label": "POST mutasi", "variant": "default" },
+    { "id": "server-tidb", "from": "server_action", "to": "tidb_atomic", "label": "Commit SQL", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Sub-50ms Optimistic Architecture",
+      "items": [
+        "Transaksi langsung tampil di feed sebelum network round-trip",
+        "Rollback visual otomatis jika transaksi server gagal"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Defensive Database Concurrency",
+      "items": [
+        "Mutasi multi-tabel dibungkus blok tx.transaction",
+        "Idempotency mutlak via clientMutationId UUID v4"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Vision AI & Hardware Interactivity",
+      "items": [
+        "Web Share Target langsung kirim struk ke Gemini 3.8 Flash",
+        "Haptic vibration tactile feedback saat transaksi berhasil disimpan"
+      ]
+    }
+  ]
+}

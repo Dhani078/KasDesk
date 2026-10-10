@@ -19,6 +19,10 @@ next-env.d.ts
 # scratch commit-message file (never tracked)
 _cm.txt
 *.zip
+*.finalize.json
+*.finalize-summary.json
+*.browser-check.json
+*.delivery.json
 
 # agent-loop artifacts (kept locally, never shipped)
 .agents/
