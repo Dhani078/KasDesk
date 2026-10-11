@@ -49,6 +49,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 📶 **100% Offline-First** | Transaksi diantrekan secara lokal via IndexedDB saat sinyal hilang dan otomatis sinkron saat online. |
 | 🗺️ **Master PRD v2.0/v3.0** | Cetak biru lengkap 9 Epic arsitektur masa depan untuk Claude/Opus/Hermes di [`PRD.md`](./PRD.md). |
 | 📐 **Technical Blueprint** | Spesifikasi teknis & rancangan rekayasa mendalam di [`docs/ROADMAP-EXPANSION-SPECS.md`](./docs/ROADMAP-EXPANSION-SPECS.md). |
+| 📊 **Interactive Architecture & Workflow** | Diagram interaktif HTML/SVG showcase arsitektur full-stack & alur transaksi 2-tap di [`docs/kasdesk-architecture.html`](./docs/kasdesk-architecture.html) & [`docs/kasdesk-quicklog-workflow.html`](./docs/kasdesk-quicklog-workflow.html). |
 
 ---
 
@@ -170,6 +171,9 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 # = typecheck + lint + 271 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
+
+# Audit AI Slop & Code Health 100/100 (deterministic AST engine)
+npm run scan:slop
 
 # Menjalankan seluruh 271 Unit Tests (offline & deterministik)
 npm run test:unit

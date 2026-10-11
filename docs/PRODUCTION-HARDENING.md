@@ -50,6 +50,7 @@ Before production deploy:
 npm ci
 npm run typecheck
 npm run lint
+npm run scan:slop
 npm run test:unit
 npm run test:coach
 npm run test:transactions

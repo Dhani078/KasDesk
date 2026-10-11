@@ -10,6 +10,7 @@ Before opening a change, run the full gate in order:
 npm ci
 npm run typecheck
 npm run lint
+npm run scan:slop        # 100/100 Healthy AST check via aislop
 npm run test:unit        # 271 unit checks: rate limit, QuickLog, tax, split-bill, backup, forecast, nlp, statement, micro-savings, envelopes, multi-currency, spaces, web-push
 npm run test:coach       # AI Coach auth + Gemini response + guardrails + conversational draft
 npm run test:transactions# cursor pagination + corrupted-query resilience
@@ -19,7 +20,7 @@ npm run release:check    # zero secret leakage + PWA manifest + release validati
 npm run build
 ```
 
-`npm run test:full` bundles steps 2–8 in a single command.
+`npm run test:full` bundles steps 2–9 in a single command.
 
 ## Database tests
 
@@ -37,6 +38,7 @@ Required invariants for any new data path:
 - `clientMutationId` mencegah transaksi ganda.
 - Session lama ditolak setelah ganti password.
 - Export tidak memuat password hash, token, cookie, API key, atau secret.
+- **Strict LOC Bound (<300–500 LOC):** Komponen UI atau modul baru wajib dipecah menjadi sub-komponen/hooks independen agar ukuran file tetap ramping, modular, dan maintainable.
 
 ## Do not re-add
 

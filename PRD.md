@@ -628,9 +628,12 @@ Sebuah fitur atau fase baru dinyatakan **SELESAI (1000/1000 APPROVED)** hanya ji
 3. **Browser & Mobile Viewport Audit**:
    - Diuji via Chrome CDP headless pada resolusi `320x568`, `390x844`, dan `1280x800` dengan pembuktian **0 horizontal overflow**.
    - Keyboard shortcut tetap berfungsi normal.
-4. **Zero AI Slop**:
+4. **Zero AI Slop & 100/100 Code Health**:
+   - `npm run scan:slop` menghasilkan skor 100/100 Healthy dengan 0 error dan 0 warning via `aislop`.
    - Tidak ada placeholder string ("Lorem ipsum", "Coming soon", tombol tanpa event handler). Seluruh tombol, modal, filter, dan form input berfungsi nyata dengan feedback status yang jelas.
-5. **Documentation Synchronization**:
+5. **Interactive Architecture Documentation**:
+   - Diagram sistem interaktif mandiri SVG/HTML di-generate dan diverifikasi via `archify`: `docs/kasdesk-architecture.html` & `docs/kasdesk-quicklog-workflow.html`.
+6. **Documentation Synchronization**:
    - Perubahan skema dan endpoint baru selalu dicatat pada `CHANGELOG.md` dan `README.md` pada setiap siklus commit.
 
 ---

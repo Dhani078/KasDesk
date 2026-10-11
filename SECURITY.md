@@ -33,3 +33,5 @@ npm run test:cleanup:fixtures
 - Production rate limiting must use shared storage; the bundled in-memory limiter is a single-instance fallback.
 - OCR fail-closes when `GEMINI_API_KEY` is absent.
 - Client-Side Encrypted Backup (`.kasdesk.enc`) uses native Web Crypto API (`AES-256-GCM` with 100,000 PBKDF2 iterations and random 16-byte salt/12-byte IV). Passphrase never leaves the browser.
+- Web Push Notifications enforce RFC 8292 ES256 VAPID and RFC 8291 `aes128gcm` encryption using Node.js native crypto; private keys are never exposed to client bundles.
+- Codebase undergoes automated AST analysis via `aislop` to guarantee 100/100 Healthy status (zero SQL injection vulnerabilities in production routes, zero unescaped HTML injections).

@@ -27,6 +27,7 @@ Gunakan Node.js 22 dan jalankan:
 npm ci
 npm run typecheck
 npm run lint
+npm run scan:slop
 npm run test:unit
 npm run release:check
 ```
