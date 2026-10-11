@@ -40,7 +40,11 @@ const check = (n: string, c: boolean, d = '') => {
 // source inspection + the pure sort/replay logic, not by live DB calls.
 const SYNC_SRC = fs.readFileSync(path.join(__dirname, '..', 'lib', 'offline', 'sync.ts'), 'utf8')
 const QUEUE_SRC = fs.readFileSync(path.join(__dirname, '..', 'lib', 'offline', 'queue.ts'), 'utf8')
-const SHEET_SRC = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8')
+const quicklogDir = path.join(__dirname, '..', 'components', 'quicklog')
+const quicklogSub = fs.existsSync(quicklogDir)
+  ? fs.readdirSync(quicklogDir).map(f => fs.readFileSync(path.join(quicklogDir, f), 'utf8')).join('\n')
+  : ''
+const SHEET_SRC = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8') + '\n' + quicklogSub
 const IND_SRC = fs.readFileSync(path.join(__dirname, '..', 'components', 'OfflineIndicator.tsx'), 'utf8')
 
 async function main() {
