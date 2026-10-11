@@ -168,7 +168,7 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 335 unit checks + AI Coach cascade + cursor pagination
+# = typecheck + lint + 353 unit checks + AI Coach cascade + cursor pagination
 #   + 70 browser audit (CDP) + 23 DB integration suites + release validation
 npm run test:full
 

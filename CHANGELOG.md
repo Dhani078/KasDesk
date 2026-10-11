@@ -1,5 +1,14 @@
 # Changelog
 
+## Real-Time Transaction Filter Aggregation & Net Cashflow Strip — 2026-10-11
+
+- Implemented concurrent database aggregation in `app/(dashboard)/transactions/page.tsx` computing filtered `totalIncome`, `totalExpense`, and total matching `count` via native SQL without pagination truncation.
+- Added responsive 3-column financial summary strip (`Total Masuk`, `Total Keluar`, `Selisih Net`) on `/transactions` dynamically updated on search, category filter, wallet filter, and date ranges.
+- Enhanced transaction counter pill to indicate filtered status (e.g. `12 transaksi terfilter`).
+- Added `test:tx-filters` unit test suite (18 checks) expanding master unit tests to 353 checks across 21 suites (100% passing).
+- Verified 70 headless Chrome CDP browser audit checks (0 horizontal overflow), 100/100 Healthy on `aislop`, and Next.js production build.
+
+
 ## Month-over-Month Comparison Engine & Category Variance Analysis — 2026-10-11
 
 - Implemented `lib/analytics/comparison.ts` and `getMonthComparison()` in `lib/analytics/actions.ts` calculating month-over-month expenditure deltas, percentage variance, and directional trend flags ('up' | 'down' | 'same').

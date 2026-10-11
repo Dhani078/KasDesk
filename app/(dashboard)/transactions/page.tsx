@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, Search, X, Download } from 'lucide-react'
-import { and, desc, eq, gte, like, lt, lte, or } from 'drizzle-orm'
+import { and, desc, eq, gte, like, lt, lte, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { transactions, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
@@ -46,20 +46,42 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const from = parseDay(q.from)
   const to = parseDay(q.to, true)
   const cursor = parseCursor(q.cursor)
-  const filters = [eq(transactions.userId, userId)]
+  const baseFilters = [eq(transactions.userId, userId)]
   if (q.search?.trim()) {
     const term = `%${q.search.trim().slice(0, 80)}%`
-    filters.push(or(like(transactions.title, term), like(transactions.note, term), like(transactions.categoryTag, term))!)
+    baseFilters.push(or(like(transactions.title, term), like(transactions.note, term), like(transactions.categoryTag, term))!)
   }
-  if (type) filters.push(eq(transactions.type, type))
-  if (category) filters.push(eq(transactions.categoryTag, category))
-  if (wallet) filters.push(or(eq(transactions.walletId, wallet), eq(transactions.toWalletId, wallet))!)
-  if (from) filters.push(gte(transactions.occurredAt, from))
-  if (to) filters.push(lte(transactions.occurredAt, to))
-  if (cursor) filters.push(or(lt(transactions.occurredAt, cursor.date), and(eq(transactions.occurredAt, cursor.date), lt(transactions.id, cursor.id)))!)
-  const fetched = await db.select({ id: transactions.id, walletId: transactions.walletId, toWalletId: transactions.toWalletId, type: transactions.type, amount: transactions.amount, title: transactions.title, categoryTag: transactions.categoryTag, occurredAt: transactions.occurredAt, note: transactions.note }).from(transactions).where(and(...filters)).orderBy(desc(transactions.occurredAt), desc(transactions.id)).limit(PAGE_SIZE + 1)
+  if (type) baseFilters.push(eq(transactions.type, type))
+  if (category) baseFilters.push(eq(transactions.categoryTag, category))
+  if (wallet) baseFilters.push(or(eq(transactions.walletId, wallet), eq(transactions.toWalletId, wallet))!)
+  if (from) baseFilters.push(gte(transactions.occurredAt, from))
+  if (to) baseFilters.push(lte(transactions.occurredAt, to))
+
+  const pagedFilters = [...baseFilters]
+  if (cursor) pagedFilters.push(or(lt(transactions.occurredAt, cursor.date), and(eq(transactions.occurredAt, cursor.date), lt(transactions.id, cursor.id)))!)
+
+  const [fetched, [agg]] = await Promise.all([
+    db
+      .select({ id: transactions.id, walletId: transactions.walletId, toWalletId: transactions.toWalletId, type: transactions.type, amount: transactions.amount, title: transactions.title, categoryTag: transactions.categoryTag, occurredAt: transactions.occurredAt, note: transactions.note })
+      .from(transactions)
+      .where(and(...pagedFilters))
+      .orderBy(desc(transactions.occurredAt), desc(transactions.id))
+      .limit(PAGE_SIZE + 1),
+    db
+      .select({
+        totalIncome: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount} else 0 end), 0)`,
+        totalExpense: sql<number>`coalesce(sum(case when ${transactions.type} = 'expense' then ${transactions.amount} else 0 end), 0)`,
+        count: sql<number>`count(*)`,
+      })
+      .from(transactions)
+      .where(and(...baseFilters)),
+  ])
   const hasMore = fetched.length > PAGE_SIZE
   const rows = fetched.slice(0, PAGE_SIZE)
+  const totalCount = Number(agg?.count ?? 0)
+  const totalIncome = Number(agg?.totalIncome ?? 0)
+  const totalExpense = Number(agg?.totalExpense ?? 0)
+  const netAmount = totalIncome - totalExpense
   const names = Object.fromEntries(walletRows.map((item) => [item.id, item.name]))
   const filtered = Boolean(q.search || type || category || wallet || q.from || q.to)
   const allTags = Array.from(new Set(rows.flatMap((r) => [...extractTags(r.note), ...extractTags(r.title)])))
@@ -120,7 +142,30 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
       </div>
     )}
 
-    <div className="mb-3 mt-7 flex items-center justify-between"><h2 className="section-title">Hasil</h2><span className="status-pill">{rows.length}{hasMore ? '+' : ''} transaksi</span></div>
+    {totalCount > 0 && (
+      <div className="mt-4 grid grid-cols-3 gap-2.5 rounded-2xl border border-border-inner bg-surface/60 p-3 sm:p-4 text-xs">
+        <div>
+          <p className="text-[11px] text-text-secondary uppercase tracking-wider font-medium">Total Masuk</p>
+          <p className="mt-0.5 font-mono font-semibold text-accent-income text-xs sm:text-sm">
+            +<PrivacyAmount value={totalIncome} />
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] text-text-secondary uppercase tracking-wider font-medium">Total Keluar</p>
+          <p className="mt-0.5 font-mono font-semibold text-accent-expense text-xs sm:text-sm">
+            -<PrivacyAmount value={totalExpense} />
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] text-text-secondary uppercase tracking-wider font-medium">Selisih Net</p>
+          <p className={`mt-0.5 font-mono font-semibold text-xs sm:text-sm ${netAmount >= 0 ? 'text-accent-income' : 'text-accent-expense'}`}>
+            {netAmount >= 0 ? '+' : ''}<PrivacyAmount value={netAmount} />
+          </p>
+        </div>
+      </div>
+    )}
+
+    <div className="mb-3 mt-7 flex items-center justify-between"><h2 className="section-title">Hasil</h2><span className="status-pill">{totalCount} transaksi{filtered ? ' terfilter' : ''}</span></div>
     {rows.length ? <ul className="surface-card divide-y divide-border-inner overflow-hidden rounded-3xl">{rows.map((transaction) => {
       const rowTags = [...extractTags(transaction.note), ...extractTags(transaction.title)]
       const isTransfer = transaction.type === 'transfer'
