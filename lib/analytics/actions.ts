@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { debts, transactions, vaults, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { getMonthWindow } from '@/lib/timezone'
+import { computeStreaks, type StreakResult } from '@/lib/analytics/streaks'
 
 export type DashboardSummary = {
   totalBalance: number
@@ -19,6 +20,7 @@ export type DashboardSummary = {
   healthScore: number
   healthLabel: string
   healthTips: string[]
+  streak?: number
 }
 
 function n(value: unknown): number {
@@ -84,7 +86,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     }
   }
 
-  const [walletAgg, vaultAgg, debtAgg, monthAgg] = await Promise.all([
+  const [walletAgg, vaultAgg, debtAgg, monthAgg, recentDates] = await Promise.all([
     db.select({
       totalBalance: sql<number>`coalesce(sum(${wallets.balance}), 0)`,
       walletCount: sql<number>`count(*)`,
@@ -99,6 +101,11 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       monthlyIncome: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount} else 0 end), 0)`,
       monthlyExpense: sql<number>`coalesce(sum(case when ${transactions.type} = 'expense' then ${transactions.amount} else 0 end), 0)`,
     }).from(transactions).where(and(eq(transactions.userId, userId), gte(transactions.occurredAt, monthWindow.start), lt(transactions.occurredAt, monthWindow.end))),
+    db.select({ occurredAt: transactions.occurredAt })
+      .from(transactions)
+      .where(eq(transactions.userId, userId))
+      .orderBy(desc(transactions.occurredAt))
+      .limit(60),
   ])
 
   const totalBalance = n(walletAgg[0]?.totalBalance)
@@ -111,6 +118,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   const spendable = totalBalance - vaultAllocations - upcomingDebts
   const safeDailySpend = Math.max(0, Math.floor(spendable / Math.max(1, daysLeft)))
   const health = buildHealthScore({ totalBalance, vaultAllocations, upcomingDebts, monthlyIncome, monthlyExpense, daysLeft })
+  const streakResult = computeStreaks(recentDates.map((r) => r.occurredAt))
 
   return {
     totalBalance,
@@ -121,6 +129,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     daysLeft,
     monthlyIncome,
     monthlyExpense,
+    streak: streakResult.current,
     ...health,
   }
 }
@@ -173,4 +182,15 @@ export async function getTopCategorySummary(limit = 7) {
 
   const total = rows.reduce((sum, row) => sum + n(row.amount), 0) || 1
   return rows.map((row) => ({ category: row.category, amount: n(row.amount), share: n(row.amount) / total }))
+}
+
+export async function getUserStreaks(): Promise<StreakResult> {
+  const userId = await requireUserId()
+  if (!userId) return { current: 0, best: 0, totalDays: 0 }
+  const rows = await db
+    .select({ occurredAt: transactions.occurredAt })
+    .from(transactions)
+    .where(eq(transactions.userId, userId))
+    .orderBy(desc(transactions.occurredAt))
+  return computeStreaks(rows.map((r) => r.occurredAt))
 }

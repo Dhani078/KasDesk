@@ -13,6 +13,7 @@ type FocusInput = {
   monthlyExpense: number
   vaultAllocations: number
   upcomingDebts: number
+  streak?: number
 }
 
 function pickFocus(dash: FocusInput) {
@@ -54,6 +55,9 @@ export function DailyFocus({ dash }: { dash: FocusInput }) {
             )}
             <span className="status-pill">Aman Harian <PrivacyAmount value={dash.safeDailySpend} /></span>
             <span className="status-pill">{dash.healthLabel} {dash.healthScore}</span>
+            {typeof dash.streak === 'number' && dash.streak > 0 ? (
+              <span className="status-pill text-amber-400 font-semibold">🔥 {dash.streak} hari</span>
+            ) : null}
           </div>
         </div>
       </div>

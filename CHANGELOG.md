@@ -1,6 +1,13 @@
 # Changelog
 
-## 100/100 Quality Gate & Automated CI Slop Enforcement — 2026-10-08
+## Financial Logging Consistency Streak Tracker & Gamification — 2026-10-11
+
+- Implemented and wired `getUserStreaks()` in `lib/analytics/actions.ts` querying historical transaction timeline.
+- Integrated `StreakCard` in `/insights` displaying consecutive active logging streak, motivational milestone messaging, record streak (`best`), and total active calendar days (`totalDays`).
+- Added real-time streak badge (`🔥 {streak} hari`) to `DailyFocus` on dashboard home (`/`).
+- Added `test:streaks` script and integrated into `npm run test:unit`, expanding master unit tests to 290 checks across 18 suites (100% passing).
+- Verified 100/100 Healthy on `aislop`, 0 TypeScript errors, 0 ESLint warnings, 70 browser audit tests (0 horizontal overflow), and successful production build.
+
 
 - Attained **100 / 100 Healthy** across all 173 codebase files via deterministic AST engine `aislop` (0 errors, 0 warnings).
 - Added `.aislop/config.yml` with strict calibrated boundaries and exclusions for build/scratch/test fixtures.

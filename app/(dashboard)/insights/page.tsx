@@ -2,13 +2,14 @@ import Link from 'next/link'
 import { ArrowLeft, BarChart3, CalendarDays, Landmark, Sparkles, TrendingDown } from 'lucide-react'
 import { auth } from '@/auth'
 import { getDebts, getSpendingFlow, getTopCategories } from '@/lib/actions'
-import { getDashboardSummary } from '@/lib/analytics/actions'
+import { getDashboardSummary, getUserStreaks } from '@/lib/analytics/actions'
 import { formatIDR, formatDateShort } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
 import { getMonthWindow } from '@/lib/timezone'
 import { MonthlyRecapModal } from '@/components/MonthlyRecapModal'
 import { FinancialHealthScoreCard } from '@/components/FinancialHealthScoreCard'
+import { StreakCard } from '@/components/insights/StreakCard'
 import { RunwayMeter } from '@/components/insights/RunwayMeter'
 import { CashflowForecast } from '@/components/insights/CashflowForecast'
 import { db } from '@/lib/db'
@@ -20,7 +21,7 @@ export const dynamic = 'force-dynamic'
 export default async function InsightsPage() {
   const session = await auth()
   const userId = session?.user?.id
-  const [dash, flow, top, debts, activeRecurring] = await Promise.all([
+  const [dash, flow, top, debts, activeRecurring, streaks] = await Promise.all([
     getDashboardSummary(),
     getSpendingFlow(),
     getTopCategories(7),
@@ -39,6 +40,7 @@ export default async function InsightsPage() {
           .from(recurringRules)
           .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isActive, 1)))
       : Promise.resolve([]),
+    getUserStreaks(),
   ])
   const { month } = getMonthWindow()
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Kawan'
@@ -87,6 +89,8 @@ export default async function InsightsPage() {
       </header>
 
       <FinancialHealthScoreCard dash={dash} />
+
+      <StreakCard data={streaks} />
 
       <RunwayMeter
         totalBalance={dash.totalBalance}
