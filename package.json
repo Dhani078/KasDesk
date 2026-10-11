@@ -69,6 +69,7 @@
     "test:multi-currency": "npx tsx scripts/test-multi-currency.js",
     "test:shared-spaces": "npx tsx scripts/test-shared-spaces.js",
     "test:web-push": "npx tsx scripts/test-web-push.js",
+    "scan:slop": "npx aislop scan",
     "test:unit": "node scripts/test-ratelimit.js && node scripts/test-quicklog.js && node scripts/test-optimistic.js && node scripts/test-feature-max.js && node scripts/test-timezone.js && npx tsx scripts/test-tax.js && npx tsx scripts/test-split-bill.js && npx tsx scripts/test-encrypted-backup.js && npx tsx scripts/test-forecast.js && npx tsx scripts/test-nlp-parser.js && npx tsx scripts/test-dual-mode-ai.js && npx tsx scripts/test-statement-parser.js && npx tsx scripts/test-micro-savings.js && npx tsx scripts/test-digital-envelopes.js && npx tsx scripts/test-multi-currency.js && npx tsx scripts/test-shared-spaces.js && npx tsx scripts/test-web-push.js",
     "test:all": "npm run test:unit && npm run typecheck && npm run lint",
     "release:check": "npm run test:all && node scripts/validate-release.js",
