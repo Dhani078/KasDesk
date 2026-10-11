@@ -1,5 +1,14 @@
 # Changelog
 
+## Month-over-Month Comparison Engine & Category Variance Analysis — 2026-10-11
+
+- Implemented `lib/analytics/comparison.ts` and `getMonthComparison()` in `lib/analytics/actions.ts` calculating month-over-month expenditure deltas, percentage variance, and directional trend flags ('up' | 'down' | 'same').
+- Added algorithmic identification of `biggestSpike` (category with highest nominal increase) and `biggestSaving` (category with highest nominal reduction).
+- Created `MonthComparisonCard.tsx` on `/insights` displaying total expenditure comparison vs previous period, insight highlight pills, and an expandable category-by-category delta breakdown.
+- Added `test:comparison` unit test suite (24 checks) expanding master unit tests to 335 checks across 20 suites (100% passing).
+- Verified 70 headless Chrome CDP browser audit tests (0 horizontal overflow), 100/100 Healthy on `aislop`, and Next.js production build.
+
+
 ## Due Recurring Bills 1-Tap Widget & Dashboard Integration — 2026-10-11
 
 - Implemented `getDueRecurringRules()` in `lib/planning/actions.ts` querying active recurring rules where `nextRunAt <= now`.

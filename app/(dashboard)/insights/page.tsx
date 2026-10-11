@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, BarChart3, CalendarDays, Landmark, Sparkles, TrendingDown } from 'lucide-react'
 import { auth } from '@/auth'
 import { getDebts, getSpendingFlow, getTopCategories } from '@/lib/actions'
-import { getDashboardSummary, getUserStreaks } from '@/lib/analytics/actions'
+import { getDashboardSummary, getUserStreaks, getMonthComparison } from '@/lib/analytics/actions'
 import { formatIDR, formatDateShort } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { EmptyState } from '@/components/EmptyState'
@@ -10,6 +10,7 @@ import { getMonthWindow } from '@/lib/timezone'
 import { MonthlyRecapModal } from '@/components/MonthlyRecapModal'
 import { FinancialHealthScoreCard } from '@/components/FinancialHealthScoreCard'
 import { StreakCard } from '@/components/insights/StreakCard'
+import { MonthComparisonCard } from '@/components/insights/MonthComparisonCard'
 import { RunwayMeter } from '@/components/insights/RunwayMeter'
 import { CashflowForecast } from '@/components/insights/CashflowForecast'
 import { db } from '@/lib/db'
@@ -21,7 +22,7 @@ export const dynamic = 'force-dynamic'
 export default async function InsightsPage() {
   const session = await auth()
   const userId = session?.user?.id
-  const [dash, flow, top, debts, activeRecurring, streaks] = await Promise.all([
+  const [dash, flow, top, debts, activeRecurring, streaks, comparison] = await Promise.all([
     getDashboardSummary(),
     getSpendingFlow(),
     getTopCategories(7),
@@ -41,6 +42,7 @@ export default async function InsightsPage() {
           .where(and(eq(recurringRules.userId, userId), eq(recurringRules.isActive, 1)))
       : Promise.resolve([]),
     getUserStreaks(),
+    getMonthComparison(),
   ])
   const { month } = getMonthWindow()
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Kawan'
@@ -91,6 +93,8 @@ export default async function InsightsPage() {
       <FinancialHealthScoreCard dash={dash} />
 
       <StreakCard data={streaks} />
+
+      <MonthComparisonCard data={comparison} />
 
       <RunwayMeter
         totalBalance={dash.totalBalance}

@@ -6,6 +6,7 @@ import { debts, transactions, vaults, wallets } from '@/lib/db/schema'
 import { requireUserId } from '@/lib/auth/session'
 import { getMonthWindow } from '@/lib/timezone'
 import { computeStreaks, type StreakResult } from '@/lib/analytics/streaks'
+import { computeMonthComparison, type MonthComparisonResult } from '@/lib/analytics/comparison'
 
 export type DashboardSummary = {
   totalBalance: number
@@ -193,4 +194,55 @@ export async function getUserStreaks(): Promise<StreakResult> {
     .where(eq(transactions.userId, userId))
     .orderBy(desc(transactions.occurredAt))
   return computeStreaks(rows.map((r) => r.occurredAt))
+}
+
+export async function getMonthComparison(): Promise<MonthComparisonResult> {
+  const userId = await requireUserId()
+  const now = new Date()
+  const currentWindow = getMonthWindow(now)
+  const prevDate = new Date(currentWindow.start.getTime() - 86_400_000)
+  const prevWindow = getMonthWindow(prevDate)
+
+  if (!userId) {
+    return computeMonthComparison([], [], currentWindow.month, prevWindow.month)
+  }
+
+  const [currentRows, prevRows] = await Promise.all([
+    db
+      .select({
+        category: sql<string>`coalesce(${transactions.categoryTag}, 'LAINNYA')`,
+        amount: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.type, 'expense'),
+          gte(transactions.occurredAt, currentWindow.start),
+          lt(transactions.occurredAt, currentWindow.end)
+        )
+      )
+      .groupBy(sql`coalesce(${transactions.categoryTag}, 'LAINNYA')`),
+
+    db
+      .select({
+        category: sql<string>`coalesce(${transactions.categoryTag}, 'LAINNYA')`,
+        amount: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.type, 'expense'),
+          gte(transactions.occurredAt, prevWindow.start),
+          lt(transactions.occurredAt, prevWindow.end)
+        )
+      )
+      .groupBy(sql`coalesce(${transactions.categoryTag}, 'LAINNYA')`),
+  ])
+
+  const curr = currentRows.map((r) => ({ category: r.category, amount: Number(r.amount ?? 0) }))
+  const prev = prevRows.map((r) => ({ category: r.category, amount: Number(r.amount ?? 0) }))
+
+  return computeMonthComparison(curr, prev, currentWindow.month, prevWindow.month)
 }
