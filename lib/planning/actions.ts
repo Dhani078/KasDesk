@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq, gte, sql } from 'drizzle-orm'
+import { and, asc, eq, gte, lte, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/lib/db'
@@ -181,5 +181,22 @@ export async function applyAiBudgetBatchAction(params: {
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Gagal menerapkan rekomendasi AI' }
   }
+}
+
+export async function getDueRecurringRules() {
+  const userId = await requireUserId()
+  if (!userId) return []
+  const now = new Date()
+  return db
+    .select()
+    .from(recurringRules)
+    .where(
+      and(
+        eq(recurringRules.userId, userId),
+        eq(recurringRules.isActive, 1),
+        lte(recurringRules.nextRunAt, now)
+      )
+    )
+    .orderBy(asc(recurringRules.nextRunAt))
 }
 

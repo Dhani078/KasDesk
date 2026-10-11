@@ -1,5 +1,14 @@
 # Changelog
 
+## Due Recurring Bills 1-Tap Widget & Dashboard Integration — 2026-10-11
+
+- Implemented `getDueRecurringRules()` in `lib/planning/actions.ts` querying active recurring rules where `nextRunAt <= now`.
+- Created accessible `DueBillsCard.tsx` on Dashboard home (`/`) displaying due/overdue recurring bills with 1-tap "Catat" execution via Server Action and custom wallet selector. Returns `null` when no bills are due to keep zero visual clutter.
+- Enhanced `DailyFocus.tsx` to automatically prioritize alert message and tag `⚠️ {count} tagihan tempo` when due bills are pending.
+- Added `test:due-bills` unit test suite (21 checks) expanding master unit tests to 311 checks across 19 suites (100% passing).
+- Verified 70 browser audit checks (0 horizontal overflow), 100/100 Healthy on `aislop`, and successful Next.js production build.
+
+
 ## Financial Logging Consistency Streak Tracker & Gamification — 2026-10-11
 
 - Implemented and wired `getUserStreaks()` in `lib/analytics/actions.ts` querying historical transaction timeline.

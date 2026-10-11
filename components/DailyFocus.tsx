@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarClock, Lightbulb, Sparkles, Target, Wallet } from 'lucide-react'
+import { BellRing, CalendarClock, Lightbulb, Sparkles, Target, Wallet } from 'lucide-react'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 
 type FocusInput = {
@@ -14,10 +14,12 @@ type FocusInput = {
   vaultAllocations: number
   upcomingDebts: number
   streak?: number
+  dueBillsCount?: number
 }
 
 function pickFocus(dash: FocusInput) {
   if (dash.walletCount === 0) return { href: '/wallets', label: 'Buat dompet', title: 'Mulai dari dompet pertama', body: 'Tambahkan cash, bank, atau e-wallet agar semua fitur aktif.', Icon: Wallet, isQuickLog: false }
+  if (typeof dash.dueBillsCount === 'number' && dash.dueBillsCount > 0) return { href: '/planning', label: 'Cek tagihan', title: `${dash.dueBillsCount} tagihan jatuh tempo`, body: 'Selesaikan pembayaran rutin agar catatan keuangan tetap akurat dan tepat waktu.', Icon: BellRing, isQuickLog: false }
   if (dash.monthlyIncome === 0) return { href: '/transactions', label: 'Catat pemasukan', title: 'Catat pemasukan utama', body: 'Aman Harian jadi lebih akurat kalau pemasukan bulan ini tercatat.', Icon: CalendarClock, isQuickLog: true }
   if (dash.monthlyExpense > dash.monthlyIncome) return { href: '/insights', label: 'Cek laporan', title: 'Pengeluaran perlu direm', body: 'Bulan ini pengeluaran melewati pemasukan. Lihat kategori terbesar dulu.', Icon: Lightbulb, isQuickLog: false }
   if (dash.vaultAllocations === 0) return { href: '/vaults', label: 'Buat target', title: 'Sisihkan uang sebelum terpakai', body: 'Buat target tabungan agar saldo tidak tercampur uang belanja.', Icon: Target, isQuickLog: false }
@@ -57,6 +59,9 @@ export function DailyFocus({ dash }: { dash: FocusInput }) {
             <span className="status-pill">{dash.healthLabel} {dash.healthScore}</span>
             {typeof dash.streak === 'number' && dash.streak > 0 ? (
               <span className="status-pill text-amber-400 font-semibold">🔥 {dash.streak} hari</span>
+            ) : null}
+            {typeof dash.dueBillsCount === 'number' && dash.dueBillsCount > 0 ? (
+              <span className="status-pill text-amber-400 font-semibold border-amber-500/30">⚠️ {dash.dueBillsCount} tagihan tempo</span>
             ) : null}
           </div>
         </div>

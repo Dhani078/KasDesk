@@ -5,6 +5,7 @@ import { auth } from '@/auth'
 import { getRecentTransactions, getWallets } from '@/lib/actions'
 import { getDashboardSummary } from '@/lib/analytics/actions'
 import { getSharedSpaces } from '@/lib/spaces/actions'
+import { getDueRecurringRules } from '@/lib/planning/actions'
 import { SpaceSwitcher } from '@/components/navigation/SpaceSwitcher'
 import { formatIDR } from '@/lib/format'
 import { QuickLogButton } from '@/components/QuickLogSheet'
@@ -13,6 +14,7 @@ import { LogoutButton } from '@/components/LogoutButton'
 import { HomeFeed } from '@/components/HomeFeed'
 import { PrivacyToggle } from '@/components/PrivacyToggle'
 import { DailyFocus } from '@/components/DailyFocus'
+import { DueBillsCard } from '@/components/planning/DueBillsCard'
 import { MetricCard } from '@/components/MetricCard'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { DashboardQuickActions } from '@/components/DashboardQuickActions'
@@ -20,12 +22,13 @@ import { DashboardQuickActions } from '@/components/DashboardQuickActions'
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const [session, dash, recent, wallets, spaces] = await Promise.all([
+  const [session, dash, recent, wallets, spaces, dueRecurring] = await Promise.all([
     auth(),
     getDashboardSummary(),
     getRecentTransactions(20),
     getWallets(),
     getSharedSpaces(),
+    getDueRecurringRules(),
   ])
 
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Kawan'
@@ -92,7 +95,9 @@ export default async function HomePage() {
 
       <DashboardQuickActions />
 
-      <DailyFocus dash={dash} />
+      <DueBillsCard rules={dueRecurring} wallets={wallets} />
+
+      <DailyFocus dash={{ ...dash, dueBillsCount: dueRecurring.length }} />
 
       <section className="surface-card mb-6 rounded-3xl p-5"><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-accent/10 text-accent"><ShieldCheck className="h-5 w-5" aria-hidden /></span><div><p className="text-xs uppercase tracking-[0.08em] text-text-secondary">Skor kesehatan</p><h2 className="text-lg font-semibold text-text-primary">{dash.healthLabel}</h2></div></div><p className="font-mono text-3xl font-semibold text-accent">{dash.healthScore}</p></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-accent" style={{ width: `${dash.healthScore}%` }} /></div><p className="mt-3 text-xs leading-5 text-text-secondary">Savings rate bulan ini {dash.savingsRate}%. {dash.healthTips[0] ?? 'Pertahankan ritme catatan dan review mingguan.'}</p><Link href="/insights" className="mt-4 inline-flex min-h-10 items-center rounded-xl border border-border-outer px-3 text-xs font-semibold text-accent transition hover:border-accent/35">Lihat laporan →</Link></section>
 

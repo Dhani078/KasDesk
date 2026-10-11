@@ -1,7 +1,7 @@
 # Release checklist
 
 - Rotate every credential previously shared outside the secret manager.
-- Run `npm ci`, `npm run typecheck`, `npm run lint`, `npm run scan:slop` (100/100 Healthy codebase via aislop), `npm run test:unit` (290 unit checks across 18 suites), `npm run test:coach`, `npm run test:transactions`, `npm run test:browser` (70 browser checks via Chrome CDP), `npm run test:db` (23 database suites including balance-sync), and `npm run release:check`.
+- Run `npm ci`, `npm run typecheck`, `npm run lint`, `npm run scan:slop` (100/100 Healthy codebase via aislop), `npm run test:unit` (311 unit checks across 19 suites), `npm run test:coach`, `npm run test:transactions`, `npm run test:browser` (70 browser checks via Chrome CDP), `npm run test:db` (23 database suites including balance-sync), and `npm run release:check`.
 - Run production build: `npm run build`.
 - Verify interactive architecture & workflow HTML artifacts (`docs/kasdesk-architecture.html` & `docs/kasdesk-quicklog-workflow.html`).
 - Back up TiDB and test migrations 0000–0007 on empty and legacy staging databases.
