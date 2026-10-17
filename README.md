@@ -175,7 +175,7 @@ npm run test:full
 # Audit AI Slop & Code Health 100/100 (deterministic AST engine)
 npm run scan:slop
 
-# Menjalankan seluruh 271 Unit Tests (offline & deterministik)
+# Menjalankan seluruh 353 Unit Tests (21 suites, offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:
@@ -192,6 +192,10 @@ npm run test:balance-sync       # Rekonsiliasi Saldo Screenshot Bank Atomik
 npm run test:nlp                # NLP Conversational Transaction Parser & Guardrails
 npm run test:dual-mode-ai       # Dual-Mode AI Copilots (Budget, Vault, Debt WA)
 npm run test:statement          # Multi-Bank Statement CSV/Text Importer Engine
+npm run test:streaks            # Pelacakan Streak Konsistensi Catat Finansial
+npm run test:due-bills          # Pengingat Tagihan Rutin Jatuh Tempo & 1-Tap Widget
+npm run test:comparison         # Analisis Variansi Pengeluaran Month-over-Month
+npm run test:tx-filters         # Agregasi Filter Transaksi & Strip Net Cashflow
 
 # Audit Browser Headless Chrome CDP nyata (320px / 390px / 1280px, 0 horizontal overflow)
 npm run test:browser
@@ -246,7 +250,7 @@ KasDesk/
 │   └── db/               # Skema Drizzle ORM (TiDB MySQL 8)
 ├── drizzle/              # Migrasi SQL (0000_init s/d 0007_push_subscriptions)
 ├── public/               # Aset statis PWA (Icons, Manifest, Service Worker)
-└── scripts/              # 17 Unit Test Suites (271 Checks) & Database Integration Runners
+└── scripts/              # 21 Unit Test Suites (353 Checks) & Database Integration Runners
 ```
 
 ---
