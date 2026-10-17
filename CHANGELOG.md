@@ -1,5 +1,16 @@
 # Changelog
 
+## PWA Scan Shortcut Bridge, Scanner Tactile Haptics & OCR Test Lifecycle — 2026-10-17
+
+- Connected PWA App Shortcut `/?action=scan` in `components/AppShell.tsx` to automatically initialize `QuickLogSheet` and trigger the receipt source selection dialog (`kasdesk:open-scan`).
+- Reinforced `components/scanner/SharedReceiptBridge.tsx` to ensure `QuickLogSheet` mounts before forwarding shared images from Web Share Target API.
+- Implemented responsive tactile haptic vibration patterns in `components/ScanReceiptButton.tsx`:
+  - `hapticTap()` on button activations, camera picker, and gallery selectors.
+  - `hapticSuccess()` upon successful AI OCR receipt parsing.
+  - `hapticWarning()` on network dropouts, rate-limiting, or file format rejections.
+- Integrated automated server lifecycle manager (`ensureServer` and `killServer`) into `scripts/test-ocr.js` with defensive `try/finally` cleanup for isolated test users and image temporary files.
+- Verified 6/6 OCR checks passing, 353 unit checks passing across 21 suites, 0 TypeScript errors, and 100/100 Healthy AST score on `aislop`.
+
 ## Vault Tactile Haptic Vibration Integration — 2026-10-17
 
 - Integrated `lib/haptics.ts` tactile vibration patterns across Vaults UI (`components/VaultsClient.tsx` & `components/vaults/VaultSheets.tsx`):
