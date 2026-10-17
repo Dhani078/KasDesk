@@ -25,9 +25,9 @@
  *
  * Run: node scripts/test-db-all.js
  */
-const { execFileSync, spawn } = require('child_process')
+const { execFileSync } = require('child_process')
 const path = require('path')
-const http = require('http')
+const { ensureServer, killServer } = require('./ensure-server')
 
 const SCRIPTS = [
   'test-db-schema-integrity.js',
@@ -54,42 +54,6 @@ const SCRIPTS = [
   'test-google-flag.js',
   'test-balance-sync.js',
 ]
-
-function isServerHealthy(port = 3333) {
-  return new Promise((resolve) => {
-    const req = http.get(`http://localhost:${port}/api/health`, (res) => {
-      resolve(res.statusCode === 200)
-    })
-    req.on('error', () => resolve(false))
-    req.setTimeout(800, () => {
-      req.destroy()
-      resolve(false)
-    })
-  })
-}
-
-async function ensureServer() {
-  const healthy = await isServerHealthy()
-  if (healthy) return null
-
-  process.stdout.write('• Port 3333 not listening. Spawning Next.js test server... ')
-  const nextBin = path.join(__dirname, '..', 'node_modules', 'next', 'dist', 'bin', 'next')
-  const child = spawn(process.execPath, [nextBin, 'start', '-p', '3333'], {
-    cwd: path.join(__dirname, '..'),
-    stdio: 'ignore',
-    detached: false,
-  })
-
-  for (let i = 0; i < 40; i++) {
-    await new Promise((r) => setTimeout(r, 500))
-    if (await isServerHealthy()) {
-      console.log('✅ READY\n')
-      return child
-    }
-  }
-  console.log('⚠️ Server spawn timeout, proceeding anyway...\n')
-  return child
-}
 
 async function main() {
   console.log('==============================================')
@@ -128,15 +92,7 @@ async function main() {
       }
     }
   } finally {
-    if (serverProc) {
-      try {
-        if (process.platform === 'win32') {
-          execFileSync('taskkill', ['/pid', String(serverProc.pid), '/T', '/F'], { stdio: 'ignore' })
-        } else {
-          serverProc.kill('SIGTERM')
-        }
-      } catch {}
-    }
+    killServer(serverProc)
   }
 
   // Always run cleanup at the end
