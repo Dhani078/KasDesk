@@ -8,13 +8,14 @@
  * Also verifies auth gating and input validation, which must happen BEFORE
  * any key check so an unauthenticated caller can't probe the feature.
  *
- * Run: node scripts/test-ocr.js  (server must be up on BASE_URL)
+ * Run: node scripts/test-ocr.js
  */
 const { execFileSync } = require('child_process')
 const fs = require('fs'), os = require('os'), path = require('path')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -64,59 +65,76 @@ fs.writeFileSync(imgPath, PNG)
 const EMAIL = `ocr-${Date.now()}@example.com`
 const PW = 'ocr12345'
 
-;(async () => {
-  const db = await mysql.createPool({
-    host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
-    user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
-    database: env.DATABASE_NAME,
-    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
-    waitForConnections: true, connectionLimit: 5,
-  })
-
-  const uid = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
-    [uid, 'OCR Tester', EMAIL, await bcrypt.hash(PW, 12)]
-  )
-
-  console.log('=== unauthenticated is rejected before anything else ===')
+async function main() {
+  let serverProc = null
+  let db = null
+  let uid = null
   const anonJar = path.join(os.tmpdir(), `ocr-anon-${Date.now()}.txt`)
-  const anonOut = execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL', '-b', anonJar, '-c', anonJar,
-    '-X', 'POST', '-F', `image=@${imgPath};type=image/png`, '--max-time', '60',
-    `${BASE}/api/scan-receipt`], { encoding: 'utf8' })
-  const anonStatus = parseInt((anonOut.split(/\r?\n/).find((l) => l.startsWith('HTTP/')) || '').split(' ')[1] || '0', 10)
-  check('anonymous -> 401 or redirect', anonStatus === 401 || anonStatus === 307 || anonStatus === 302,
-    `${anonStatus}`)
 
-  console.log('\n=== authenticated, no API key -> fail closed ===')
-  check('login', login(EMAIL, PW))
-  const st = statusOnly(['-X', 'POST', '-F', `image=@${imgPath};type=image/png`,
-    `${BASE}/api/scan-receipt`])
+  try {
+    serverProc = await ensureServer()
 
-  if (HAS_KEY) {
-    check('key present -> does NOT return 503', st !== 503, `${st}`)
-  } else {
-    check('no key -> 503 OCR_NOT_CONFIGURED', st === 503, `${st}`)
+    db = await mysql.createPool({
+      host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
+      user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
+      database: env.DATABASE_NAME,
+      ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+      waitForConnections: true, connectionLimit: 5,
+    })
+
+    uid = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
+      [uid, 'OCR Tester', EMAIL, await bcrypt.hash(PW, 12)]
+    )
+
+    console.log('=== unauthenticated is rejected before anything else ===')
+    const anonOut = execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL', '-b', anonJar, '-c', anonJar,
+      '-X', 'POST', '-F', `image=@${imgPath};type=image/png`, '--max-time', '60',
+      `${BASE}/api/scan-receipt`], { encoding: 'utf8' })
+    const anonStatus = parseInt((anonOut.split(/\r?\n/).find((l) => l.startsWith('HTTP/')) || '').split(' ')[1] || '0', 10)
+    check('anonymous -> 401 or redirect', anonStatus === 401 || anonStatus === 307 || anonStatus === 302,
+      `${anonStatus}`)
+
+    console.log('\n=== authenticated, no API key -> fail closed ===')
+    check('login', login(EMAIL, PW))
+    const st = statusOnly(['-X', 'POST', '-F', `image=@${imgPath};type=image/png`,
+      `${BASE}/api/scan-receipt`])
+
+    if (HAS_KEY) {
+      check('key present -> does NOT return 503', st !== 503, `${st}`)
+    } else {
+      check('no key -> 503 OCR_NOT_CONFIGURED', st === 503, `${st}`)
+    }
+
+    console.log('\n=== input validation (before any upstream call) ===')
+    const noImage = statusOnly(['-X', 'POST', '-F', 'notimage=1', `${BASE}/api/scan-receipt`])
+    check('missing image rejected', noImage === 400 || noImage === 503, `${noImage}`)
+
+    const badType = statusOnly(['-X', 'POST', '-F', `image=@${__filename};type=application/json`,
+      `${BASE}/api/scan-receipt`])
+    check('unsupported type rejected', badType === 415 || badType === 503, `${badType}`)
+
+    console.log('\n=== scanner UI ===')
+    const scanBtnSrc = fs.readFileSync(path.join(__dirname, '..', 'components', 'ScanReceiptButton.tsx'), 'utf8')
+    const qlSheetSrc = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8')
+    check('scan button component exists and wired in QuickLogSheet', scanBtnSrc.includes('Pindai struk') && qlSheetSrc.includes('ScanReceiptButton'))
+  } finally {
+    try {
+      if (db && uid) {
+        await db.execute('DELETE FROM users WHERE id=?', [uid])
+        await db.end()
+      }
+    } catch {}
+    try { fs.unlinkSync(imgPath) } catch {}
+    try { fs.unlinkSync(jar) } catch {}
+    try { fs.unlinkSync(anonJar) } catch {}
+    killServer(serverProc)
   }
-
-  console.log('\n=== input validation (before any upstream call) ===')
-  const noImage = statusOnly(['-X', 'POST', '-F', 'notimage=1', `${BASE}/api/scan-receipt`])
-  check('missing image rejected', noImage === 400 || noImage === 503, `${noImage}`)
-
-  const badType = statusOnly(['-X', 'POST', '-F', `image=@${__filename};type=application/json`,
-    `${BASE}/api/scan-receipt`])
-  check('unsupported type rejected', badType === 415 || badType === 503, `${badType}`)
-
-  console.log('\n=== scanner UI ===')
-  const scanBtnSrc = fs.readFileSync(path.join(__dirname, '..', 'components', 'ScanReceiptButton.tsx'), 'utf8')
-  const qlSheetSrc = fs.readFileSync(path.join(__dirname, '..', 'components', 'QuickLogSheet.tsx'), 'utf8')
-  check('scan button component exists and wired in QuickLogSheet', scanBtnSrc.includes('Pindai struk') && qlSheetSrc.includes('ScanReceiptButton'))
-
-  await db.execute('DELETE FROM users WHERE id=?', [uid])
-  await db.end()
-  fs.unlinkSync(imgPath)
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   if (!HAS_KEY) console.log('\nNOTE: GEMINI_API_KEY not set — upstream path not exercised.')
   process.exit(fail ? 1 : 0)
-})().catch((e) => { console.error(e); process.exit(1) })
+}
+
+main().catch((e) => { console.error(e); process.exit(1) })
