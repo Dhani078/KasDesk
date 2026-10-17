@@ -50,6 +50,7 @@ const SCRIPTS = [
   'test-account-lifecycle.js',
   'test-concurrency.js',
   'test-export.js',
+  'test-ocr.js',
   'test-logout.js',
   'test-google-flag.js',
   'test-balance-sync.js',
