@@ -60,6 +60,18 @@ export function NewVaultSheet({ onClose }: { onClose: () => void }) {
             placeholder="Contoh: 5.000.000"
             className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
           />
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {[1_000_000, 3_000_000, 5_000_000, 10_000_000].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setTargetAmount(formatWithDots(String(preset)))}
+                className="rounded-lg border border-border-outer bg-surface px-2.5 py-1 text-xs font-mono text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95 cursor-pointer"
+              >
+                {formatIDR(preset).replace('Rp\u00a0', 'Rp ')}
+              </button>
+            ))}
+          </div>
         </Field>
         <Field label="Target tercapai pada (opsional)" htmlFor="v-date">
           <input
@@ -140,6 +152,53 @@ export function MoveSheet({
             onChange={(e) => setAmount(formatWithDots(e.target.value))}
             className="w-full rounded-xl border border-border bg-canvas px-4 py-3 font-mono tabular-nums text-text-primary outline-none focus:border-accent"
           />
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {dir === 'in' ? (
+              <>
+                {[50_000, 100_000, 500_000].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setAmount(formatWithDots(String(preset)))}
+                    className="rounded-lg border border-border-outer bg-surface px-2.5 py-1 text-xs font-mono text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95 cursor-pointer"
+                  >
+                    +{formatIDR(preset).replace('Rp\u00a0', '')}
+                  </button>
+                ))}
+                {remaining > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(formatWithDots(String(remaining)))}
+                    className="rounded-lg border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent transition hover:bg-accent/20 active:scale-95 cursor-pointer"
+                  >
+                    Pas Target ({formatIDR(remaining)})
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {[50_000, 100_000, 500_000].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setAmount(formatWithDots(String(preset)))}
+                    className="rounded-lg border border-border-outer bg-surface px-2.5 py-1 text-xs font-mono text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95 cursor-pointer"
+                  >
+                    {formatIDR(preset).replace('Rp\u00a0', '')}
+                  </button>
+                ))}
+                {Number(vault.currentAmount) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(formatWithDots(String(vault.currentAmount)))}
+                    className="rounded-lg border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent transition hover:bg-accent/20 active:scale-95 cursor-pointer"
+                  >
+                    Semua ({formatIDR(Number(vault.currentAmount))})
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </Field>
         {dir === 'in' && remaining > 0 && (
           <p className="text-xs text-text-secondary">

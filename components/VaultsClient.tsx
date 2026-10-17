@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { Target, Plus, Loader2, ArrowDownToLine, ArrowUpFromLine, Trash2, Coins } from 'lucide-react'
+import { Target, Plus, Loader2, ArrowDownToLine, ArrowUpFromLine, Trash2, Coins, Sparkles } from 'lucide-react'
 
 import { deleteVault } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
@@ -102,18 +102,27 @@ export function VaultsClient({
             const cur = Number(v.currentAmount)
             const tgt = Number(v.targetAmount)
             const pct = tgt > 0 ? Math.min(100, Math.round((cur / tgt) * 100)) : 0
+            const isRoundUpTarget = roundUpConfig?.enabled && roundUpConfig?.targetVaultId === v.id
             return (
               <li key={v.id} className="rounded-2xl border border-border-outer bg-surface p-4">
                 <div className="mb-2 flex items-baseline justify-between gap-2">
-                  <p className="min-w-0 truncate text-sm font-medium text-text-primary">
-                    {v.name}
+                  <div className="min-w-0 flex flex-wrap items-center gap-1.5">
+                    <p className="truncate text-sm font-medium text-text-primary">
+                      {v.name}
+                    </p>
                     {v.isCompleted === 1 && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs uppercase tracking-wider text-accent-income">
-                        <svg className="h-3 w-3 animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.09 6.26L20.18 9l-5 4.36L16.55 20 12 16.27 7.45 20l1.37-6.64-5-4.36 6.09-.74z"/></svg>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-accent-income/30 bg-accent-income/10 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-accent-income">
+                        <Sparkles className="h-3 w-3 text-accent-income" />
                         Tercapai 🎉
                       </span>
                     )}
-                  </p>
+                    {isRoundUpTarget && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+                        <Coins className="h-3 w-3 text-amber-400" />
+                        Celengan Aktif
+                      </span>
+                    )}
+                  </div>
                   <span className="shrink-0 font-mono text-xs tabular-nums text-text-secondary">
                     {pct}%
                   </span>
