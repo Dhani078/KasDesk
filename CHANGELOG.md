@@ -1,5 +1,14 @@
 # Changelog
 
+## Vault Tactile Haptic Vibration Integration — 2026-10-17
+
+- Integrated `lib/haptics.ts` tactile vibration patterns across Vaults UI (`components/VaultsClient.tsx` & `components/vaults/VaultSheets.tsx`):
+  - Subtle `hapticTap()` on quick preset chips (`+50rb`, `+100rb`, `+500rb`, `Pas Target`, `Semua`), `+ Target`, `Setor`, and `Tarik` buttons.
+  - Celebratory `hapticSuccess()` upon successful vault creation, deposits, and withdrawals.
+  - Alert `hapticWarning()` when target mutations return errors or deletion is blocked by remaining balance.
+  - Distinctive `hapticDelete()` confirmation on target deletion.
+- Verified 353 unit checks (21 suites), 0 TypeScript errors, 0 ESLint warnings, and 100/100 Healthy AST score on `aislop`.
+
 ## Automated Server Lifecycle Across All E2E Integration Test Suites — 2026-10-17
 
 - Wired `ensureServer()` and `killServer()` from `scripts/ensure-server.js` into remaining standalone integration test suites:
