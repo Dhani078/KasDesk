@@ -1,5 +1,12 @@
 # Changelog
 
+## Unified Integration Test Runner 25-Suite Expansion (Micro-Savings & Round-Up) — 2026-10-17
+
+- Added `scripts/test-micro-savings.js` into the centralized unified database integration runner (`scripts/test-db-all.js`), expanding automated test coverage to 25 suites.
+- Added direct shortcut npm script `"test:micro-savings": "npx tsx scripts/test-micro-savings.js"` in `package.json`.
+- Validated end-to-end execution: all 25 database integration suites passing cleanly (25/25), verifying spare-change round-up math, Pay Yourself First rules, schema constraints, and atomic multi-table ledger transactions against TiDB Cloud.
+- Verified 353 unit checks across 21 suites, 0 TypeScript errors, 0 ESLint warnings, 70 headless Chrome browser audit tests, and 100/100 Healthy AST score on `aislop`.
+
 ## Unified Integration Test Runner 24-Suite Expansion — 2026-10-17
 
 - Added `scripts/test-ocr.js` into the centralized unified test runner (`scripts/test-db-all.js`), expanding automated database integration coverage to 24 suites.
