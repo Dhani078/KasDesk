@@ -1,5 +1,13 @@
 # Changelog
 
+## Unified Integration Test Runner 29-Suite Expansion (OCR Limits & Gemini Key Transport) — 2026-10-17
+
+- Wired `ensureServer()` and `killServer()` from `scripts/ensure-server.js` into standalone OCR limits suite (`scripts/test-ocr-limits.js`), ensuring autonomous verification of Content-Length guard placement, 11MB payload rejection (413/503) in <8s, and non-image MIME type refusal (415/503).
+- Added both `scripts/test-ocr-limits.js` (7/7 checks) and `scripts/test-key-transport.js` (7/7 checks validating API key header transport and absence of query param key exposure) into the unified database integration runner (`scripts/test-db-all.js`), expanding coverage to 29 suites.
+- Validated end-to-end execution: all 29 database integration suites passing cleanly (29/29) against TiDB Cloud with automated Next.js test server lifecycle and zero leftover fixtures.
+- Verified 353 unit checks across 21 suites, 0 TypeScript errors, 0 ESLint warnings, 70 headless Chrome browser audit tests, and 100/100 Healthy AST score on `aislop`.
+
+
 ## Unified Integration Test Runner 27-Suite Expansion (Security Headers & Anti-Clickjacking) — 2026-10-17
 
 - Wired `ensureServer()` and `killServer()` into standalone security headers runner (`scripts/test-security-headers.js`), enabling autonomous zero-manual-intervention verification of `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and CSP assertions.
