@@ -15,6 +15,7 @@ const fs = require('fs'), os = require('os'), path = require('path')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -56,6 +57,8 @@ const EMAIL = `del-${Date.now()}@example.com`
 const PW = 'delete12345'
 
 ;(async () => {
+  let serverProc = null
+  serverProc = await ensureServer()
   const db = await mysql.createPool({
     host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
     user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
@@ -64,90 +67,94 @@ const PW = 'delete12345'
     waitForConnections: true, connectionLimit: 5,
   })
 
-  const uid = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
-    [uid, 'Delete Tester', EMAIL, await bcrypt.hash(PW, 12)]
-  )
-  const wid = crypto.randomUUID()
-  const START = 500000
-  await db.execute('INSERT INTO wallets (id,userId,name,type,balance) VALUES (?,?,?,?,?)',
-    [wid, uid, 'Dompet Hapus', 'bank', START])
+  try {
+    const uid = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
+      [uid, 'Delete Tester', EMAIL, await bcrypt.hash(PW, 12)]
+    )
+    const wid = crypto.randomUUID()
+    const START = 500000
+    await db.execute('INSERT INTO wallets (id,userId,name,type,balance) VALUES (?,?,?,?,?)',
+      [wid, uid, 'Dompet Hapus', 'bank', START])
 
-  // An expense of 75000 that has already been applied to the balance.
-  const tid = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO transactions (id,userId,walletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,NOW())',
-    [tid, uid, wid, 'expense', 75000, 'Salah ketik nominal']
-  )
-  await db.execute('UPDATE wallets SET balance = balance - 75000 WHERE id=?', [wid])
-  // And an income of 100000 already applied.
-  const tid2 = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO transactions (id,userId,walletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,NOW())',
-    [tid2, uid, wid, 'income', 100000, 'Gaji harian']
-  )
-  await db.execute('UPDATE wallets SET balance = balance + 100000 WHERE id=?', [wid])
+    // An expense of 75000 that has already been applied to the balance.
+    const tid = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO transactions (id,userId,walletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,NOW())',
+      [tid, uid, wid, 'expense', 75000, 'Salah ketik nominal']
+    )
+    await db.execute('UPDATE wallets SET balance = balance - 75000 WHERE id=?', [wid])
+    // And an income of 100000 already applied.
+    const tid2 = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO transactions (id,userId,walletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,NOW())',
+      [tid2, uid, wid, 'income', 100000, 'Gaji harian']
+    )
+    await db.execute('UPDATE wallets SET balance = balance + 100000 WHERE id=?', [wid])
 
-  const bal = async () => Number((await db.execute(
-    'SELECT balance FROM wallets WHERE id=?', [wid]))[0][0].balance)
+    const bal = async () => Number((await db.execute(
+      'SELECT balance FROM wallets WHERE id=?', [wid]))[0][0].balance)
 
-  console.log('=== wallet detail page ===')
-  check('login', login(EMAIL, PW))
-  check('wallet detail 200', status(`${BASE}/wallets/${wid}`) === 200)
-  const page = curl([`${BASE}/wallets/${wid}`])
-  check('shows transaction title', page.includes('Salah ketik nominal'))
-  check('shows delete button', page.includes('Hapus Salah ketik nominal'))
+    console.log('=== wallet detail page ===')
+    check('login', login(EMAIL, PW))
+    check('wallet detail 200', status(`${BASE}/wallets/${wid}`) === 200)
+    const page = curl([`${BASE}/wallets/${wid}`])
+    check('shows transaction title', page.includes('Salah ketik nominal'))
+    check('shows delete button', page.includes('Hapus Salah ketik nominal'))
 
-  console.log('\n=== reversal arithmetic ===')
-  const before = await bal()
-  check('balance reflects both txns', before === START - 75000 + 100000, `${before}`)
+    console.log('\n=== reversal arithmetic ===')
+    const before = await bal()
+    check('balance reflects both txns', before === START - 75000 + 100000, `${before}`)
 
-  // Replicate exactly what deleteTransaction does for the expense.
-  await db.query('START TRANSACTION')
-  const [r1] = await db.execute(
-    'DELETE FROM transactions WHERE id=? AND userId=?', [tid, uid])
-  check('expense row deleted', r1.affectedRows === 1)
-  await db.execute(
-    'UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [75000, wid, uid])
-  await db.query('COMMIT')
-  const mid = await bal()
-  check('expense reversal restored balance', mid === before + 75000, `${before} -> ${mid}`)
+    // Replicate exactly what deleteTransaction does for the expense.
+    await db.query('START TRANSACTION')
+    const [r1] = await db.execute(
+      'DELETE FROM transactions WHERE id=? AND userId=?', [tid, uid])
+    check('expense row deleted', r1.affectedRows === 1)
+    await db.execute(
+      'UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [75000, wid, uid])
+    await db.query('COMMIT')
+    const mid = await bal()
+    check('expense reversal restored balance', mid === before + 75000, `${before} -> ${mid}`)
 
-  // Now the income: deleting income must SUBTRACT.
-  await db.query('START TRANSACTION')
-  const [r2] = await db.execute(
-    'DELETE FROM transactions WHERE id=? AND userId=?', [tid2, uid])
-  check('income row deleted', r2.affectedRows === 1)
-  await db.execute(
-    'UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [100000, wid, uid])
-  await db.query('COMMIT')
-  const after = await bal()
-  check('income reversal subtracted', after === mid - 100000, `${mid} -> ${after}`)
-  check('balance back to starting value', after === START, `${after} vs ${START}`)
+    // Now the income: deleting income must SUBTRACT.
+    await db.query('START TRANSACTION')
+    const [r2] = await db.execute(
+      'DELETE FROM transactions WHERE id=? AND userId=?', [tid2, uid])
+    check('income row deleted', r2.affectedRows === 1)
+    await db.execute(
+      'UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [100000, wid, uid])
+    await db.query('COMMIT')
+    const after = await bal()
+    check('income reversal subtracted', after === mid - 100000, `${mid} -> ${after}`)
+    check('balance back to starting value', after === START, `${after} vs ${START}`)
 
-  console.log('\n=== ownership scoping (no RLS) ===')
-  const uidB = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
-    [uidB, 'Delete B', `delb-${Date.now()}@example.com`, await bcrypt.hash(PW, 12)]
-  )
-  const tidB = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO transactions (id,userId,walletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,NOW())',
-    [tidB, uidB, wid, 'expense', 1000, 'Milik B']
-  )
-  const [rb] = await db.execute(
-    'DELETE FROM transactions WHERE id=? AND userId=?', [tidB, uid])
-  check("A cannot delete B's transaction", rb.affectedRows === 0)
-  const [rb2] = await db.execute(
-    'DELETE FROM transactions WHERE id=? AND userId=?', [tidB, uidB])
-  check("B can delete own transaction", rb2.affectedRows === 1)
+    console.log('\n=== ownership scoping (no RLS) ===')
+    const uidB = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
+      [uidB, 'Delete B', `delb-${Date.now()}@example.com`, await bcrypt.hash(PW, 12)]
+    )
+    const tidB = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO transactions (id,userId,walletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,NOW())',
+      [tidB, uidB, wid, 'expense', 1000, 'Milik B']
+    )
+    const [rb] = await db.execute(
+      'DELETE FROM transactions WHERE id=? AND userId=?', [tidB, uid])
+    check("A cannot delete B's transaction", rb.affectedRows === 0)
+    const [rb2] = await db.execute(
+      'DELETE FROM transactions WHERE id=? AND userId=?', [tidB, uidB])
+    check("B can delete own transaction", rb2.affectedRows === 1)
 
-  await db.execute('DELETE FROM transactions WHERE userId IN (?,?)', [uid, uidB])
-  await db.execute('DELETE FROM wallets WHERE id=?', [wid])
-  await db.execute('DELETE FROM users WHERE id IN (?,?)', [uid, uidB])
-  await db.end()
+    await db.execute('DELETE FROM transactions WHERE userId IN (?,?)', [uid, uidB])
+    await db.execute('DELETE FROM wallets WHERE id=?', [wid])
+    await db.execute('DELETE FROM users WHERE id IN (?,?)', [uid, uidB])
+    await db.end()
+  } finally {
+    killServer(serverProc)
+  }
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   process.exit(fail ? 1 : 0)

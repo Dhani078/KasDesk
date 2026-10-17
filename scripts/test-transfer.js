@@ -18,6 +18,7 @@ const fs = require('fs'), os = require('os'), path = require('path')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -59,6 +60,9 @@ const EMAIL = `tr-${Date.now()}@example.com`
 const PW = 'trans12345'
 
 ;(async () => {
+  let serverProc = null
+  serverProc = await ensureServer()
+
   const db = await mysql.createPool({
     host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
     user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
@@ -67,76 +71,80 @@ const PW = 'trans12345'
     waitForConnections: true, connectionLimit: 5,
   })
 
-  const uid = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
-    [uid, 'Transfer Tester', EMAIL, await bcrypt.hash(PW, 12)]
-  )
-  const wA = crypto.randomUUID(), wB = crypto.randomUUID()
-  const A0 = 400000, B0 = 100000
-  await db.execute('INSERT INTO wallets (id,userId,name,type,balance) VALUES (?,?,?,?,?)',
-    [wA, uid, 'Dompet A', 'bank', A0])
-  await db.execute('INSERT INTO wallets (id,userId,name,type,balance) VALUES (?,?,?,?,?)',
-    [wB, uid, 'Dompet B', 'cash', B0])
+  try {
+    const uid = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
+      [uid, 'Transfer Tester', EMAIL, await bcrypt.hash(PW, 12)]
+    )
+    const wA = crypto.randomUUID(), wB = crypto.randomUUID()
+    const A0 = 400000, B0 = 100000
+    await db.execute('INSERT INTO wallets (id,userId,name,type,balance) VALUES (?,?,?,?,?)',
+      [wA, uid, 'Dompet A', 'bank', A0])
+    await db.execute('INSERT INTO wallets (id,userId,name,type,balance) VALUES (?,?,?,?,?)',
+      [wB, uid, 'Dompet B', 'cash', B0])
 
-  const bal = async (id) => Number((await db.execute(
-    'SELECT balance FROM wallets WHERE id=?', [id]))[0][0].balance)
+    const bal = async (id) => Number((await db.execute(
+      'SELECT balance FROM wallets WHERE id=?', [id]))[0][0].balance)
 
-  console.log('=== pages render ===')
-  check('login', login(EMAIL, PW))
-  check('wallet A detail 200', status(`${BASE}/wallets/${wA}`) === 200)
-  check('wallet B detail 200', status(`${BASE}/wallets/${wB}`) === 200)
+    console.log('=== pages render ===')
+    check('login', login(EMAIL, PW))
+    check('wallet A detail 200', status(`${BASE}/wallets/${wA}`) === 200)
+    check('wallet B detail 200', status(`${BASE}/wallets/${wB}`) === 200)
 
-  console.log('\n=== transfer moves money, total conserved ===')
-  const AMT = 150000
-  await db.query('START TRANSACTION')
-  await db.execute('UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [AMT, wA, uid])
-  await db.execute('UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [AMT, wB, uid])
-  await db.execute(
-    'INSERT INTO transactions (id,userId,walletId,toWalletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,?,NOW())',
-    [crypto.randomUUID(), uid, wA, wB, 'transfer', AMT, 'Transfer uji'])
-  await db.query('COMMIT')
+    console.log('\n=== transfer moves money, total conserved ===')
+    const AMT = 150000
+    await db.query('START TRANSACTION')
+    await db.execute('UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [AMT, wA, uid])
+    await db.execute('UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [AMT, wB, uid])
+    await db.execute(
+      'INSERT INTO transactions (id,userId,walletId,toWalletId,type,amount,title,occurredAt) VALUES (?,?,?,?,?,?,?,NOW())',
+      [crypto.randomUUID(), uid, wA, wB, 'transfer', AMT, 'Transfer uji'])
+    await db.query('COMMIT')
 
-  const a1 = await bal(wA), b1 = await bal(wB)
-  check('source decreased', a1 === A0 - AMT, `${A0} -> ${a1}`)
-  check('destination increased', b1 === B0 + AMT, `${B0} -> ${b1}`)
-  check('total conserved', a1 + b1 === A0 + B0, `${a1}+${b1} vs ${A0}+${B0}`)
+    const a1 = await bal(wA), b1 = await bal(wB)
+    check('source decreased', a1 === A0 - AMT, `${A0} -> ${a1}`)
+    check('destination increased', b1 === B0 + AMT, `${B0} -> ${b1}`)
+    check('total conserved', a1 + b1 === A0 + B0, `${a1}+${b1} vs ${A0}+${B0}`)
 
-  console.log('\n=== same-wallet transfer is rejected ===')
-  // The guard lives in createTransaction; verify the invariant it protects:
-  // a self-transfer must not change the balance.
-  const before = await bal(wA)
-  await db.query('START TRANSACTION')
-  await db.execute('UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [5000, wA, uid])
-  await db.execute('UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [5000, wA, uid])
-  await db.query('COMMIT')
-  const after = await bal(wA)
-  check('self-transfer nets to zero (so must be rejected, not recorded)',
-    before === after, `${before} -> ${after}`)
+    console.log('\n=== same-wallet transfer is rejected ===')
+    // The guard lives in createTransaction; verify the invariant it protects:
+    // a self-transfer must not change the balance.
+    const before = await bal(wA)
+    await db.query('START TRANSACTION')
+    await db.execute('UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [5000, wA, uid])
+    await db.execute('UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [5000, wA, uid])
+    await db.query('COMMIT')
+    const after = await bal(wA)
+    check('self-transfer nets to zero (so must be rejected, not recorded)',
+      before === after, `${before} -> ${after}`)
 
-  console.log('\n=== detail page reflects current balance ===')
-  const page = curl([`${BASE}/wallets/${wA}`])
-  const shown = (page.match(/Rp\s*([\d.]+)/) || [])[1]
-  const expected = String(a1).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-  check('detail page shows live balance',
-    shown === expected || page.includes(expected),
-    `page=${shown} expected=${expected}`)
+    console.log('\n=== detail page reflects current balance ===')
+    const page = curl([`${BASE}/wallets/${wA}`])
+    const shown = (page.match(/Rp\s*([\d.]+)/) || [])[1]
+    const expected = String(a1).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    check('detail page shows live balance',
+      shown === expected || page.includes(expected),
+      `page=${shown} expected=${expected}`)
 
-  console.log('\n=== delete a transfer reverses both legs ===')
-  const tid = (await db.execute(
-    "SELECT id FROM transactions WHERE title='Transfer uji' AND userId=?", [uid]))[0][0].id
-  await db.query('START TRANSACTION')
-  await db.execute('UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [AMT, wA, uid])
-  await db.execute('UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [AMT, wB, uid])
-  await db.execute('DELETE FROM transactions WHERE id=? AND userId=?', [tid, uid])
-  await db.query('COMMIT')
-  check('source restored', (await bal(wA)) === A0)
-  check('destination restored', (await bal(wB)) === B0)
+    console.log('\n=== delete a transfer reverses both legs ===')
+    const tid = (await db.execute(
+      "SELECT id FROM transactions WHERE title='Transfer uji' AND userId=?", [uid]))[0][0].id
+    await db.query('START TRANSACTION')
+    await db.execute('UPDATE wallets SET balance = balance + ? WHERE id=? AND userId=?', [AMT, wA, uid])
+    await db.execute('UPDATE wallets SET balance = balance - ? WHERE id=? AND userId=?', [AMT, wB, uid])
+    await db.execute('DELETE FROM transactions WHERE id=? AND userId=?', [tid, uid])
+    await db.query('COMMIT')
+    check('source restored', (await bal(wA)) === A0)
+    check('destination restored', (await bal(wB)) === B0)
 
-  await db.execute('DELETE FROM transactions WHERE userId=?', [uid])
-  await db.execute('DELETE FROM wallets WHERE id IN (?,?)', [wA, wB])
-  await db.execute('DELETE FROM users WHERE id=?', [uid])
-  await db.end()
+    await db.execute('DELETE FROM transactions WHERE userId=?', [uid])
+    await db.execute('DELETE FROM wallets WHERE id IN (?,?)', [wA, wB])
+    await db.execute('DELETE FROM users WHERE id=?', [uid])
+    await db.end()
+  } finally {
+    killServer(serverProc)
+  }
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   process.exit(fail ? 1 : 0)
