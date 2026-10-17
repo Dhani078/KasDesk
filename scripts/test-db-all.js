@@ -32,6 +32,7 @@ const { ensureServer, killServer } = require('./ensure-server')
 const SCRIPTS = [
   'test-db-schema-integrity.js',
   'test-balance.js',
+  'test-balance-e2e.js',
   'test-transfer.js',
   'test-delete.js',
   'test-debts.js',

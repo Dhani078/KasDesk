@@ -6,13 +6,14 @@
  * Server Action is still broken. This drives the actual Next.js action over
  * HTTP so a regression in lib/actions.ts fails the suite.
  *
- * Run:  node scripts/test-balance-e2e.js   (server must be up on BASE_URL)
+ * Run:  node scripts/test-balance-e2e.js
  */
 const { execFileSync } = require('child_process')
 const fs = require('fs'), os = require('os'), path = require('path')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -49,18 +50,23 @@ function login() {
   return /authjs\.session-token=/.test(out)
 }
 
-
-;(async () => {
-  const db = await mysql.createPool({
-    host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
-    user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
-    database: env.DATABASE_NAME,
-    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
-  })
-  const userId = crypto.randomUUID()
-  const wA = crypto.randomUUID(), wB = crypto.randomUUID()
+async function main() {
+  let serverProc = null
+  let db = null
+  let userId = null
 
   try {
+    serverProc = await ensureServer()
+
+    db = await mysql.createPool({
+      host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
+      user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
+      database: env.DATABASE_NAME,
+      ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+    })
+    userId = crypto.randomUUID()
+    const wA = crypto.randomUUID(), wB = crypto.randomUUID()
+
     await db.execute('INSERT INTO users (id,email,name,passwordHash) VALUES (?,?,?,?)',
       [userId, EMAIL, 'Balance E2E', await bcrypt.hash(PW, 12)])
     await db.execute('INSERT INTO wallets (id,userId,name,type,balance) VALUES (?,?,?,?,?)',
@@ -71,10 +77,6 @@ function login() {
     const bal = async (id) => {
       const [r] = await db.execute('SELECT balance FROM wallets WHERE id=?', [id])
       return Number(r[0].balance)
-    }
-    const count = async () => {
-      const [r] = await db.execute('SELECT COUNT(*) c FROM transactions WHERE userId=?', [userId])
-      return Number(r[0].c)
     }
 
     console.log('\n=== 0. LOGIN ===')
@@ -103,8 +105,6 @@ function login() {
     const [orphan] = await db.execute(
       'SELECT COUNT(*) c FROM transactions WHERE userId<>?', [userId])
     console.log(`  (informational) transactions from other users: ${orphan[0].c}`)
-    const [_mine] = await db.execute(
-      'SELECT COUNT(*) c FROM transactions WHERE userId=?', [userId])
     check('user has own transactions only', Number(orphan[0].c) >= 0)
 
     console.log(`\n${'='.repeat(48)}`)
@@ -113,12 +113,19 @@ function login() {
   } catch (e) {
     console.error('ERROR:', e.message); fail++
   } finally {
-    for (const t of ['wallets','transactions','categories','debts','vaults','sessions','accounts'])
-      await db.execute(`DELETE FROM ${t} WHERE userId=?`, [userId]).catch(() => {})
-    await db.execute('DELETE FROM users WHERE id=?', [userId])
-    await db.end()
+    if (db && userId) {
+      for (const t of ['wallets','transactions','categories','debts','vaults','sessions','accounts'])
+        await db.execute(`DELETE FROM ${t} WHERE userId=?`, [userId]).catch(() => {})
+      await db.execute('DELETE FROM users WHERE id=?', [userId]).catch(() => {})
+      await db.end().catch(() => {})
+    }
     fs.rmSync(jar, { force: true })
-    console.log('cleanup done')
+    killServer(serverProc)
   }
   process.exit(fail === 0 ? 0 : 1)
-})()
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})
