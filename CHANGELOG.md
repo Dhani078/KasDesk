@@ -1,5 +1,17 @@
 # Changelog
 
+## Automated Server Lifecycle Across All E2E Integration Test Suites — 2026-10-17
+
+- Wired `ensureServer()` and `killServer()` from `scripts/ensure-server.js` into remaining standalone integration test suites:
+  - `scripts/test-transfer.js` (10/10 checks)
+  - `scripts/test-delete.js` (12/12 checks)
+  - `scripts/test-debts.js` (15/15 checks)
+  - `scripts/test-wallet-archive.js` (10/10 checks)
+  - `scripts/test-export.js` (23/23 checks)
+  - `scripts/test-insights.js` (5/5 checks)
+- Hardened variable scoping in `try/finally` cleanup blocks (`test-wallet-archive.js` & `test-insights.js`) to guarantee flawless database teardown even when early assertions encounter failures.
+- All standalone and combined test suites now run completely self-sufficiently without requiring separate manual dev server startup.
+
 ## Vault Quick Amount Presets & Celengan Indicator Badge — 2026-10-17
 
 - Enhanced `components/VaultsClient.tsx` with dynamic `🪙 Celengan Aktif` indicator badge displaying directly on the target card designated in micro-savings config.
