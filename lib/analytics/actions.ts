@@ -177,7 +177,7 @@ export async function getTopCategorySummary(limit = 7) {
     })
     .from(transactions)
     .where(and(eq(transactions.userId, userId), eq(transactions.type, 'expense'), gte(transactions.occurredAt, monthWindow.start), lt(transactions.occurredAt, monthWindow.end)))
-    .groupBy(sql`coalesce(${transactions.categoryTag}, 'LAINNYA')`)
+    .groupBy(transactions.categoryTag)
     .orderBy(desc(sql`sum(${transactions.amount})`))
     .limit(limit)
 
@@ -222,7 +222,7 @@ export async function getMonthComparison(): Promise<MonthComparisonResult> {
           lt(transactions.occurredAt, currentWindow.end)
         )
       )
-      .groupBy(sql`coalesce(${transactions.categoryTag}, 'LAINNYA')`),
+      .groupBy(transactions.categoryTag),
 
     db
       .select({
@@ -238,7 +238,7 @@ export async function getMonthComparison(): Promise<MonthComparisonResult> {
           lt(transactions.occurredAt, prevWindow.end)
         )
       )
-      .groupBy(sql`coalesce(${transactions.categoryTag}, 'LAINNYA')`),
+      .groupBy(transactions.categoryTag),
   ])
 
   const curr = currentRows.map((r) => ({ category: r.category, amount: Number(r.amount ?? 0) }))
