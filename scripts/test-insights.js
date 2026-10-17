@@ -16,6 +16,7 @@ const os = require('os')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -78,18 +79,8 @@ const EMAIL = `ins-${Date.now()}@example.com`
 const PW = 'ins12345'
 
 async function main() {
-  // Preflight: fail fast and clearly if the server is down.
-  try {
-    const probe = execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}',
-      '--max-time', '15', `${BASE}/api/auth/csrf`], { encoding: 'utf8', env })
-    if (!String(probe).trim().startsWith('2')) {
-      console.error(`ERROR: server not responding at ${BASE} (got ${String(probe).trim()})`)
-      process.exit(1)
-    }
-  } catch {
-    console.error(`ERROR: cannot reach ${BASE} — is the server running?`)
-    process.exit(1)
-  }
+  let serverProc = null
+  serverProc = await ensureServer()
 
   const db = await mysql.createPool({
     host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
@@ -99,7 +90,9 @@ async function main() {
     waitForConnections: true, connectionLimit: 5,
   })
 
-  const uid = crypto.randomUUID()
+  let uid = null
+  try {
+    uid = crypto.randomUUID()
   await db.execute(
     'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
     [uid, 'Insights Tester', EMAIL, await bcrypt.hash(PW, 12)]
@@ -174,11 +167,16 @@ async function main() {
   check('Kategori Terbesar section rendered', html.includes('Kategori Terbesar'))
   check('top category listed', html.includes('MAKAN') || html.includes('BELANJA'), '')
 
-  await db.execute('DELETE FROM transactions WHERE userId=?', [uid])
-  await db.execute('DELETE FROM wallets WHERE userId=?', [uid])
-  await db.execute('DELETE FROM users WHERE id=?', [uid])
-  await db.end()
-  fs.rmSync(jar, { force: true })
+  } finally {
+    if (uid) {
+      await db.execute('DELETE FROM transactions WHERE userId=?', [uid]).catch(() => {})
+      await db.execute('DELETE FROM wallets WHERE userId=?', [uid]).catch(() => {})
+      await db.execute('DELETE FROM users WHERE id=?', [uid]).catch(() => {})
+    }
+    await db.end().catch(() => {})
+    fs.rmSync(jar, { force: true })
+    killServer(serverProc)
+  }
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   process.exit(fail ? 1 : 0)
