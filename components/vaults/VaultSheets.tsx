@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { createVault, depositToVault, withdrawFromVault } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 import type { VaultLite, WalletLite } from '@/components/VaultsClient'
 
 export function formatWithDots(raw: string) {
@@ -30,9 +31,11 @@ export function NewVaultSheet({ onClose }: { onClose: () => void }) {
     })
     setPending(false)
     if (!r.success) {
+      hapticWarning()
       setError(r.error.message)
       return
     }
+    hapticSuccess()
     onClose()
   }
 
@@ -65,7 +68,10 @@ export function NewVaultSheet({ onClose }: { onClose: () => void }) {
               <button
                 key={preset}
                 type="button"
-                onClick={() => setTargetAmount(formatWithDots(String(preset)))}
+                onClick={() => {
+                  hapticTap()
+                  setTargetAmount(formatWithDots(String(preset)))
+                }}
                 className="rounded-lg border border-border-outer bg-surface px-2.5 py-1 text-xs font-mono text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95 cursor-pointer"
               >
                 {formatIDR(preset).replace('Rp\u00a0', 'Rp ')}
@@ -118,9 +124,11 @@ export function MoveSheet({
       : await withdrawFromVault(vault.id, walletId, amt)
     setPending(false)
     if (!r.success) {
+      hapticWarning()
       setError(r.error.message)
       return
     }
+    hapticSuccess()
     onClose()
   }
 
@@ -159,7 +167,10 @@ export function MoveSheet({
                   <button
                     key={preset}
                     type="button"
-                    onClick={() => setAmount(formatWithDots(String(preset)))}
+                    onClick={() => {
+                      hapticTap()
+                      setAmount(formatWithDots(String(preset)))
+                    }}
                     className="rounded-lg border border-border-outer bg-surface px-2.5 py-1 text-xs font-mono text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95 cursor-pointer"
                   >
                     +{formatIDR(preset).replace('Rp\u00a0', '')}
@@ -168,7 +179,10 @@ export function MoveSheet({
                 {remaining > 0 && (
                   <button
                     type="button"
-                    onClick={() => setAmount(formatWithDots(String(remaining)))}
+                    onClick={() => {
+                      hapticTap()
+                      setAmount(formatWithDots(String(remaining)))
+                    }}
                     className="rounded-lg border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent transition hover:bg-accent/20 active:scale-95 cursor-pointer"
                   >
                     Pas Target ({formatIDR(remaining)})
@@ -181,7 +195,10 @@ export function MoveSheet({
                   <button
                     key={preset}
                     type="button"
-                    onClick={() => setAmount(formatWithDots(String(preset)))}
+                    onClick={() => {
+                      hapticTap()
+                      setAmount(formatWithDots(String(preset)))
+                    }}
                     className="rounded-lg border border-border-outer bg-surface px-2.5 py-1 text-xs font-mono text-text-secondary transition hover:border-accent/40 hover:text-text-primary active:scale-95 cursor-pointer"
                   >
                     {formatIDR(preset).replace('Rp\u00a0', '')}
@@ -190,7 +207,10 @@ export function MoveSheet({
                 {Number(vault.currentAmount) > 0 && (
                   <button
                     type="button"
-                    onClick={() => setAmount(formatWithDots(String(vault.currentAmount)))}
+                    onClick={() => {
+                      hapticTap()
+                      setAmount(formatWithDots(String(vault.currentAmount)))
+                    }}
                     className="rounded-lg border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent transition hover:bg-accent/20 active:scale-95 cursor-pointer"
                   >
                     Semua ({formatIDR(Number(vault.currentAmount))})

@@ -12,6 +12,7 @@ import { AiVaultPlannerModal } from '@/components/vaults/AiVaultPlannerModal'
 import { RoundUpSettingsModal } from '@/components/vaults/RoundUpSettingsModal'
 import { getLocalRoundUpConfig, type RoundUpConfig } from '@/lib/micro-savings'
 import { NewVaultSheet, MoveSheet } from '@/components/vaults/VaultSheets'
+import { hapticTap, hapticWarning, hapticDelete } from '@/lib/haptics'
 
 export type VaultLite = {
   id: string
@@ -71,7 +72,10 @@ export function VaultsClient({
           <AiVaultPlannerModal monthlyIncome={monthlyIncome} monthlyExpense={monthlyExpense} />
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              hapticTap()
+              setOpen(true)
+            }}
             className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" /> Target
@@ -154,17 +158,23 @@ export function VaultsClient({
                 <div className="mt-3 flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setMove({ vault: v, dir: 'in' })}
+                    onClick={() => {
+                      hapticTap()
+                      setMove({ vault: v, dir: 'in' })
+                    }}
                     disabled={wallets.length === 0}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-text-primary ring-1 ring-border-outer transition hover:bg-white/[0.04] disabled:opacity-40"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-text-primary ring-1 ring-border-outer transition hover:bg-white/[0.04] disabled:opacity-40 cursor-pointer"
                   >
                     <ArrowDownToLine className="h-3.5 w-3.5" /> Setor
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMove({ vault: v, dir: 'out' })}
+                    onClick={() => {
+                      hapticTap()
+                      setMove({ vault: v, dir: 'out' })
+                    }}
                     disabled={cur <= 0 || wallets.length === 0}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-text-secondary ring-1 ring-border-outer transition hover:bg-white/[0.04] disabled:opacity-40"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-text-secondary ring-1 ring-border-outer transition hover:bg-white/[0.04] disabled:opacity-40 cursor-pointer"
                   >
                     <ArrowUpFromLine className="h-3.5 w-3.5" /> Tarik
                   </button>
@@ -194,14 +204,18 @@ function DeleteVaultButton({ vault }: { vault: VaultLite }) {
 
   function onDelete() {
     if (Number(vault.currentAmount) > 0) {
+      hapticWarning()
       alert('Tarik semua saldo target ke dompet terlebih dahulu sebelum menghapus target ini.')
       return
     }
+    hapticTap()
     if (!window.confirm(`Hapus target tabungan "${vault.name}"?`)) return
 
+    hapticDelete()
     start(async () => {
       const res = await deleteVault(vault.id)
       if (!res.success) {
+        hapticWarning()
         alert(res.error.message)
       }
     })
