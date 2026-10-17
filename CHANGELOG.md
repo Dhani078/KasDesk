@@ -1,5 +1,12 @@
 # Changelog
 
+## Unified Integration Test Runner 24-Suite Expansion — 2026-10-17
+
+- Added `scripts/test-ocr.js` into the centralized unified test runner (`scripts/test-db-all.js`), expanding automated database integration coverage to 24 suites.
+- Validated end-to-end execution: all 24 database integration suites passing cleanly (24/24), with automated Next.js server lifecycle on port 3333 and isolated fixture teardown.
+- Verified 70 headless Chrome CDP audit checks passing across mobile, compact (320px), and desktop viewports, with 0 horizontal overflow.
+- Maintained 100/100 Healthy codebase benchmark on AST quality gate `aislop` (178 files scanned, 0 errors, 0 warnings).
+
 ## PWA Scan Shortcut Bridge, Scanner Tactile Haptics & OCR Test Lifecycle — 2026-10-17
 
 - Connected PWA App Shortcut `/?action=scan` in `components/AppShell.tsx` to automatically initialize `QuickLogSheet` and trigger the receipt source selection dialog (`kasdesk:open-scan`).
