@@ -1,5 +1,13 @@
 # Changelog
 
+## Vault Quick Amount Presets & Celengan Indicator Badge — 2026-10-17
+
+- Enhanced `components/VaultsClient.tsx` with dynamic `🪙 Celengan Aktif` indicator badge displaying directly on the target card designated in micro-savings config.
+- Refined goal completion badge with celebratory `Sparkles` icon replacing raw SVG spinner.
+- Added quick preset amount chips (`+50rb`, `+100rb`, `+500rb`, `Pas Target` / `Semua`) in `MoveSheet` and `NewVaultSheet` (`components/vaults/VaultSheets.tsx`).
+- Connected standalone `scripts/test-vaults.js` to `ensure-server.js` lifecycle manager, ensuring zero manual steps when running `npm run test:vaults`.
+- Verified 13/13 vault tests passing, 353 unit checks passing, 70 browser CDP audit checks passing, 100/100 Healthy AST score on `aislop`.
+
 ## Automated Test Server Lifecycle & MySQL Query Hardening — 2026-10-17
 
 - Created `scripts/ensure-server.js` centralized test server lifecycle manager that checks port 3333 (`/api/health`), automatically starts Next.js in background if offline, and terminates the spawned child process on test completion via `killServer`.
