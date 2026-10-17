@@ -1,5 +1,12 @@
 # Changelog
 
+## Unified Integration Test Runner 27-Suite Expansion (Security Headers & Anti-Clickjacking) — 2026-10-17
+
+- Wired `ensureServer()` and `killServer()` into standalone security headers runner (`scripts/test-security-headers.js`), enabling autonomous zero-manual-intervention verification of `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, and CSP assertions.
+- Added `scripts/test-security-headers.js` into the centralized unified database integration runner (`scripts/test-db-all.js`), expanding automated test coverage to 27 suites.
+- Validated end-to-end execution: all 27 database integration suites passing cleanly (27/27) against TiDB Cloud with zero manual server intervention.
+- Verified 353 unit checks across 21 suites, 0 TypeScript errors, 0 ESLint warnings, 70 headless Chrome browser audit tests, and 100/100 Healthy AST score on `aislop`.
+
 ## Unified Integration Test Runner 26-Suite Expansion (Balance E2E via Server Actions) — 2026-10-17
 
 - Wired `ensureServer()` and `killServer()` into standalone balance end-to-end runner (`scripts/test-balance-e2e.js`), validating HTTP session cookie authentication, live homepage net balance rendering, wallet details, and ownership scoping.
