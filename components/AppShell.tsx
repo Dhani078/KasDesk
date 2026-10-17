@@ -68,7 +68,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (action === 'quicklog') {
         setTimeout(() => window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog')), 100)
       } else if (action === 'scan') {
-        setTimeout(() => window.dispatchEvent(new CustomEvent('kasdesk:scan-file')), 100)
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog'))
+          setTimeout(() => window.dispatchEvent(new CustomEvent('kasdesk:open-scan')), 150)
+        }, 100)
       }
     } catch {}
 

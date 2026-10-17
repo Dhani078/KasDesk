@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { Camera, Image as ImageIcon, Loader2, X } from 'lucide-react'
 import { downscale } from '@/lib/ocr/image-utils'
 import { ScanProgressModal } from '@/components/scanner/ScanProgressModal'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export type ScanResult = {
   merchant_name: string
@@ -54,6 +55,7 @@ export function ScanReceiptButton({
 
   async function processFile(file: File) {
     if (file.size > MAX_BYTES) {
+      hapticWarning()
       onUnavailable?.('Ukuran gambar lebih dari 10 MB.')
       return
     }
@@ -92,10 +94,12 @@ export function ScanReceiptButton({
 
       if (res.status === 503 || json?.error === 'OCR_NOT_CONFIGURED') {
         setConfigured(false)
+        hapticWarning()
         onUnavailable?.('OCR belum dikonfigurasi.')
         return
       }
       if (!res.ok) {
+        hapticWarning()
         const msg =
           json?.message ||
           (json?.error === 'RATE_LIMITED'
@@ -108,11 +112,13 @@ export function ScanReceiptButton({
         onUnavailable?.(msg)
         return
       }
+      hapticSuccess()
       onResult(json as ScanResult)
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
         return // User voluntarily cancelled
       }
+      hapticWarning()
       onUnavailable?.('Tidak dapat terhubung ke server. Silakan catat manual.')
     } finally {
       clearInterval(stepTimer)
@@ -128,6 +134,7 @@ export function ScanReceiptButton({
     const file = e.target.files?.[0]
     e.target.value = '' // allow re-picking the same file
     if (!file) return
+    hapticTap()
     await processFile(file)
   }
 
@@ -146,6 +153,7 @@ export function ScanReceiptButton({
           const file = item.getAsFile()
           if (file) {
             e.preventDefault()
+            hapticTap()
             processFileRef.current(file)
             break
           }
@@ -153,19 +161,28 @@ export function ScanReceiptButton({
       }
     }
 
-    // Support drag-and-drop file processing from QuickLogSheet
+    // Support drag-and-drop or forwarded scan file processing
     const onScanFile = (e: Event) => {
       const custom = e as CustomEvent<File>
       if (custom.detail instanceof File) {
         processFileRef.current(custom.detail)
+      } else {
+        setMenuOpen(true)
       }
+    }
+
+    // Support PWA shortcut directly opening scan picker modal
+    const onOpenScan = () => {
+      setMenuOpen(true)
     }
 
     window.addEventListener('paste', onPaste)
     window.addEventListener('kasdesk:scan-file', onScanFile)
+    window.addEventListener('kasdesk:open-scan', onOpenScan)
     return () => {
       window.removeEventListener('paste', onPaste)
       window.removeEventListener('kasdesk:scan-file', onScanFile)
+      window.removeEventListener('kasdesk:open-scan', onOpenScan)
     }
   }, [])
 
@@ -203,15 +220,18 @@ export function ScanReceiptButton({
 
       <button
         type="button"
-        onClick={() => setMenuOpen(true)}
+        onClick={() => {
+          hapticTap()
+          setMenuOpen(true)
+        }}
         disabled={busy}
         aria-label="Pindai struk"
         className={
           variant === 'compact'
-            ? 'inline-flex items-center gap-1.5 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent shadow-sm transition hover:bg-accent/20 active:scale-95 disabled:opacity-60'
+            ? 'inline-flex items-center gap-1.5 rounded-full border border-accent/35 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent shadow-sm transition hover:bg-accent/20 active:scale-95 disabled:opacity-60 cursor-pointer'
             : variant === 'pill'
-              ? 'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-text-primary transition hover:bg-white/[0.08] active:scale-95 disabled:opacity-60'
-              : 'flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-text-primary shadow-lg ring-1 ring-border-outer disabled:opacity-60 transition active:scale-95 hover:border-accent/40'
+              ? 'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold text-text-primary transition hover:bg-white/[0.08] active:scale-95 disabled:opacity-60 cursor-pointer'
+              : 'flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-text-primary shadow-lg ring-1 ring-border-outer disabled:opacity-60 transition active:scale-95 hover:border-accent/40 cursor-pointer'
         }
       >
         {busy ? (
@@ -226,7 +246,10 @@ export function ScanReceiptButton({
       {menuOpen && (
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={() => setMenuOpen(false)}
+          onClick={() => {
+            hapticTap()
+            setMenuOpen(false)
+          }}
         >
           <div
             role="dialog"
@@ -239,8 +262,11 @@ export function ScanReceiptButton({
               <h3 className="text-sm font-semibold text-text-primary">Scan Struk Belanja</h3>
               <button
                 type="button"
-                onClick={() => setMenuOpen(false)}
-                className="text-text-secondary hover:text-text-primary p-1 rounded-lg"
+                onClick={() => {
+                  hapticTap()
+                  setMenuOpen(false)
+                }}
+                className="text-text-secondary hover:text-text-primary p-1 rounded-lg cursor-pointer"
                 aria-label="Tutup"
               >
                 <X className="h-4 w-4" />
@@ -251,10 +277,11 @@ export function ScanReceiptButton({
               <button
                 type="button"
                 onClick={() => {
+                  hapticTap()
                   setMenuOpen(false)
                   cameraInputRef.current?.click()
                 }}
-                className="flex w-full items-center gap-3 rounded-2xl border border-border-outer bg-white/[0.03] p-3 text-left transition hover:border-accent/40 hover:bg-white/[0.06] active:scale-95"
+                className="flex w-full items-center gap-3 rounded-2xl border border-border-outer bg-white/[0.03] p-3 text-left transition hover:border-accent/40 hover:bg-white/[0.06] active:scale-95 cursor-pointer"
               >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
                   <Camera className="h-5 w-5" />
@@ -268,10 +295,11 @@ export function ScanReceiptButton({
               <button
                 type="button"
                 onClick={() => {
+                  hapticTap()
                   setMenuOpen(false)
                   galleryInputRef.current?.click()
                 }}
-                className="flex w-full items-center gap-3 rounded-2xl border border-border-outer bg-white/[0.03] p-3 text-left transition hover:border-accent/40 hover:bg-white/[0.06] active:scale-95"
+                className="flex w-full items-center gap-3 rounded-2xl border border-border-outer bg-white/[0.03] p-3 text-left transition hover:border-accent/40 hover:bg-white/[0.06] active:scale-95 cursor-pointer"
               >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent-income/15 text-accent-income">
                   <ImageIcon className="h-5 w-5" />

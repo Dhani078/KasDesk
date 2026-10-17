@@ -69,6 +69,8 @@ export function SharedReceiptBridge() {
     }
 
     const dispatchScanFile = (file: File) => {
+      // First ensure QuickLogSheet is opened so ScanReceiptButton mounts and listens
+      window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog'))
       // Small timeout to allow target components to mount and listen
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('kasdesk:scan-file', { detail: file }))
