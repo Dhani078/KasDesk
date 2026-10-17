@@ -22,6 +22,7 @@ const os = require('os')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -76,17 +77,8 @@ const EMAIL = `warch-${Date.now()}@example.com`
 const PW = 'warch12345'
 
 async function main() {
-  try {
-    const probe = execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}',
-      '--max-time', '15', `${BASE}/api/auth/csrf`], { encoding: 'utf8', env })
-    if (!String(probe).trim().startsWith('2')) {
-      console.error(`ERROR: server not responding at ${BASE}`)
-      process.exit(1)
-    }
-  } catch {
-    console.error(`ERROR: cannot reach ${BASE} — is the server running?`)
-    process.exit(1)
-  }
+  let serverProc = null
+  serverProc = await ensureServer()
 
   const db = await mysql.createPool({
     host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
@@ -96,9 +88,12 @@ async function main() {
     waitForConnections: true, connectionLimit: 5,
   })
 
-  const uid = crypto.randomUUID()
-  const other = crypto.randomUUID()
-  const hash = await bcrypt.hash(PW, 12)
+  let uid = null
+  let other = null
+  try {
+    uid = crypto.randomUUID()
+    other = crypto.randomUUID()
+    const hash = await bcrypt.hash(PW, 12)
   await db.execute(
     'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
     [uid, 'Archive Tester', EMAIL, hash]
@@ -162,10 +157,13 @@ async function main() {
   const [v] = await db.query('SELECT isArchived FROM wallets WHERE id=?', [victim])
   check("other user's wallet untouched", Number(v[0].isArchived) === 0)
 
-  await db.execute('DELETE FROM wallets WHERE userId IN (?,?)', [uid, other])
-  await db.execute('DELETE FROM users WHERE id IN (?,?)', [uid, other])
-  await db.end()
-  fs.rmSync(jar, { force: true })
+  } finally {
+    await db.execute('DELETE FROM wallets WHERE userId IN (?,?)', [uid, other]).catch(() => {})
+    await db.execute('DELETE FROM users WHERE id IN (?,?)', [uid, other]).catch(() => {})
+    await db.end().catch(() => {})
+    fs.rmSync(jar, { force: true })
+    killServer(serverProc)
+  }
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   process.exit(fail ? 1 : 0)

@@ -12,6 +12,7 @@ const fs = require('fs'), os = require('os'), path = require('path')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -53,6 +54,8 @@ const EMAIL = `debt-${Date.now()}@example.com`, PW = 'debts12345'
 const ids = []
 
 ;(async () => {
+  let serverProc = null
+  serverProc = await ensureServer()
   const db = await mysql.createPool({
     host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
     user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
@@ -140,6 +143,7 @@ const ids = []
     }
     await db.end()
     fs.rmSync(jarA, { force: true })
+    killServer(serverProc)
     console.log('cleanup done')
   }
   process.exit(fail === 0 ? 0 : 1)
