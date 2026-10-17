@@ -25,8 +25,9 @@
  *
  * Run: node scripts/test-db-all.js
  */
-const { execFileSync } = require('child_process')
+const { execFileSync, spawn } = require('child_process')
 const path = require('path')
+const http = require('http')
 
 const SCRIPTS = [
   'test-db-schema-integrity.js',
@@ -54,52 +55,110 @@ const SCRIPTS = [
   'test-balance-sync.js',
 ]
 
-console.log('==============================================')
-console.log('  KASDESK UNIFIED DATABASE INTEGRATION RUNNER  ')
-console.log('==============================================\n')
+function isServerHealthy(port = 3333) {
+  return new Promise((resolve) => {
+    const req = http.get(`http://localhost:${port}/api/health`, (res) => {
+      resolve(res.statusCode === 200)
+    })
+    req.on('error', () => resolve(false))
+    req.setTimeout(800, () => {
+      req.destroy()
+      resolve(false)
+    })
+  })
+}
 
-let suitesPassed = 0
-let suitesFailed = 0
-const failedSuites = []
+async function ensureServer() {
+  const healthy = await isServerHealthy()
+  if (healthy) return null
 
-for (const script of SCRIPTS) {
-  const scriptPath = path.join(__dirname, script)
-  process.stdout.write(`• Running ${script.padEnd(35)} `)
-  try {
-    const isTs = script.endsWith('.ts') || script === 'test-balance-sync.js'
-    const tsxCli = path.join(__dirname, '..', 'node_modules', 'tsx', 'dist', 'cli.mjs')
-    const cmd = 'node'
-    const args = isTs ? [tsxCli, '--env-file=.env.local', scriptPath] : [scriptPath]
-    const out = execFileSync(cmd, args, { encoding: 'utf8', stdio: 'pipe' })
-    if (out.includes('FAIL') && !script.includes('concurrency')) {
-      console.log('❌ FAIL')
-      suitesFailed++
-      failedSuites.push(script)
-    } else {
-      console.log('✅ PASS')
-      suitesPassed++
+  process.stdout.write('• Port 3333 not listening. Spawning Next.js test server... ')
+  const nextBin = path.join(__dirname, '..', 'node_modules', 'next', 'dist', 'bin', 'next')
+  const child = spawn(process.execPath, [nextBin, 'start', '-p', '3333'], {
+    cwd: path.join(__dirname, '..'),
+    stdio: 'ignore',
+    detached: false,
+  })
+
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 500))
+    if (await isServerHealthy()) {
+      console.log('✅ READY\n')
+      return child
     }
-  } catch (_err) {
-    console.log('💥 ERROR')
-    suitesFailed++
-    failedSuites.push(script)
+  }
+  console.log('⚠️ Server spawn timeout, proceeding anyway...\n')
+  return child
+}
+
+async function main() {
+  console.log('==============================================')
+  console.log('  KASDESK UNIFIED DATABASE INTEGRATION RUNNER  ')
+  console.log('==============================================\n')
+
+  let serverProc = null
+  let suitesPassed = 0
+  let suitesFailed = 0
+  const failedSuites = []
+
+  try {
+    serverProc = await ensureServer()
+
+    for (const script of SCRIPTS) {
+      const scriptPath = path.join(__dirname, script)
+      process.stdout.write(`• Running ${script.padEnd(35)} `)
+      try {
+        const isTs = script.endsWith('.ts') || script === 'test-balance-sync.js'
+        const tsxCli = path.join(__dirname, '..', 'node_modules', 'tsx', 'dist', 'cli.mjs')
+        const cmd = 'node'
+        const args = isTs ? [tsxCli, '--env-file=.env.local', scriptPath] : [scriptPath]
+        const out = execFileSync(cmd, args, { encoding: 'utf8', stdio: 'pipe' })
+        if (out.includes('FAIL') && !script.includes('concurrency')) {
+          console.log('❌ FAIL')
+          suitesFailed++
+          failedSuites.push(script)
+        } else {
+          console.log('✅ PASS')
+          suitesPassed++
+        }
+      } catch (_err) {
+        console.log('💥 ERROR')
+        suitesFailed++
+        failedSuites.push(script)
+      }
+    }
+  } finally {
+    if (serverProc) {
+      try {
+        if (process.platform === 'win32') {
+          execFileSync('taskkill', ['/pid', String(serverProc.pid), '/T', '/F'], { stdio: 'ignore' })
+        } else {
+          serverProc.kill('SIGTERM')
+        }
+      } catch {}
+    }
+  }
+
+  // Always run cleanup at the end
+  console.log('\n• Running fixture cleanup...')
+  try {
+    execFileSync('node', [path.join(__dirname, 'cleanup-fixtures.js'), '--apply'], { stdio: 'inherit' })
+  } catch {}
+
+  console.log('\n==============================================')
+  console.log(`TOTAL SUITES: ${SCRIPTS.length} | PASSED: ${suitesPassed} | FAILED: ${suitesFailed}`)
+  console.log('==============================================')
+
+  if (suitesFailed > 0) {
+    console.error('\nFailed suites:', failedSuites.join(', '))
+    process.exit(1)
+  } else {
+    console.log('\nAll database integration suites passed cleanly!')
+    process.exit(0)
   }
 }
 
-// Always run cleanup at the end
-console.log('\n• Running fixture cleanup...')
-try {
-  execFileSync('node', [path.join(__dirname, 'cleanup-fixtures.js'), '--apply'], { stdio: 'inherit' })
-} catch {}
-
-console.log('\n==============================================')
-console.log(`TOTAL SUITES: ${SCRIPTS.length} | PASSED: ${suitesPassed} | FAILED: ${suitesFailed}`)
-console.log('==============================================')
-
-if (suitesFailed > 0) {
-  console.error('\nFailed suites:', failedSuites.join(', '))
+main().catch((err) => {
+  console.error('Unified runner fatal error:', err)
   process.exit(1)
-} else {
-  console.log('\nAll database integration suites passed cleanly!')
-  process.exit(0)
-}
+})

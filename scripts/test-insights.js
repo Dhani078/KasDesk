@@ -132,9 +132,8 @@ async function main() {
     ]
   )
 
-  console.log('=== Insights: "7 Hari Terakhir" must be 7 days, not the month ===')
   check('login', await login(EMAIL, PW))
-  const html = curl([`${BASE}/insights`])
+  const html = curl(['-L', `${BASE}/insights`])
 
   // Independent expected values straight from the DB.
   const sevenStart = new Date(now); sevenStart.setHours(0, 0, 0, 0); sevenStart.setDate(sevenStart.getDate() - 6)
