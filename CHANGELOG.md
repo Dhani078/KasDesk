@@ -1,5 +1,12 @@
 # Changelog
 
+## Unified Integration Test Runner 26-Suite Expansion (Balance E2E via Server Actions) — 2026-10-17
+
+- Wired `ensureServer()` and `killServer()` into standalone balance end-to-end runner (`scripts/test-balance-e2e.js`), validating HTTP session cookie authentication, live homepage net balance rendering, wallet details, and ownership scoping.
+- Added `scripts/test-balance-e2e.js` into the centralized unified database integration runner (`scripts/test-db-all.js`), expanding automated test coverage to 26 suites.
+- Validated end-to-end execution: all 26 database integration suites passing cleanly (26/26) against TiDB Cloud with zero manual server intervention.
+- Verified 353 unit checks across 21 suites, 0 TypeScript errors, 0 ESLint warnings, 70 headless Chrome browser audit tests, and 100/100 Healthy AST score on `aislop`.
+
 ## Unified Integration Test Runner 25-Suite Expansion (Micro-Savings & Round-Up) — 2026-10-17
 
 - Added `scripts/test-micro-savings.js` into the centralized unified database integration runner (`scripts/test-db-all.js`), expanding automated test coverage to 25 suites.
