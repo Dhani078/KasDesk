@@ -1,6 +1,7 @@
 const http = require('http');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const { ensureServer, killServer } = require('./ensure-server');
 
 async function getJson(path) {
   return new Promise((resolve, reject) => {
@@ -90,6 +91,7 @@ async function sleep(ms) {
 }
 
 async function runAudit() {
+  const serverProc = await ensureServer();
   const chromeProc = await ensureChrome();
   const version = await getJson('/json/version');
   const browserWs = new CDPClient(version.webSocketDebuggerUrl);
@@ -367,6 +369,7 @@ async function runAudit() {
   client.close();
   browserWs.close();
   if (chromeProc) chromeProc.kill();
+  killServer(serverProc);
 
   const failed = results.filter(r => !r.pass);
   console.log(`\n==============================================`);

@@ -17,6 +17,7 @@ const { execFileSync } = require('child_process')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -58,6 +59,9 @@ async function login(email, pw) {
 
 async function main() {
   console.log('=== Transactions Cursor Pagination & Resilient Query Tests ===')
+  let serverProc = null
+
+  serverProc = await ensureServer()
 
   // 1. Setup isolated user and wallet
   const db = await mysql.createPool({
@@ -142,6 +146,7 @@ async function main() {
       fs.unlinkSync(jar)
     } catch {}
     await db.end()
+    killServer(serverProc)
   }
 
   console.log(`\n==============================================`)

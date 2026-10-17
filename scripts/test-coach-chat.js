@@ -13,6 +13,7 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const { execFileSync } = require('child_process')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -51,8 +52,11 @@ async function login(email, pw) {
 
 async function main() {
   console.log('=== AI Coach Chat API & Gemini 3.8/3.7/3.6 Flash Tests ===')
+  let serverProc = null
+  try {
+    serverProc = await ensureServer()
 
-  // 1. Unauthenticated gate
+    // 1. Unauthenticated gate
   const anonJar = path.join(os.tmpdir(), `anon-${Date.now()}.txt`)
   const unauthCode = execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}', '-c', anonJar, '-b', anonJar,
     '-X', 'POST', '-H', 'Content-Type: application/json',
@@ -123,11 +127,14 @@ async function main() {
   check('transaction draft amount matches 18000', txIntentJson.action?.data?.amount === 18000)
   check('transaction draft category is MAKAN', txIntentJson.action?.data?.categoryTag === 'MAKAN')
 
-  // Cleanup
-  try {
-    fs.unlinkSync(jar)
-    fs.unlinkSync(anonJar)
-  } catch {}
+    // Cleanup
+    try {
+      fs.unlinkSync(jar)
+      fs.unlinkSync(anonJar)
+    } catch {}
+  } finally {
+    killServer(serverProc)
+  }
 
   console.log(`\n==============================================`)
   console.log(`RESULT: ${pass} passed, ${fail} failed`)
