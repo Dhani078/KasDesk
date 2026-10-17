@@ -17,6 +17,7 @@
     "test:debts": "node scripts/test-debts.js",
     "test:ratelimit": "node scripts/test-ratelimit.js",
     "test:vaults": "node scripts/test-vaults.js",
+    "test:micro-savings": "npx tsx scripts/test-micro-savings.js",
     "test:delete": "node scripts/test-delete.js",
     "test:transfer": "node scripts/test-transfer.js",
     "test:ocr": "node scripts/test-ocr.js",
