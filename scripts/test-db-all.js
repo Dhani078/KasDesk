@@ -58,6 +58,9 @@ const SCRIPTS = [
   'test-security-headers.js',
   'test-logout.js',
   'test-google-flag.js',
+  'test-archived-wallet.js',
+  'test-transactions-pagination.js',
+  'test-auth-http.cjs',
   'test-balance-sync.js',
 ]
 
