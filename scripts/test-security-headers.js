@@ -1,16 +1,14 @@
 /**
  * Security headers test.
  *
- * The app had NO security headers at all: no nosniff, no framing protection,
- * no referrer policy. These are cheap wins that close real risks for a finance
- * app — clickjacking via a look-alike site, MIME-sniffed responses, and wallet
- * URLs leaking in the Referer header to third parties.
- *
- * Two halves, because "the header is present" and "the app still works" are
- * different claims and a bad header can satisfy the first while breaking the
- * second:
- *   A. every header is present with the right value
- *   B. normal pages still render (200) and login still succeeds
+ * Verifies:
+ *   A. Every security header is present with the right value:
+ *      - X-Content-Type-Options: nosniff
+ *      - X-Frame-Options: DENY (anti-clickjacking)
+ *      - Referrer-Policy: strict-origin-when-cross-origin
+ *      - Permissions-Policy disables unused APIs
+ *      - CSP declarations
+ *   B. Normal pages still render (200), login still succeeds, and auth redirects function.
  *
  * Run: node scripts/test-security-headers.js
  */
@@ -21,6 +19,7 @@ const os = require('os')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -51,8 +50,6 @@ function headers(url) {
 }
 function status(url, useJar = false) {
   const args = ['-s', '-o', 'NUL', '-w', '%{http_code}', '--max-time', '25']
-  // Authenticated checks MUST send the session cookie, or the app correctly
-  // redirects a signed-out request and the assertion fails for the wrong reason.
   if (useJar) args.push('-b', jar, '-c', jar)
   args.push(url)
   return Number(execFileSync('curl', args, { encoding: 'utf8', env }).trim())
@@ -74,82 +71,81 @@ const EMAIL = `sec-${Date.now()}@example.com`
 const PW = 'sec12345'
 
 async function main() {
+  let serverProc = null
+  let db = null
+  let uid = null
+
   try {
-    const probe = execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}',
-      '--max-time', '15', `${BASE}/api/auth/csrf`], { encoding: 'utf8', env })
-    if (!String(probe).trim().startsWith('2')) {
-      console.error(`ERROR: server not responding at ${BASE}`)
-      process.exit(1)
-    }
-  } catch {
-    console.error(`ERROR: cannot reach ${BASE} — is the server running?`)
-    process.exit(1)
+    serverProc = await ensureServer()
+
+    console.log('=== A. Security headers must be present ===')
+
+    // Checked on a PUBLIC page so the assertion does not depend on auth.
+    const h = headers(`${BASE}/login`)
+    check('X-Content-Type-Options: nosniff',
+      h['x-content-type-options'] === 'nosniff', `got "${h['x-content-type-options']}"`)
+    check('X-Frame-Options: DENY (anti-clickjacking)',
+      h['x-frame-options'] === 'DENY', `got "${h['x-frame-options']}"`)
+    check('Referrer-Policy set',
+      /strict-origin/.test(h['referrer-policy'] || ''), `got "${h['referrer-policy']}"`)
+    check('Permissions-Policy disables unused APIs',
+      /microphone=\(\)/.test(h['permissions-policy'] || ''), `got "${h['permissions-policy']}"`)
+    check('CSP is report-only (not enforcing yet)',
+      Boolean(h['content-security-policy-report-only']))
+    check('CSP declares frame-ancestors none',
+      /frame-ancestors 'none'/.test(h['content-security-policy-report-only'] || ''))
+    check('no enforcing CSP that could break the app',
+      !h['content-security-policy'], 'an enforcing CSP appeared without being validated')
+
+    // Headers must apply to API routes, not just pages.
+    const api = headers(`${BASE}/api/auth/csrf`)
+    check('headers also applied to API routes',
+      api['x-content-type-options'] === 'nosniff', `got "${api['x-content-type-options']}"`)
+
+    // ---- B. The app must still work ----
+    console.log('\n=== B. The app must still function with these headers ===')
+
+    check('/login renders (200)', status(`${BASE}/login`) === 200)
+    check('/register renders (200)', status(`${BASE}/register`) === 200)
+    check('/ redirects when signed out (307)', status(`${BASE}/`) === 307)
+    check('/api/auth/csrf answers (200)', status(`${BASE}/api/auth/csrf`) === 200)
+
+    db = await mysql.createPool({
+      host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
+      user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
+      database: env.DATABASE_NAME,
+      ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+      waitForConnections: true, connectionLimit: 5,
+    })
+    uid = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
+      [uid, 'Sec Tester', EMAIL, await bcrypt.hash(PW, 12)]
+    )
+
+    check('login still succeeds with headers in place', await login(EMAIL, PW))
+    check('authenticated home renders (200)', status(`${BASE}/`, true) === 200,
+      `got ${status(`${BASE}/`, true)}`)
+
+    // And the same URL must still redirect when signed OUT — proving the 200
+    // above came from the session, not from / having become public.
+    const anon = Number(execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}',
+      '--max-time', '25', `${BASE}/`], { encoding: 'utf8', env }).trim())
+    check('signed-out / still redirects (307) — auth is not bypassed', anon === 307,
+      `got ${anon}`)
+    const authed = execFileSync('curl', ['-s', '-b', jar, '-c', jar, '--max-time', '25', `${BASE}/wallets`],
+      { encoding: 'utf8', env })
+    check('authenticated /wallets renders content', authed.length > 500, `len=${authed.length}`)
+  } finally {
+    try {
+      if (db && uid) {
+        await db.execute('DELETE FROM users WHERE id=?', [uid])
+        await db.end()
+      }
+    } catch {}
+    fs.rmSync(jar, { force: true })
+    killServer(serverProc)
   }
-
-  console.log('=== A. Security headers must be present ===')
-
-  // Checked on a PUBLIC page so the assertion does not depend on auth.
-  const h = headers(`${BASE}/login`)
-  check('X-Content-Type-Options: nosniff',
-    h['x-content-type-options'] === 'nosniff', `got "${h['x-content-type-options']}"`)
-  check('X-Frame-Options: DENY (anti-clickjacking)',
-    h['x-frame-options'] === 'DENY', `got "${h['x-frame-options']}"`)
-  check('Referrer-Policy set',
-    /strict-origin/.test(h['referrer-policy'] || ''), `got "${h['referrer-policy']}"`)
-  check('Permissions-Policy disables unused APIs',
-    /microphone=\(\)/.test(h['permissions-policy'] || ''), `got "${h['permissions-policy']}"`)
-  check('CSP is report-only (not enforcing yet)',
-    Boolean(h['content-security-policy-report-only']))
-  check('CSP declares frame-ancestors none',
-    /frame-ancestors 'none'/.test(h['content-security-policy-report-only'] || ''))
-  check('no enforcing CSP that could break the app',
-    !h['content-security-policy'], 'an enforcing CSP appeared without being validated')
-
-  // Headers must apply to API routes, not just pages.
-  const api = headers(`${BASE}/api/auth/csrf`)
-  check('headers also applied to API routes',
-    api['x-content-type-options'] === 'nosniff', `got "${api['x-content-type-options']}"`)
-
-  // ---- B. The app must still work ----
-  console.log('\n=== B. The app must still function with these headers ===')
-
-  check('/login renders (200)', status(`${BASE}/login`) === 200)
-  check('/register renders (200)', status(`${BASE}/register`) === 200)
-  check('/ redirects when signed out (307)', status(`${BASE}/`) === 307)
-  check('/api/auth/csrf answers (200)', status(`${BASE}/api/auth/csrf`) === 200)
-
-  const db = await mysql.createPool({
-    host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
-    user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
-    database: env.DATABASE_NAME,
-    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
-    waitForConnections: true, connectionLimit: 5,
-  })
-  const uid = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
-    [uid, 'Sec Tester', EMAIL, await bcrypt.hash(PW, 12)]
-  )
-
-  check('login still succeeds with headers in place', await login(EMAIL, PW))
-  check('authenticated home renders (200)', status(`${BASE}/`, true) === 200,
-    `got ${status(`${BASE}/`, true)}`)
-
-  // And the same URL must still redirect when signed OUT — proving the 200
-  // above came from the session, not from / having become public.
-  const freshJar = path.join(os.tmpdir(), `anonal-${Date.now()}.txt`)
-  const anon = Number(execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}',
-    '--max-time', '25', `${BASE}/`], { encoding: 'utf8', env }).trim())
-  fs.rmSync(freshJar, { force: true })
-  check('signed-out / still redirects (307) — auth is not bypassed', anon === 307,
-    `got ${anon}`)
-  const authed = execFileSync('curl', ['-s', '-b', jar, '-c', jar, '--max-time', '25', `${BASE}/wallets`],
-    { encoding: 'utf8', env })
-  check('authenticated /wallets renders content', authed.length > 500, `len=${authed.length}`)
-
-  await db.execute('DELETE FROM users WHERE id=?', [uid])
-  await db.end()
-  fs.rmSync(jar, { force: true })
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   process.exit(fail ? 1 : 0)
