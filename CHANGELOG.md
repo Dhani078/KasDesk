@@ -1,5 +1,13 @@
 # Changelog
 
+## Automated Test Server Lifecycle & MySQL Query Hardening — 2026-10-17
+
+- Created `scripts/ensure-server.js` centralized test server lifecycle manager that checks port 3333 (`/api/health`), automatically starts Next.js in background if offline, and terminates the spawned child process on test completion via `killServer`.
+- Wired `ensureServer()` into `scripts/test-db-all.js`, `scripts/test-coach-chat.js`, `scripts/test-transactions-pagination.js`, and `scripts/browser-audit.js`, enabling deterministic zero-manual-intervention execution across all test suites.
+- Fixed strict MySQL/TiDB `ONLY_FULL_GROUP_BY` SQL syntax error in `lib/analytics/actions.ts` by grouping directly on `transactions.categoryTag` without table-qualification mismatch.
+- Recorded 100/100 Healthy codebase audit benchmark on `aislop` (178 files scanned, 0 errors, 0 warnings).
+- All 353 unit checks (21 suites), 23 database integration suites, 70 headless Chrome CDP audit checks, and release checks passing 100%.
+
 ## Real-Time Transaction Filter Aggregation & Net Cashflow Strip — 2026-10-11
 
 - Implemented concurrent database aggregation in `app/(dashboard)/transactions/page.tsx` computing filtered `totalIncome`, `totalExpense`, and total matching `count` via native SQL without pagination truncation.
