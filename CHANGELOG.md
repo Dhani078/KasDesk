@@ -1,5 +1,16 @@
 # Changelog
 
+## Unified Integration Test Runner 32-Suite Expansion (Archived Wallets, Cursor Pagination & HTTP Auth) — 2026-10-17
+
+- Wired `ensureServer()` and `killServer()` from `scripts/ensure-server.js` with defensive `try/finally` teardown into:
+  - `scripts/smoke-ui.js` (19/19 checks validating authenticated demo UI screens, navigation, Safe Daily Spend, and real total balance).
+  - `scripts/test-archived-wallet.js` (6/6 checks verifying ledger invariants and exclusion of archived balances from headline Total Saldo).
+  - `scripts/test-auth-http.cjs` (12/12 checks validating CSRF token generation, session cookies, credential sign-in, and unauthorized 307 redirects).
+- Integrated `scripts/test-archived-wallet.js`, `scripts/test-transactions-pagination.js` (9/9 checks testing base64url cursor navigation and corrupt query resiliency), and `scripts/test-auth-http.cjs` into the centralized runner (`scripts/test-db-all.js`), expanding automated database test coverage to **32 suites**.
+- Validated end-to-end execution: all 32 database integration suites passing cleanly (32/32) against TiDB Cloud with zero manual server intervention and zero leftover test fixtures.
+- Verified 353 unit checks across 21 suites, 0 TypeScript errors, 0 ESLint warnings, 70 headless Chrome browser audit tests, and 100/100 Healthy AST score on `aislop`.
+
+
 ## Unified Integration Test Runner 29-Suite Expansion (OCR Limits & Gemini Key Transport) — 2026-10-17
 
 - Wired `ensureServer()` and `killServer()` from `scripts/ensure-server.js` into standalone OCR limits suite (`scripts/test-ocr-limits.js`), ensuring autonomous verification of Content-Length guard placement, 11MB payload rejection (413/503) in <8s, and non-image MIME type refusal (415/503).
