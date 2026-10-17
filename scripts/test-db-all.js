@@ -53,6 +53,8 @@ const SCRIPTS = [
   'test-concurrency.js',
   'test-export.js',
   'test-ocr.js',
+  'test-ocr-limits.js',
+  'test-key-transport.js',
   'test-security-headers.js',
   'test-logout.js',
   'test-google-flag.js',
