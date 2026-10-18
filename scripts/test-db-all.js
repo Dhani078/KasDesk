@@ -62,6 +62,9 @@ const SCRIPTS = [
   'test-transactions-pagination.js',
   'test-auth-http.cjs',
   'test-balance-sync.js',
+  'test-ocr-real.js',
+  'test-coach-chat.js',
+  'smoke-ui.js',
 ]
 
 async function main() {

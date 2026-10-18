@@ -1,5 +1,17 @@
 # Changelog
 
+## Unified Integration Test Runner 35-Suite & Master Unit 413-Check Expansion — 2026-10-18
+
+- Wired `ensureServer()` and `killServer()` into standalone real OCR suite (`scripts/test-ocr-real.js`), with defensive `try/catch` on curl errors and normalized fixture path handling.
+- Optimized `scripts/ensure-server.js` lifecycle manager: increased health check timeout to 1500ms and max wait iterations to 80 (40s), guaranteeing robust automated test server initialization across high disk-I/O Windows runs.
+- Expanded master offline unit test suite (`npm run test:unit`) from 21 suites (353 checks) to **24 suites (413 checks)** by adding:
+  - `scripts/test-archived-unit.ts` (12/12 checks verifying archived wallet balance omission invariants).
+  - `scripts/test-input-bounds.ts` (33/33 checks verifying Transaction, Wallet, and Debt Zod schema protection against negative, fractional, and hostile inputs).
+  - `scripts/test-offline-queue.ts` (15/15 checks asserting IndexedDB queue persistence, drain ordering, and offline action fallback contracts).
+- Integrated `scripts/test-ocr-real.js` (8/8 checks testing Gemini Flash receipt extraction), `scripts/test-coach-chat.js` (12/12 checks testing AI Coach chat API and model cascade), and `scripts/smoke-ui.js` (19/19 checks validating authenticated demo UI screens) into the centralized runner (`scripts/test-db-all.js`), expanding automated database test coverage to **35 suites**.
+- Validated end-to-end execution: all 35 database integration suites passing cleanly (35/35) against TiDB Cloud with zero manual server intervention and zero leftover test fixtures.
+- Verified 413 unit checks across 24 suites, 0 TypeScript errors, 0 ESLint warnings, 70 headless Chrome browser audit tests, and 100/100 Healthy AST score on `aislop`.
+
 ## Unified Integration Test Runner 32-Suite Expansion (Archived Wallets, Cursor Pagination & HTTP Auth) — 2026-10-17
 
 - Wired `ensureServer()` and `killServer()` from `scripts/ensure-server.js` with defensive `try/finally` teardown into:

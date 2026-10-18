@@ -10,6 +10,7 @@ const os = require('os')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -22,7 +23,7 @@ function loadEnv(f) {
 const env = loadEnv(path.join(__dirname, '..', '.env.local'))
 const BASE = process.env.BASE_URL || 'http://localhost:3333'
 
-const receiptPath = path.join(__dirname, '..', 'scripts/fixtures/test_receipt.png')
+const receiptPath = path.join(__dirname, '..', 'scripts/fixtures/test_receipt.png').replace(/\\/g, '/')
 if (!fs.existsSync(receiptPath)) {
   console.error('scripts/fixtures/test_receipt.png not found at', receiptPath)
   process.exit(1)
@@ -39,13 +40,19 @@ function curl(args) {
   return execFileSync('curl', ['-s', '-b', jar, '-c', jar, '--max-time', '120', ...args], { encoding: 'utf8', env })
 }
 function curlWithStatus(args) {
-  const out = execFileSync('curl', ['-s', '-i', '-b', jar, '-c', jar, '--max-time', '120', ...args], { encoding: 'utf8', env })
-  // -i includes headers in output, body follows after \r\n\r\n
-  const statusLine = out.split(/\r?\n/).find(l => l.startsWith('HTTP/'))
-  const status = statusLine ? parseInt(statusLine.split(' ')[1], 10) : 0
-  const bodyStart = out.indexOf('\r\n\r\n')
-  const body = bodyStart >= 0 ? out.slice(bodyStart + 4) : out
-  return { status, body }
+  try {
+    const out = execFileSync('curl', ['-s', '-i', '-b', jar, '-c', jar, '--max-time', '120', ...args], { encoding: 'utf8', env })
+    const statusLine = out.split(/\r?\n/).find(l => l.startsWith('HTTP/'))
+    const status = statusLine ? parseInt(statusLine.split(' ')[1], 10) : 0
+    const bodyStart = out.indexOf('\r\n\r\n') >= 0 ? out.indexOf('\r\n\r\n') + 4 : (out.indexOf('\n\n') >= 0 ? out.indexOf('\n\n') + 2 : -1)
+    const body = bodyStart >= 0 ? out.slice(bodyStart) : out
+    return { status, body }
+  } catch (err) {
+    const out = (err.stdout || '') + (err.stderr || '')
+    const statusLine = out.split(/\r?\n/).find(l => l.startsWith('HTTP/'))
+    const status = statusLine ? parseInt(statusLine.split(' ')[1], 10) : (err.status || 500)
+    return { status, body: out }
+  }
 }
 
 async function login(email, pw) {
@@ -62,68 +69,80 @@ const EMAIL = `ocrreal-${Date.now()}@example.com`
 const PW = 'ocr12345'
 
 ;(async () => {
-  const db = await mysql.createPool({
-    host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
-    user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
-    database: env.DATABASE_NAME,
-    ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
-    waitForConnections: true, connectionLimit: 5,
-  })
+  let serverProc = null
+  let db = null
+  let uid = null
 
-  const uid = crypto.randomUUID()
-  await db.execute(
-    'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
-    [uid, 'OCR Real Tester', EMAIL, await bcrypt.hash(PW, 12)]
-  )
-
-  console.log('=== Real OCR call with generated receipt ===')
-  check('login', await login(EMAIL, PW))
-
-  // The user is freshly generated with a new UUID, so rate limits are clean.
-  // No need to sleep 61s.
-
-  const resp = curlWithStatus(['-X', 'POST', '-F', `image=@${receiptPath};type=image/png`, `${BASE}/api/scan-receipt`])
-
-  let data = {}
   try {
-    const lines = resp.body.trim().split('\n')
-    data = JSON.parse(lines[lines.length - 1].trim() || '{}')
-  } catch (_e) {
-    data = {}
+    serverProc = await ensureServer()
+
+    db = await mysql.createPool({
+      host: env.DATABASE_HOST, port: Number(env.DATABASE_PORT),
+      user: env.DATABASE_USER, password: env.DATABASE_PASSWORD,
+      database: env.DATABASE_NAME,
+      ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true },
+      waitForConnections: true, connectionLimit: 5,
+    })
+
+    uid = crypto.randomUUID()
+    await db.execute(
+      'INSERT INTO users (id,name,email,passwordHash,emailVerified) VALUES (?,?,?,?,NOW())',
+      [uid, 'OCR Real Tester', EMAIL, await bcrypt.hash(PW, 12)]
+    )
+
+    console.log('=== Real OCR call with generated receipt ===')
+    check('login', await login(EMAIL, PW))
+
+    // The user is freshly generated with a new UUID, so rate limits are clean.
+    // No need to sleep 61s.
+
+    const resp = curlWithStatus(['-X', 'POST', '-F', `image=@${receiptPath};type=image/png`, `${BASE}/api/scan-receipt`])
+
+    let data = {}
+    try {
+      const lines = resp.body.trim().split('\n')
+      data = JSON.parse(lines[lines.length - 1].trim() || '{}')
+    } catch (_e) {
+      data = {}
+    }
+
+    if (data.error === 'RATE_LIMITED' || resp.status === 429) {
+      // 429 here means the GEMINI free-tier quota is exhausted, not an app
+      // bug — the route correctly forwards upstream 429.
+      console.log('\n--- SKIPPED: Gemini quota exhausted (upstream 429) ---')
+      console.log('This is expected on a free-tier key that has been used heavily.')
+      console.log('Re-run later, or use a paid key, to exercise the upstream path.')
+      console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed (SKIPPED: quota)\n${'='.repeat(46)}`)
+      return
+    }
+
+    check('HTTP 200', resp.status === 200, `got ${resp.status}`)
+
+    if (data.error) {
+      console.log('API returned error:', JSON.stringify(data, null, 2))
+      check('no error from API', false, data.error)
+    } else {
+      check('merchant_name present', typeof data.merchant_name === 'string' && data.merchant_name.length > 0, data.merchant_name)
+      check('items is array', Array.isArray(data.items), JSON.stringify(data.items))
+      check('detected_total present', typeof data.detected_total === 'number', data.detected_total)
+      check('confidence_score present', typeof data.confidence_score === 'number', data.confidence_score)
+      check('detected_category present', typeof data.detected_category === 'string', data.detected_category)
+      check('needs_confirmation boolean', typeof data.needs_confirmation === 'boolean', data.needs_confirmation)
+
+      // Print the full result for inspection
+      console.log('\n--- OCR RESULT ---')
+      console.log(JSON.stringify(data, null, 2))
+    }
+  } finally {
+    try {
+      if (db && uid) {
+        await db.execute('DELETE FROM users WHERE id=?', [uid])
+        await db.end()
+      }
+    } catch {}
+    try { fs.unlinkSync(jar) } catch {}
+    killServer(serverProc)
   }
-
-  if (data.error === 'RATE_LIMITED' || resp.status === 429) {
-    // 429 here means the GEMINI free-tier quota is exhausted, not an app
-    // bug — the route correctly forwards upstream 429.
-    console.log('\n--- SKIPPED: Gemini quota exhausted (upstream 429) ---')
-    console.log('This is expected on a free-tier key that has been used heavily.')
-    console.log('Re-run later, or use a paid key, to exercise the upstream path.')
-    await db.execute('DELETE FROM users WHERE id=?', [uid])
-    await db.end()
-    console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed (SKIPPED: quota)\n${'='.repeat(46)}`)
-    process.exit(0)
-  }
-
-  check('HTTP 200', resp.status === 200, `got ${resp.status}`)
-
-  if (data.error) {
-    console.log('API returned error:', JSON.stringify(data, null, 2))
-    check('no error from API', false, data.error)
-  } else {
-    check('merchant_name present', typeof data.merchant_name === 'string' && data.merchant_name.length > 0, data.merchant_name)
-    check('items is array', Array.isArray(data.items), JSON.stringify(data.items))
-    check('detected_total present', typeof data.detected_total === 'number', data.detected_total)
-    check('confidence_score present', typeof data.confidence_score === 'number', data.confidence_score)
-    check('detected_category present', typeof data.detected_category === 'string', data.detected_category)
-    check('needs_confirmation boolean', typeof data.needs_confirmation === 'boolean', data.needs_confirmation)
-
-    // Print the full result for inspection
-    console.log('\n--- OCR RESULT ---')
-    console.log(JSON.stringify(data, null, 2))
-  }
-
-  await db.execute('DELETE FROM users WHERE id=?', [uid])
-  await db.end()
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   process.exit(fail ? 1 : 0)

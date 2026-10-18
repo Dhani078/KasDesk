@@ -15,7 +15,7 @@ function isServerHealthy(port = 3333) {
       resolve(res.statusCode === 200)
     })
     req.on('error', () => resolve(false))
-    req.setTimeout(800, () => {
+    req.setTimeout(1500, () => {
       req.destroy()
       resolve(false)
     })
@@ -34,7 +34,7 @@ async function ensureServer(port = 3333) {
     detached: false,
   })
 
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 80; i++) {
     await new Promise((r) => setTimeout(r, 500))
     if (await isServerHealthy(port)) {
       console.log('✅ READY\n')
