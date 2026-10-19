@@ -71,6 +71,7 @@
     "test:shared-spaces": "npx tsx scripts/test-shared-spaces.js",
     "test:spaces:db": "node scripts/test-shared-spaces-db.js",
     "test:web-push": "npx tsx scripts/test-web-push.js",
+    "test:push:db": "node scripts/test-push-db.js",
     "test:streaks": "npx tsx scripts/test-streaks.js",
     "test:due-bills": "node scripts/test-due-bills.js",
     "test:comparison": "npx tsx scripts/test-comparison.js",
