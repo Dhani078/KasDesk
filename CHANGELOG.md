@@ -1,5 +1,18 @@
 # Changelog
 
+## Unified Integration Test Runner 37-Suite Expansion (Web Push & Trigger Engines) — 2026-10-19
+
+- Built and added `scripts/test-push-db.js` (13/13 checks) into the centralized database test runner (`scripts/test-db-all.js`), expanding automated database test coverage to **37 suites**:
+  - Validates atomic push subscription insertion in `pushSubscriptions` with `endpoint`, `p256dh`, `auth`, and `userAgent` metadata.
+  - Enforces `push_endpoint_uq` unique constraint on push endpoints, preventing duplicate registration across tenants.
+  - Asserts upsert semantics when updating existing subscription credentials.
+  - Verifies multi-tenant isolation: distinct users only receive notifications intended for their registered devices.
+  - Verifies H-3 and H-1 recurring bill trigger query detecting upcoming bills in `recurringRules`.
+  - Verifies evening 20:00 logging prompt trigger: generated when 0 transactions exist today, cleanly suppressed after transactions are logged.
+  - Tests clean device unsubscription and fixture deletion.
+- Added direct shortcut npm script `"test:push:db": "node scripts/test-push-db.js"` in `package.json`.
+- Maintained 0 TypeScript errors (`tsc --noEmit`), 0 ESLint warnings, 413 unit tests across 24 suites, and 100/100 Healthy AST score on `aislop`.
+
 ## Unified Integration Test Runner 36-Suite Expansion & Full-App Haptic Polish — 2026-10-19
 
 - Built and added `scripts/test-shared-spaces-db.js` (16/16 checks) into the centralized database test runner (`scripts/test-db-all.js`), expanding coverage to **36 suites**:
