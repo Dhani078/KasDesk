@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { getLatestSharedReceipt, clearSharedReceipt } from '@/lib/scanner/shared-receipt'
+import { hapticSuccess } from '@/lib/haptics'
 
 /**
  * Client bridge for Web Share Target (EPIC 8.1).
@@ -69,6 +70,7 @@ export function SharedReceiptBridge() {
     }
 
     const dispatchScanFile = (file: File) => {
+      hapticSuccess()
       // First ensure QuickLogSheet is opened so ScanReceiptButton mounts and listens
       window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog'))
       // Small timeout to allow target components to mount and listen
