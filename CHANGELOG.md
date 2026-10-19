@@ -1,5 +1,20 @@
 # Changelog
 
+## Unified Integration Test Runner 38-Suite Expansion (Multi-Currency & Forex DB Invariants) — 2026-10-19
+
+- Built and added `scripts/test-exchange-rates-db.js` (17/17 checks) into the centralized database test runner (`scripts/test-db-all.js`), expanding automated database test coverage to **38 suites** (completing 100% database integration coverage across all 14 schema tables):
+  - Validates atomic insertion and schema adherence in `exchangeRates` table across forex (USD, SGD), commodity (XAU gold), and crypto (BTC) pairs.
+  - Verifies exact decimal precision retention (`decimal(18,6)`) in live TiDB database for exchange rates.
+  - Enforces unique pair constraint `exchange_rates_pair_uq` on `(fromCurrency, toCurrency)` preventing duplicate rate records.
+  - Verifies upsert semantics (`ON DUPLICATE KEY UPDATE`) for live market rate fluctuation updates and automatic `updatedAt` timestamp advancement.
+  - Verifies composite index lookup query using `exchange_rates_lookup_idx` on `(fromCurrency, toCurrency, updatedAt)` for efficient latest-rate resolution.
+  - Verifies multi-currency wallet creation and transaction recording storing both native foreign units (USD, EUR) and IDR-equivalent `baseAmount`.
+  - Verifies aggregate ledger rollups (`SUM(baseAmount)`) calculating cross-currency net worth spending accurately against live TiDB.
+  - Clean fixture teardown with zero residual records.
+- Added direct shortcut npm script `"test:forex:db": "node scripts/test-exchange-rates-db.js"` in `package.json`.
+- Validated end-to-end execution: all 38 database integration suites passing cleanly (38/38) against TiDB Cloud with automated Next.js test server lifecycle and zero leftover test fixtures.
+- Maintained 0 TypeScript errors (`tsc --noEmit`), 0 ESLint warnings (`eslint .`), 413 unit tests across 24 suites, and 100/100 Healthy AST score on `aislop`.
+
 ## Unified Integration Test Runner 37-Suite Expansion (Web Push & Trigger Engines) — 2026-10-19
 
 - Built and added `scripts/test-push-db.js` (13/13 checks) into the centralized database test runner (`scripts/test-db-all.js`), expanding automated database test coverage to **37 suites**:
