@@ -66,6 +66,7 @@ const SCRIPTS = [
   'test-coach-chat.js',
   'test-shared-spaces-db.js',
   'test-push-db.js',
+  'test-exchange-rates-db.js',
   'smoke-ui.js',
 ]
 
