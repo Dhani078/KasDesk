@@ -10,6 +10,7 @@ import {
   saveLocalRoundUpConfig,
   calculateRoundUp,
 } from '@/lib/micro-savings'
+import { hapticTap, hapticSuccess } from '@/lib/haptics'
 
 export type VaultLite = {
   id: string
@@ -34,6 +35,7 @@ export function RoundUpSettingsModal({ vaults }: { vaults: VaultLite[] }) {
   }, [open])
 
   function handleOpen() {
+    hapticTap()
     setConfig(getLocalRoundUpConfig())
     setOpen(true)
   }
@@ -42,6 +44,7 @@ export function RoundUpSettingsModal({ vaults }: { vaults: VaultLite[] }) {
   const sampleCalc = calculateRoundUp(sampleAmount, config.step)
 
   function handleSave() {
+    hapticSuccess()
     const finalConfig: RoundUpConfig = {
       ...config,
       targetVaultId: config.targetVaultId || vaults[0]?.id || null,
@@ -120,7 +123,10 @@ export function RoundUpSettingsModal({ vaults }: { vaults: VaultLite[] }) {
                 <input
                   type="checkbox"
                   checked={config.enabled}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, enabled: e.target.checked }))}
+                  onChange={(e) => {
+                    hapticTap()
+                    setConfig((prev) => ({ ...prev, enabled: e.target.checked }))
+                  }}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
@@ -140,7 +146,10 @@ export function RoundUpSettingsModal({ vaults }: { vaults: VaultLite[] }) {
                 <select
                   id="roundup-vault"
                   value={config.targetVaultId || vaults[0]?.id || ''}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, targetVaultId: e.target.value }))}
+                  onChange={(e) => {
+                    hapticTap()
+                    setConfig((prev) => ({ ...prev, targetVaultId: e.target.value }))
+                  }}
                   className="w-full rounded-xl border border-border bg-canvas px-3.5 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
                 >
                   {vaults.map((v) => (
@@ -164,7 +173,10 @@ export function RoundUpSettingsModal({ vaults }: { vaults: VaultLite[] }) {
                     <button
                       key={s.value}
                       type="button"
-                      onClick={() => setConfig((prev) => ({ ...prev, step: s.value }))}
+                      onClick={() => {
+                        hapticTap()
+                        setConfig((prev) => ({ ...prev, step: s.value }))
+                      }}
                       className={`flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition cursor-pointer ${
                         isSelected
                           ? 'border-amber-500/50 bg-amber-500/15 text-amber-300 shadow-sm'

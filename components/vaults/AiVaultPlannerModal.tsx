@@ -6,6 +6,7 @@ import { evaluateVaultFeasibility, type VaultFeasibilityResult } from '@/lib/vau
 import { createVault } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
 import { useRouter } from 'next/navigation'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export function AiVaultPlannerModal({
   monthlyIncome = 0,
@@ -41,6 +42,7 @@ export function AiVaultPlannerModal({
 
   const handleCreateVault = () => {
     if (!name.trim()) {
+      hapticWarning()
       setErrorMsg('Nama target tabungan wajib diisi')
       return
     }
@@ -57,10 +59,12 @@ export function AiVaultPlannerModal({
       })
 
       if (!res.success) {
+        hapticWarning()
         setErrorMsg(res.error?.message || 'Gagal membuat target tabungan')
         return
       }
 
+      hapticSuccess()
       setSuccessMsg(`Target "${name}" berhasil dibuat dengan simulasi AI!`)
       router.refresh()
       setTimeout(() => {
@@ -76,6 +80,7 @@ export function AiVaultPlannerModal({
       <button
         type="button"
         onClick={() => {
+          hapticTap()
           setErrorMsg('')
           setSuccessMsg('')
           setIsOpen(true)
@@ -147,7 +152,10 @@ export function AiVaultPlannerModal({
                   <label className="block text-text-secondary mb-1">Durasi Target (Bulan):</label>
                   <select
                     value={targetMonths}
-                    onChange={(e) => setTargetMonths(parseInt(e.target.value, 10))}
+                    onChange={(e) => {
+                      hapticTap()
+                      setTargetMonths(parseInt(e.target.value, 10))
+                    }}
                     disabled={isPending}
                     className="w-full rounded-xl border border-border-outer bg-canvas px-3 py-2 text-text-primary text-sm focus:border-accent focus:outline-none"
                   >
