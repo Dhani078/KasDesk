@@ -11,6 +11,8 @@
   - Verifies evening 20:00 logging prompt trigger: generated when 0 transactions exist today, cleanly suppressed after transactions are logged.
   - Tests clean device unsubscription and fixture deletion.
 - Added direct shortcut npm script `"test:push:db": "node scripts/test-push-db.js"` in `package.json`.
+- Validated end-to-end execution: all 37 database integration suites passing cleanly (37/37) against TiDB Cloud with automated Next.js test server lifecycle and zero leftover test fixtures.
+- Wired automated `ensureServer()` and `killServer()` lifecycle into `scripts/test-logout.js`, normalizing child process execution and status assertions.
 - Maintained 0 TypeScript errors (`tsc --noEmit`), 0 ESLint warnings, 413 unit tests across 24 suites, and 100/100 Healthy AST score on `aislop`.
 
 ## Unified Integration Test Runner 36-Suite Expansion & Full-App Haptic Polish — 2026-10-19
