@@ -1,5 +1,30 @@
 # Changelog
 
+## Tactile Haptic Vibration Engine Across Debts, Wallets, QuickLog & Navigation — 2026-10-19
+
+- Fully integrated native-grade tactile haptic feedback (`lib/haptics.ts`) across all core interaction surfaces in KasDesk (EPIC 8.3):
+  - **Debts Surface (`components/DebtsClient.tsx`, `components/debts/*`)**:
+    - `hapticTap()` on tab switches (`utang` / `piutang`) and `+ Catat` opener.
+    - `hapticTap()` on due date presets (`+7 hari`, `+30 hari`) and partial settlement shortcuts (`50%`, `100%`).
+    - `hapticSuccess()` on successful debt registration and full/partial settlements.
+    - `hapticWarning()` on form validation constraints and API settlement errors.
+    - `hapticDelete()` on debt deletion and cancellation.
+    - `hapticSuccess()` / `hapticTap()` in `AiDebtReminderModal.tsx` on copying generated WhatsApp reminders and switching prompt tones (`santun`, `santai`, `tegas`).
+  - **Wallets Surface (`components/WalletsClient.tsx`, `components/wallets/*`)**:
+    - `hapticTap()` on `Transfer` and `+ Dompet` sheet triggers.
+    - `hapticDelete()` on wallet archive/hide actions, `hapticSuccess()` on wallet restoration.
+    - `hapticSuccess()` on new wallet creation in `NewWalletSheet.tsx`.
+    - `hapticTap()` and `hapticSuccess()` in `SyncWalletModal.tsx` on screenshot OCR balance extraction and ledger balance reconciliation.
+  - **QuickLog Surface (`components/quicklog/*`)**:
+    - `hapticSuccess()` on instant offline mutation queueing and online transaction saves.
+    - `hapticWarning()` on invalid amount, identical wallet transfer, or submission failures.
+    - `hapticTap()` on transaction type radio switches (`Keluar` / `Masuk` / `Transfer`), category chip selections, and wallet dropdowns.
+    - `hapticTap()` on `Tukar Posisi` (source/target wallet swap) in `TransferWalletsBox.tsx`.
+  - **Global Navigation (`components/BottomNav.tsx`)**:
+    - `hapticTap()` on bottom navigation tabs (`Home`, `Dompet`, `Riwayat`, `Akun`).
+    - `hapticTap()` on the central elevated quick action `Catat` trigger.
+- Confirmed zero-regression tactile safety: graceful browser fallback when `navigator.vibrate` is unavailable, maintaining 100/100 Healthy AST score and 0 TypeScript errors.
+
 ## Unified Integration Test Runner 35-Suite & Master Unit 413-Check Expansion — 2026-10-18
 
 - Wired `ensureServer()` and `killServer()` into standalone real OCR suite (`scripts/test-ocr-real.js`), with defensive `try/catch` on curl errors and normalized fixture path handling.
