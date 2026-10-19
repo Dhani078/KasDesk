@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { createWallet } from '@/lib/actions'
 import { SUPPORTED_CURRENCIES, CURRENCY_METAS } from '@/lib/currency'
+import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export const TYPE_LABEL: Record<string, string> = {
   cash: 'Tunai',
@@ -51,8 +52,10 @@ export function NewWalletSheet({ onClose }: { onClose: () => void }) {
     setPending(false)
     if (!res.success) {
       setError(res.error.message)
+      hapticWarning()
       return
     }
+    hapticSuccess()
     onClose()
   }
 

@@ -5,6 +5,7 @@ import { Camera, Upload, Check, AlertCircle, RefreshCw, X, ArrowRight } from 'lu
 import { reconcileWalletBalance } from '@/lib/wallets/reconcile'
 import { formatIDR } from '@/lib/format'
 import { useRouter } from 'next/navigation'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 interface WalletOption {
   id: string
@@ -84,8 +85,10 @@ export function SyncWalletModal({ wallets }: { wallets: WalletOption[] }) {
       }
 
       setScanResult(data.data)
+      hapticSuccess()
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal memproses gambar')
+      hapticWarning()
     } finally {
       setIsScanning(false)
     }
@@ -104,10 +107,12 @@ export function SyncWalletModal({ wallets }: { wallets: WalletOption[] }) {
 
       if (!res.success) {
         setErrorMsg(res.error || 'Gagal menyimpan penyesuaian saldo')
+        hapticWarning()
         return
       }
 
       setSuccessMsg(`Saldo ${currentWallet?.name || 'dompet'} berhasil diselaraskan ke ${formatIDR(scanResult.detected_balance)}!`)
+      hapticSuccess()
       router.refresh()
       setTimeout(() => {
         setIsOpen(false)
@@ -121,6 +126,7 @@ export function SyncWalletModal({ wallets }: { wallets: WalletOption[] }) {
       <button
         type="button"
         onClick={() => {
+          hapticTap()
           resetState()
           setIsOpen(true)
         }}

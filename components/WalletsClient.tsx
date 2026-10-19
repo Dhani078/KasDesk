@@ -12,6 +12,7 @@ import { NewWalletSheet, TYPE_LABEL } from '@/components/wallets/NewWalletSheet'
 import { SyncWalletModal } from '@/components/wallets/SyncWalletModal'
 import { NetWorthCard } from '@/components/wallets/NetWorthCard'
 import { formatCurrency, convertToBase, type SupportedCurrency } from '@/lib/currency'
+import { hapticTap, hapticSuccess, hapticWarning, hapticDelete } from '@/lib/haptics'
 
 type WalletLite = {
   id: string
@@ -45,7 +46,10 @@ export function WalletsClient({
           {wallets.length >= 2 && (
             <button
               type="button"
-              onClick={() => window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog', { detail: { type: 'transfer' } }))}
+              onClick={() => {
+                hapticTap()
+                window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog', { detail: { type: 'transfer' } }))
+              }}
               className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs font-medium text-accent ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
             >
               <ArrowRightLeft className="h-3.5 w-3.5" /> Transfer
@@ -53,7 +57,10 @@ export function WalletsClient({
           )}
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              hapticTap()
+              setOpen(true)
+            }}
             className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" /> Dompet
@@ -196,7 +203,12 @@ function ArchiveButton({ id, name, balance }: { id: string; name: string; balanc
     setPending(true)
     const res = await archiveWallet(id, true)
     setPending(false)
-    if (!res.success) { setError(res.error.message); return }
+    if (!res.success) {
+      setError(res.error.message)
+      hapticWarning()
+      return
+    }
+    hapticDelete()
     setConfirming(false)
   }
 
@@ -204,7 +216,10 @@ function ArchiveButton({ id, name, balance }: { id: string; name: string; balanc
     <>
       <button
         type="button"
-        onClick={() => setConfirming(true)}
+        onClick={() => {
+          hapticTap()
+          setConfirming(true)
+        }}
         aria-label={`Arsipkan ${name}`}
         className="mr-3 shrink-0 rounded-lg p-2 text-text-secondary transition-colors hover:bg-white/[0.04] hover:text-text-primary"
       >
@@ -283,7 +298,12 @@ function RestoreButton({ id, name }: { id: string; name: string }) {
     setPending(true)
     const res = await archiveWallet(id, false)
     setPending(false)
-    if (!res.success) setError(res.error.message)
+    if (!res.success) {
+      setError(res.error.message)
+      hapticWarning()
+    } else {
+      hapticSuccess()
+    }
   }
 
   return (
