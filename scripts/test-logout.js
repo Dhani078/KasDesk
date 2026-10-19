@@ -24,6 +24,7 @@ const os = require('os')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const { ensureServer, killServer } = require('./ensure-server')
 
 function loadEnv(f) {
   const o = {}
@@ -44,13 +45,13 @@ const check = (n, c, d = '') => {
 
 const jar = path.join(os.tmpdir(), `lo-${Date.now()}.txt`)
 function curl(args) {
-  return execFileSync('curl', ['-s', '-b', jar, '-c', jar, '--max-time', '40', ...args], { encoding: 'utf8', env })
+  return execFileSync('curl', ['-s', '-b', jar, '-c', jar, '--max-time', '40', ...args], { encoding: 'utf8' })
 }
 function status(url, useJar = false) {
   const a = ['-s', '-o', 'NUL', '-w', '%{http_code}', '--max-time', '40']
   if (useJar) a.push('-b', jar, '-c', jar)
   a.push(url)
-  return Number(execFileSync('curl', a, { encoding: 'utf8', env }).trim())
+  return Number(execFileSync('curl', a, { encoding: 'utf8' }).trim())
 }
 async function login(email, pw) {
   const csrf = JSON.parse(curl([`${BASE}/api/auth/csrf`])).csrfToken
@@ -58,7 +59,7 @@ async function login(email, pw) {
     '-X', 'POST', '-H', 'Content-Type: application/x-www-form-urlencoded',
     '--data-urlencode', `csrfToken=${csrf}`, '--data-urlencode', `email=${email}`,
     '--data-urlencode', `password=${pw}`, '--data-urlencode', `callbackUrl=${BASE}/`,
-    `${BASE}/api/auth/callback/credentials`], { encoding: 'utf8', env })
+    `${BASE}/api/auth/callback/credentials`], { encoding: 'utf8' })
   return /authjs\.session-token=/.test(out)
 }
 
@@ -66,17 +67,9 @@ const EMAIL = `lo-${Date.now()}@example.com`
 const PW = 'lo123456'
 
 async function main() {
+  let serverProc = null
+  serverProc = await ensureServer()
   try {
-    const probe = execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}',
-      '--max-time', '15', `${BASE}/api/auth/csrf`], { encoding: 'utf8', env })
-    if (!String(probe).trim().startsWith('2')) {
-      console.error(`ERROR: server not responding at ${BASE}`)
-      process.exit(1)
-    }
-  } catch {
-    console.error(`ERROR: cannot reach ${BASE} — is the server running?`)
-    process.exit(1)
-  }
 
   console.log('=== A. Sign-out must exist and actually end the session ===')
 
@@ -108,25 +101,28 @@ async function main() {
 
   check('signed out: / redirects', status(`${BASE}/`) === 307)
   check('login succeeds', await login(EMAIL, PW))
-  check('signed in: / renders', status(`${BASE}/`, true) === 200)
-  check('signed in: /wallets renders', status(`${BASE}/wallets`, true) === 200)
+  check('signed in: / renders', status(`${BASE}/`, true) === 200, `got ${status(`${BASE}/`, true)}`)
+  check('signed in: /wallets renders', status(`${BASE}/wallets`, true) === 200, `got ${status(`${BASE}/wallets`, true)}`)
 
-  // Sign out the way the button does: POST to the signout endpoint with CSRF.
-  const csrf = JSON.parse(curl([`${BASE}/api/auth/csrf`])).csrfToken
-  execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL', '-b', jar, '-c', jar,
-    '-X', 'POST', '-H', 'Content-Type: application/x-www-form-urlencoded',
-    '--data-urlencode', `csrfToken=${csrf}`,
-    '--data-urlencode', `callbackUrl=${BASE}/login`,
-    `${BASE}/api/auth/signout`], { encoding: 'utf8', env })
+    // Sign out the way the button does: POST to the signout endpoint with CSRF.
+    const csrf = JSON.parse(curl([`${BASE}/api/auth/csrf`])).csrfToken
+    execFileSync('curl', ['-s', '-D', '-', '-o', 'NUL', '-b', jar, '-c', jar,
+      '-X', 'POST', '-H', 'Content-Type: application/x-www-form-urlencoded',
+      '--data-urlencode', `csrfToken=${csrf}`,
+      '--data-urlencode', `callbackUrl=${BASE}/login`,
+      `${BASE}/api/auth/signout`], { encoding: 'utf8' })
 
-  check('after sign-out: / redirects again', status(`${BASE}/`) === 307,
-    `got ${status(`${BASE}/`)}`)
-  check('after sign-out: /wallets redirects too', status(`${BASE}/wallets`) === 307,
-    `got ${status(`${BASE}/wallets`)}`)
+    check('after sign-out: / redirects again', status(`${BASE}/`) === 307,
+      `got ${status(`${BASE}/`)}`)
+    check('after sign-out: /wallets redirects too', status(`${BASE}/wallets`) === 307,
+      `got ${status(`${BASE}/wallets`)}`)
 
-  await db.execute('DELETE FROM users WHERE id=?', [uid])
-  await db.end()
-  fs.rmSync(jar, { force: true })
+    await db.execute('DELETE FROM users WHERE id=?', [uid])
+    await db.end()
+    fs.rmSync(jar, { force: true })
+  } finally {
+    killServer(serverProc)
+  }
 
   console.log(`\n${'='.repeat(46)}\nRESULT: ${pass} passed, ${fail} failed\n${'='.repeat(46)}`)
   process.exit(fail ? 1 : 0)
