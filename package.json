@@ -69,6 +69,7 @@
     "test:digital-envelopes": "npx tsx scripts/test-digital-envelopes.js",
     "test:multi-currency": "npx tsx scripts/test-multi-currency.js",
     "test:shared-spaces": "npx tsx scripts/test-shared-spaces.js",
+    "test:spaces:db": "node scripts/test-shared-spaces-db.js",
     "test:web-push": "npx tsx scripts/test-web-push.js",
     "test:streaks": "npx tsx scripts/test-streaks.js",
     "test:due-bills": "node scripts/test-due-bills.js",

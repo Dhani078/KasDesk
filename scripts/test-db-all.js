@@ -64,6 +64,7 @@ const SCRIPTS = [
   'test-balance-sync.js',
   'test-ocr-real.js',
   'test-coach-chat.js',
+  'test-shared-spaces-db.js',
   'smoke-ui.js',
 ]
 
