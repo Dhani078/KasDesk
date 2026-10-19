@@ -10,6 +10,7 @@ import {
 import { applyAiBudgetBatchAction } from '@/lib/planning/actions'
 import { formatIDR } from '@/lib/format'
 import { useRouter } from 'next/navigation'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export function AiBudgetModal({
   month,
@@ -37,6 +38,7 @@ export function AiBudgetModal({
   }, [isOpen, isPending])
 
   const handleOpen = () => {
+    hapticTap()
     const recs = generateAiBudgetRecommendations({ monthlyIncome, categorySpendings })
     setItems(recs)
     setErrorMsg('')
@@ -59,10 +61,12 @@ export function AiBudgetModal({
       })
 
       if (!res.success) {
+        hapticWarning()
         setErrorMsg(res.error || 'Gagal menerapkan budget AI')
         return
       }
 
+      hapticSuccess()
       setSuccessMsg(`Berhasil! ${res.count} kategori budget otomatis diterapkan untuk bulan ${month}.`)
       router.refresh()
       setTimeout(() => {

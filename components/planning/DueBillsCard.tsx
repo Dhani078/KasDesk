@@ -5,6 +5,7 @@ import { BellRing, CheckCircle2, ChevronRight, Clock } from 'lucide-react'
 import { executeRecurringAction } from '@/lib/planning/actions'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { formatDateShort } from '@/lib/format'
+import { hapticTap, hapticSuccess } from '@/lib/haptics'
 import type { RecurringRule } from '@/lib/db/schema'
 
 type WalletLite = { id: string; name: string }
@@ -39,6 +40,7 @@ export function DueBillsCard({
         </div>
         <Link
           href="/planning"
+          onClick={() => hapticTap()}
           className="flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
         >
           Semua <ChevronRight className="h-3.5 w-3.5" />
@@ -85,6 +87,7 @@ export function DueBillsCard({
                   <select
                     name="walletId"
                     aria-label={`Pilih dompet untuk ${rule.title}`}
+                    onChange={() => hapticTap()}
                     className="h-9 rounded-xl border border-border-outer bg-canvas px-2.5 text-xs text-text-primary outline-none focus:border-accent"
                   >
                     {wallets.map((w) => (
@@ -98,7 +101,8 @@ export function DueBillsCard({
                 ) : null}
                 <button
                   type="submit"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
+                  onClick={() => hapticSuccess()}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95 cursor-pointer"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Catat
