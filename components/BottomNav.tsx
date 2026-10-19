@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Clock, Home, Plus, User, Wallet } from 'lucide-react'
 import { getWallets } from '@/lib/actions'
+import { hapticTap } from '@/lib/haptics'
 
 const QuickLogSheet = dynamic(
   () => import('@/components/QuickLogSheet').then((m) => m.QuickLogSheet),
@@ -53,6 +54,7 @@ export function BottomNav() {
   }, [])
 
   function handleCenterClick() {
+    hapticTap()
     if (wallets.length === 0) {
       getWallets().then((w) => setWallets(w ?? [])).catch(() => {})
     }
@@ -73,6 +75,7 @@ export function BottomNav() {
                 <Link
                   href={href}
                   prefetch={true}
+                  onClick={() => hapticTap()}
                   aria-current={active ? 'page' : undefined}
                   className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-xs font-medium transition-all active:scale-95 active:opacity-75 ${
                     active
@@ -112,6 +115,7 @@ export function BottomNav() {
                 <Link
                   href={href}
                   prefetch={true}
+                  onClick={() => hapticTap()}
                   aria-current={active ? 'page' : undefined}
                   className={`relative flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-xs font-medium transition-all active:scale-95 active:opacity-75 ${
                     active
