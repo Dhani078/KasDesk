@@ -38,11 +38,11 @@ const check = (n, c, d = '') => {
 
 const jar = path.join(os.tmpdir(), `tx-test-${Date.now()}.txt`)
 function curl(args) {
-  return execFileSync('curl', ['-s', '-b', jar, '-c', jar, '--max-time', '45', ...args], { encoding: 'utf8', env })
+  return execFileSync('curl', ['-s', '-b', jar, '-c', jar, '--max-time', '45', ...args], { encoding: 'utf8' })
 }
 
 function curlStatus(args) {
-  return execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}', '-b', jar, '-c', jar, '--max-time', '45', ...args], { encoding: 'utf8', env }).trim()
+  return execFileSync('curl', ['-s', '-o', 'NUL', '-w', '%{http_code}', '-b', jar, '-c', jar, '--max-time', '45', ...args], { encoding: 'utf8' }).trim()
 }
 
 async function login(email, pw) {
@@ -53,7 +53,7 @@ async function login(email, pw) {
     '--data-urlencode', `email=${email}`,
     '--data-urlencode', `password=${pw}`,
     `${BASE}/api/auth/callback/credentials`
-  ], { encoding: 'utf8', env })
+  ], { encoding: 'utf8' })
   return out.includes('Location: /') || out.includes('302') || out.includes('authjs.session-token')
 }
 

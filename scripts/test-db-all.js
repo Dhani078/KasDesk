@@ -98,8 +98,11 @@ async function main() {
           console.log('✅ PASS')
           suitesPassed++
         }
-      } catch (_err) {
+      } catch (err) {
         console.log('💥 ERROR')
+        if (err.stdout) console.log(err.stdout.trim())
+        if (err.stderr) console.error(err.stderr.trim())
+        if (err.message && !err.stdout && !err.stderr) console.error(err.message)
         suitesFailed++
         failedSuites.push(script)
       }
