@@ -8,6 +8,7 @@ import {
   type SharedSpaceMeta,
 } from '@/lib/spaces'
 import { createSharedSpace } from '@/lib/spaces/actions'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export function SpaceSwitcher({
   initialSpaces = [],
@@ -45,6 +46,7 @@ export function SpaceSwitcher({
   }, [dropdownOpen, modalOpen])
 
   function switchSpace(id: string | null) {
+    hapticTap()
     setActiveSpaceId(id)
     setDropdownOpen(false)
     try {
@@ -66,9 +68,12 @@ export function SpaceSwitcher({
     setPending(false)
 
     if (!res.success) {
+      hapticWarning()
       setError(res.error.message)
       return
     }
+
+    hapticSuccess()
 
     const newSpace: SharedSpaceMeta = {
       id: res.data.id,
@@ -91,7 +96,10 @@ export function SpaceSwitcher({
       <div className="relative inline-block text-left">
         <button
           type="button"
-          onClick={() => setDropdownOpen((prev) => !prev)}
+          onClick={() => {
+            hapticTap()
+            setDropdownOpen((prev) => !prev)
+          }}
           className="flex items-center gap-2 rounded-xl border border-border-outer bg-surface/80 px-2.5 py-1.5 text-xs font-medium text-text-primary transition hover:border-accent/40 active:scale-95"
           aria-expanded={dropdownOpen}
           aria-haspopup="true"
@@ -166,6 +174,7 @@ export function SpaceSwitcher({
             <button
               type="button"
               onClick={() => {
+                hapticTap()
                 setDropdownOpen(false)
                 setModalOpen(true)
               }}
