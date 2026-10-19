@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { createDebt } from '@/lib/actions'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export function NewDebtSheet({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState(false)
@@ -45,8 +46,10 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
     setPending(false)
     if (!r.success) {
       setError(r.error.message)
+      hapticWarning()
       return
     }
+    hapticSuccess()
     onClose()
   }
 
@@ -115,6 +118,7 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
                 <button
                   type="button"
                   onClick={() => {
+                    hapticTap()
                     const d = new Date()
                     d.setDate(d.getDate() + 7)
                     setDueDate(d.toISOString().slice(0, 10))
@@ -126,6 +130,7 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
                 <button
                   type="button"
                   onClick={() => {
+                    hapticTap()
                     const d = new Date()
                     d.setDate(d.getDate() + 30)
                     setDueDate(d.toISOString().slice(0, 10))

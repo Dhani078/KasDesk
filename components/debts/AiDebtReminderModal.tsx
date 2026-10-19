@@ -7,6 +7,7 @@ import {
   type ReminderTone,
 } from '@/lib/debts/ai-reminder'
 import { formatIDR } from '@/lib/format'
+import { hapticTap, hapticSuccess } from '@/lib/haptics'
 
 interface ReceivableItem {
   id: string
@@ -55,11 +56,13 @@ export function AiDebtReminderModal({
     if (!previewMessage) return
     navigator.clipboard.writeText(previewMessage).catch(() => {})
     setCopied(true)
+    hapticSuccess()
     setTimeout(() => setCopied(false), 2000)
   }
 
   const handleOpenWhatsApp = () => {
     if (!previewMessage) return
+    hapticTap()
     const url = `https://wa.me/?text=${encodeURIComponent(previewMessage)}`
     window.open(url, '_blank')
   }
@@ -70,7 +73,10 @@ export function AiDebtReminderModal({
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          hapticTap()
+          setIsOpen(true)
+        }}
         className="inline-flex items-center gap-1.5 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition hover:bg-accent/20 active:scale-95 cursor-pointer"
       >
         <Sparkles className="h-3.5 w-3.5" />
@@ -134,7 +140,10 @@ export function AiDebtReminderModal({
                     <button
                       key={t}
                       type="button"
-                      onClick={() => setTone(t)}
+                      onClick={() => {
+                        hapticTap()
+                        setTone(t)
+                      }}
                       className={`rounded-xl py-1.5 text-xs font-semibold capitalize border transition ${
                         tone === t
                           ? 'bg-accent-solid text-white border-accent'

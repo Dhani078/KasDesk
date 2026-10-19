@@ -6,6 +6,7 @@ import { settleDebt, deleteDebt } from '@/lib/actions'
 import { formatIDR, formatDate } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import type { DebtLite } from '@/components/DebtsClient'
+import { hapticTap, hapticSuccess, hapticWarning, hapticDelete } from '@/lib/haptics'
 
 export function formatWithDots(raw: string) {
   const digits = raw.replace(/[^\d]/g, '')
@@ -32,7 +33,12 @@ export function DebtRow({ debt }: { debt: DebtLite }) {
   function onSettle(amount?: number) {
     start(async () => {
       const r = await settleDebt(debt.id, amount)
-      if (!r.success) setError(r.error.message)
+      if (!r.success) {
+        setError(r.error.message)
+        hapticWarning()
+      } else {
+        hapticSuccess()
+      }
       setPayOpen(false)
     })
   }
@@ -40,7 +46,12 @@ export function DebtRow({ debt }: { debt: DebtLite }) {
   function onDelete() {
     start(async () => {
       const r = await deleteDebt(debt.id)
-      if (!r.success) setError(r.error.message)
+      if (!r.success) {
+        setError(r.error.message)
+        hapticWarning()
+      } else {
+        hapticDelete()
+      }
     })
   }
 
@@ -109,6 +120,7 @@ export function DebtRow({ debt }: { debt: DebtLite }) {
             <button
               type="button"
               onClick={() => {
+                hapticTap()
                 setPayAmount(formatWithDots(String(remaining)))
                 setPayOpen(true)
               }}
@@ -178,14 +190,20 @@ export function DebtRow({ debt }: { debt: DebtLite }) {
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setPayAmount(formatWithDots(String(Math.round(remaining / 2))))}
+                    onClick={() => {
+                      hapticTap()
+                      setPayAmount(formatWithDots(String(Math.round(remaining / 2))))
+                    }}
                     className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
                   >
                     50%
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPayAmount(formatWithDots(String(remaining)))}
+                    onClick={() => {
+                      hapticTap()
+                      setPayAmount(formatWithDots(String(remaining)))
+                    }}
                     className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
                   >
                     100%

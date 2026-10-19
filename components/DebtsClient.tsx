@@ -9,6 +9,7 @@ import { NewDebtSheet } from '@/components/debts/NewDebtSheet'
 import { SplitBillModal } from '@/components/splitbill/SplitBillModal'
 import { AiDebtReminderModal } from '@/components/debts/AiDebtReminderModal'
 import { DebtRow } from '@/components/debts/DebtRow'
+import { hapticTap } from '@/lib/haptics'
 
 export type DebtLite = {
   id: string
@@ -45,7 +46,10 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
           <SplitBillModal />
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              hapticTap()
+              setOpen(true)
+            }}
             className="flex items-center gap-1 rounded-xl bg-surface px-3 py-2 text-xs text-text-primary ring-1 ring-border-outer transition hover:border-accent/40 active:scale-95 cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" /> Catat
@@ -58,7 +62,10 @@ export function DebtsClient({ debts }: { debts: DebtLite[] }) {
           <button
             key={t}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => {
+              hapticTap()
+              setTab(t)
+            }}
             className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium capitalize transition-colors ${
               tab === t ? 'bg-accent-solid text-white' : 'text-text-secondary'
             }`}
