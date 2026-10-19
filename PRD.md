@@ -584,33 +584,33 @@ Dokumen ini disusun agar autonomous coding agents (Claude, Antigravity, Hermes s
 
 ```
 [ EXECUTION PHASES ]
-├── FASE 1: Core Extension (Multi-Currency & Statement Importer)
-│   ├── Step 1.1: Buat migrasi SQL 0005 & perbarui schema Drizzle (`lib/db/schema.ts`)
-│   ├── Step 1.2: Implementasikan `lib/currency.ts` (kurs engine + cache fallback)
-│   ├── Step 1.3: Update wallet actions & form input untuk mendukung valas
-│   ├── Step 1.4: Buat `lib/importer/` parser PDF/CSV bank lokal & SHA-256 deduplication
-│   └── Step 1.5: Buat test suite integrasi database untuk multi-currency & statement import
+├── FASE 1: Core Extension (Multi-Currency & Statement Importer) [DONE & VERIFIED]
+│   ├── Step 1.1: Buat migrasi SQL 0005 & perbarui schema Drizzle (`lib/db/schema.ts`) [DONE]
+│   ├── Step 1.2: Implementasikan `lib/currency.ts` (kurs engine + cache fallback) [DONE]
+│   ├── Step 1.3: Update wallet actions & form input untuk mendukung valas [DONE]
+│   ├── Step 1.4: Buat `lib/importer/` parser PDF/CSV bank lokal & SHA-256 deduplication [DONE]
+│   └── Step 1.5: Buat test suite integrasi database untuk multi-currency & statement import [DONE]
 │
-├── FASE 2: Social & Smart Savings (Split-Bill & Digital Envelopes)
-│   ├── Step 2.1: Buat migrasi SQL 0006 & 0007 (splitBills & savingsRules)
-│   ├── Step 2.2: Implementasikan algoritma pembagian pajak proporsional (`lib/split-bill.ts`)
-│   ├── Step 2.3: Buat generator teks WhatsApp & integrasi sinkronisasi ke tabel `debts`
+├── FASE 2: Social & Smart Savings (Split-Bill & Digital Envelopes) [DONE & VERIFIED]
+│   ├── Step 2.1: Buat migrasi SQL 0006 & 0007 (splitBills & savingsRules) [DONE]
+│   ├── Step 2.2: Implementasikan algoritma pembagian pajak proporsional (`lib/split-bill.ts`) [DONE]
+│   ├── Step 2.3: Buat generator teks WhatsApp & integrasi sinkronisasi ke tabel `debts` [DONE]
 │   ├── Step 2.4: Buat logika pembulatan celengan otomatis pada pipeline transaksi [DONE]
 │   └── Step 2.5: Buat unit & database tests untuk split-bill dan aturan celengan [DONE]
 │
-├── FASE 3: Financial Autopilot (Predictive Cashflow, Coach v2 & Pajak)
-│   ├── Step 3.1: Buat kalkulator proyeksi arus kas 30/60/90 hari (`lib/analytics/forecast.ts`)
-│   ├── Step 3.2: Buat detektor "Tanggal Kritis" dan kalkulator Runway Dana Darurat
-│   ├── Step 3.3: Implementasikan kalkulator pajak PPh 21 NPPN Indonesia (`lib/tax.ts`)
-│   ├── Step 3.4: Buat UI Cashflow Forecast Canvas & Tax Estimator Modal
-│   └── Step 3.5: Tambahkan automated test verifikasi batas matematis pajak & proyeksi
+├── FASE 3: Financial Autopilot (Predictive Cashflow, Coach v2 & Pajak) [DONE & VERIFIED]
+│   ├── Step 3.1: Buat kalkulator proyeksi arus kas 30/60/90 hari (`lib/analytics/forecast.ts`) [DONE]
+│   ├── Step 3.2: Buat detektor "Tanggal Kritis" dan kalkulator Runway Dana Darurat [DONE]
+│   ├── Step 3.3: Implementasikan kalkulator pajak PPh 21 NPPN Indonesia (`lib/tax.ts`) [DONE]
+│   ├── Step 3.4: Buat UI Cashflow Forecast Canvas & Tax Estimator Modal [DONE]
+│   └── Step 3.5: Tambahkan automated test verifikasi batas matematis pajak & proyeksi [DONE]
 │
-└── FASE 4: Collaboration & Native PWA (Shared Spaces, Push & Encrypted Sync)
-    ├── Step 4.1: Buat migrasi SQL 0008 (sharedSpaces, spaceMembers, pushSubscriptions)
-    ├── Step 4.2: Implementasikan RBAC & isolasi query untuk Shared Space
-    ├── Step 4.3: Konfigurasi Web Push Notifications (Service Worker + VAPID)
-    ├── Step 4.4: Implementasikan modul backup client-side AES-256-GCM (`lib/crypto/backup.ts`)
-    └── Step 4.5: Jalankan `npm run test:full` (unit, lint, typecheck, DB suites, browser audit)
+└── FASE 4: Collaboration & Native PWA (Shared Spaces, Push & Encrypted Sync) [DONE & VERIFIED]
+    ├── Step 4.1: Buat migrasi SQL 0008 (sharedSpaces, spaceMembers, pushSubscriptions) [DONE]
+    ├── Step 4.2: Implementasikan RBAC & isolasi query untuk Shared Space [DONE]
+    ├── Step 4.3: Konfigurasi Web Push Notifications (Service Worker + VAPID) [DONE]
+    ├── Step 4.4: Implementasikan modul backup client-side AES-256-GCM (`lib/crypto/backup.ts`) [DONE]
+    └── Step 4.5: Jalankan `npm run test:full` (unit, lint, typecheck, 37 DB suites, browser audit) [DONE]
 ```
 
 ---
