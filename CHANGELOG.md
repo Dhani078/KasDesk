@@ -1,5 +1,29 @@
 # Changelog
 
+## Unified Integration Test Runner 36-Suite Expansion & Full-App Haptic Polish — 2026-10-19
+
+- Built and added `scripts/test-shared-spaces-db.js` (16/16 checks) into the centralized database test runner (`scripts/test-db-all.js`), expanding coverage to **36 suites**:
+  - Validates atomic shared space creation in `sharedSpaces` with owner attribution.
+  - Asserts `spaceMembers` pair unique index `(spaceId, userId)` enforcement preventing duplicate memberships.
+  - Verifies multi-tenant isolation: Owner and invited editor access the space; unrelated third-party users see 0 spaces.
+  - Tests space-scoped wallet creation and ledger transaction audit trail (`createdByUserId` tracking).
+  - Asserts member role elevation/demotion (`editor` to `viewer`), member removal, and clean fixture deletion.
+- Added direct shortcut npm script `"test:spaces:db": "node scripts/test-shared-spaces-db.js"` in `package.json`.
+- Completed comprehensive Tactile Haptic Vibration Engine (`lib/haptics.ts`) across all remaining interactive components:
+  - **Vaults & Micro-Savings (`components/vaults/*`)**:
+    - `hapticTap()` on celengan pembulatan settings modal, step radio buttons, and vault selector.
+    - `hapticSuccess()` on saving round-up settings and AI feasibility vault creation.
+    - `hapticWarning()` on validation errors in `AiVaultPlannerModal.tsx`.
+  - **Planning & Recurring Bills (`components/planning/*`)**:
+    - `hapticSuccess()` on 1-tap bill recording (`DueBillsCard.tsx`) and batch AI budget application (`AiBudgetModal.tsx`).
+    - `hapticTap()` on wallet selector and AI budget modal opener.
+  - **Shared Spaces (`components/navigation/SpaceSwitcher.tsx`)**:
+    - `hapticTap()` on space switcher dropdown toggle, personal/shared space selection, and new space modal trigger.
+    - `hapticSuccess()` on successful space creation; `hapticWarning()` on validation or API error.
+  - **Scanner Bridge (`components/scanner/SharedReceiptBridge.tsx`)**:
+    - `hapticSuccess()` on intercepting and dispatching Web Share Target receipts into the scanner pipeline.
+- Verified 413 unit checks across 24 suites, 0 TypeScript errors, 0 ESLint warnings, and 100/100 Healthy AST score on `aislop`.
+
 ## Tactile Haptic Vibration Engine Across Debts, Wallets, QuickLog & Navigation — 2026-10-19
 
 - Fully integrated native-grade tactile haptic feedback (`lib/haptics.ts`) across all core interaction surfaces in KasDesk (EPIC 8.3):
