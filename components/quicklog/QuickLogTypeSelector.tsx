@@ -1,3 +1,5 @@
+import { hapticTap } from '@/lib/haptics'
+
 export function QuickLogTypeSelector({
   txType,
   onChange,
@@ -14,7 +16,10 @@ export function QuickLogTypeSelector({
             name="type"
             value={t}
             checked={txType === t}
-            onChange={() => onChange(t)}
+            onChange={() => {
+              hapticTap()
+              onChange(t)
+            }}
             className="peer sr-only"
           />
           <span

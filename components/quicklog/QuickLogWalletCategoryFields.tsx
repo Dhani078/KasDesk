@@ -1,6 +1,5 @@
-'use client'
-
 import { formatIDR } from '@/lib/format'
+import { hapticTap } from '@/lib/haptics'
 
 type WalletLite = { id: string; name: string; balance: number }
 
@@ -29,7 +28,10 @@ export function QuickLogWalletCategoryFields({
           id="wallet_id"
           name="wallet_id"
           value={walletSel}
-          onChange={(e) => onWalletChange(e.target.value)}
+          onChange={(e) => {
+            hapticTap()
+            onWalletChange(e.target.value)
+          }}
           required
           className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
         >
@@ -56,7 +58,10 @@ export function QuickLogWalletCategoryFields({
               key={c}
               role="radio"
               aria-checked={catSel === c}
-              onClick={() => onPickCat(c)}
+              onClick={() => {
+                hapticTap()
+                onPickCat(c)
+              }}
               className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
                 catSel === c
                   ? 'bg-accent-solid text-white'

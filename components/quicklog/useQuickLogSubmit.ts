@@ -6,7 +6,7 @@ import { usePendingTx } from '@/components/pending-tx'
 import { enqueueOp } from '@/lib/offline/queue'
 import { calculateRoundUp, type RoundUpConfig } from '@/lib/micro-savings'
 import { getLocalDateString } from '@/components/quicklog/DateTransactionPicker'
-import { hapticSuccess } from '@/lib/haptics'
+import { hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 type WalletLite = { id: string; name: string; balance: number }
 
@@ -57,16 +57,19 @@ export function useQuickLogSubmit({
     const amount = Number(clean)
     if (!clean || !Number.isFinite(amount) || amount <= 0) {
       setError('Masukkan jumlah yang valid')
+      hapticWarning()
       return
     }
 
     if (txType === 'transfer') {
       if (wallets.length < 2) {
         setError('Dibutuhkan minimal 2 dompet untuk transfer saldo.')
+        hapticWarning()
         return
       }
       if (!effectiveToWallet || walletSel === effectiveToWallet) {
         setError('Dompet asal dan tujuan tidak boleh sama.')
+        hapticWarning()
         return
       }
     }
@@ -120,6 +123,7 @@ export function useQuickLogSubmit({
           categoryTag: payload.category_tag ?? 'LAINNYA',
           createdAt: occurredDate,
         })
+        hapticSuccess()
         onClose()
         return
       } catch {
@@ -142,6 +146,7 @@ export function useQuickLogSubmit({
       if (!res.success) {
         resolvePending(clientId, false)
         setError(res.error.message)
+        hapticWarning()
         setPending(false)
         return
       }
@@ -155,6 +160,7 @@ export function useQuickLogSubmit({
     } catch {
       resolvePending(clientId, false)
       setError('Tidak dapat menyimpan transaksi. Coba lagi.')
+      hapticWarning()
       setPending(false)
     }
   }

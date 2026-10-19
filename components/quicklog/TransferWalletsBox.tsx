@@ -1,7 +1,6 @@
-'use client'
-
 import { ArrowRightLeft, ArrowLeftRight } from 'lucide-react'
 import { formatIDR } from '@/lib/format'
+import { hapticTap } from '@/lib/haptics'
 
 type WalletLite = { id: string; name: string; balance: number }
 
@@ -31,7 +30,10 @@ export function TransferWalletsBox({
         {wallets.length >= 2 && (
           <button
             type="button"
-            onClick={onSwapWallets}
+            onClick={() => {
+              hapticTap()
+              onSwapWallets()
+            }}
             className="!min-h-0 !min-w-0 flex items-center gap-1 rounded-lg border border-border-outer bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 active:scale-95 transition"
             title="Tukar dompet asal dan tujuan"
           >
@@ -49,7 +51,10 @@ export function TransferWalletsBox({
             id="transfer_from_wallet_id"
             name="wallet_id"
             value={walletSel}
-            onChange={(e) => onWalletChange(e.target.value)}
+            onChange={(e) => {
+              hapticTap()
+              onWalletChange(e.target.value)
+            }}
             required
             className="w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
           >
@@ -69,7 +74,10 @@ export function TransferWalletsBox({
             id="to_wallet_id"
             name="to_wallet_id"
             value={effectiveToWallet}
-            onChange={(e) => onToWalletChange(e.target.value)}
+            onChange={(e) => {
+              hapticTap()
+              onToWalletChange(e.target.value)
+            }}
             required
             className="w-full rounded-xl border border-border bg-canvas px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent"
           >
