@@ -171,7 +171,7 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
 # = typecheck + lint + 413 unit checks + AI Coach cascade + cursor pagination
-#   + 70 browser audit (CDP) + 37 DB integration suites + release validation
+#   + 70 browser audit (CDP) + 38 DB integration suites + release validation
 npm run test:full
 
 # Audit AI Slop & Code Health 100/100 (deterministic AST engine)
@@ -181,6 +181,7 @@ npm run scan:slop
 npm run test:unit
 
 # Test spesifik per modul inovasi:
+npm run test:forex:db         # Multi-Currency & Forex Exchange Rates DB Integration (EPIC 1)
 npm run test:spaces:db        # Shared Financial Spaces Database Integration (EPIC 6)
 npm run test:push:db          # Web Push Subscriptions & Trigger Engine DB Integration (EPIC 8.4)
 npm run test:web-push         # Web Push Notifications (VAPID) & Web Share Target
@@ -204,7 +205,7 @@ npm run test:tx-filters         # Agregasi Filter Transaksi & Strip Net Cashflow
 # Audit Browser Headless Chrome CDP nyata (320px / 390px / 1280px, 0 horizontal overflow)
 npm run test:browser
 
-# 37 Database Integration Suites (TiDB Cloud): isolasi, saldo, transfer, utang, vault, spaces, push, balance-sync
+# 38 Database Integration Suites (TiDB Cloud): isolasi, saldo, transfer, utang, vault, spaces, push, forex, balance-sync
 npm run test:db
 
 # Pengecekan Type Safety TypeScript
