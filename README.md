@@ -47,6 +47,8 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 🏆 **Gamifikasi Health Score** | Tingkatkan level kesehatan finansialmu dari *Bronze*, *Silver*, *Gold*, hingga *Diamond Tier*. |
 | ⌨️ **Keyboard Shortcut Desktop** | `c` catat cepat, `/` cari transaksi, `p` mode privasi, `?` daftar shortcut. |
 | 📶 **100% Offline-First** | Transaksi diantrekan secara lokal via IndexedDB saat sinyal hilang dan otomatis sinkron saat online. |
+| 📳 **Tactile Haptic Vibration Engine (EPIC 8.3)** | Pengalaman sentuhan native mobile (`lib/haptics.ts`) pada transaksi, validasi form, navigasi, dompet, target tabungan, dan amplop digital. |
+| 🔔 **Web Push & Web Share Target (EPIC 8.1 & 8.4)** | Notifikasi pengingat tagihan H-3, pengingat catat malam 20:00, peringatan batas budget 90% via VAPID RFC 8292, dan terima struk langsung dari galeri/WhatsApp. |
 | 🗺️ **Master PRD v2.0/v3.0** | Cetak biru lengkap 9 Epic arsitektur masa depan untuk Claude/Opus/Hermes di [`PRD.md`](./PRD.md). |
 | 📐 **Technical Blueprint** | Spesifikasi teknis & rancangan rekayasa mendalam di [`docs/ROADMAP-EXPANSION-SPECS.md`](./docs/ROADMAP-EXPANSION-SPECS.md). |
 | 📊 **Interactive Architecture & Workflow** | Diagram interaktif HTML/SVG showcase arsitektur full-stack & alur transaksi 2-tap di [`docs/kasdesk-architecture.html`](./docs/kasdesk-architecture.html) & [`docs/kasdesk-quicklog-workflow.html`](./docs/kasdesk-quicklog-workflow.html). |
@@ -168,17 +170,19 @@ KASDESK dilengkapi dengan pengujian unit dan otomatisasi terintegrasi:
 
 ```bash
 # Verifikasi Lengkap 1 Perintah (Full Gate)
-# = typecheck + lint + 353 unit checks + AI Coach cascade + cursor pagination
-#   + 70 browser audit (CDP) + 23 DB integration suites + release validation
+# = typecheck + lint + 413 unit checks + AI Coach cascade + cursor pagination
+#   + 70 browser audit (CDP) + 37 DB integration suites + release validation
 npm run test:full
 
 # Audit AI Slop & Code Health 100/100 (deterministic AST engine)
 npm run scan:slop
 
-# Menjalankan seluruh 353 Unit Tests (21 suites, offline & deterministik)
+# Menjalankan seluruh 413 Unit Tests (24 suites, offline & deterministik)
 npm run test:unit
 
 # Test spesifik per modul inovasi:
+npm run test:spaces:db        # Shared Financial Spaces Database Integration (EPIC 6)
+npm run test:push:db          # Web Push Subscriptions & Trigger Engine DB Integration (EPIC 8.4)
 npm run test:web-push         # Web Push Notifications (VAPID) & Web Share Target
 npm run test:shared-spaces     # Mode Rumah Tangga & RBAC Dual-Ledger
 npm run test:multi-currency    # Mesin Multi-Currency, Kurs & Net Worth Rollup
@@ -200,7 +204,7 @@ npm run test:tx-filters         # Agregasi Filter Transaksi & Strip Net Cashflow
 # Audit Browser Headless Chrome CDP nyata (320px / 390px / 1280px, 0 horizontal overflow)
 npm run test:browser
 
-# 23 Database Integration Suites (TiDB Cloud): isolasi, saldo, transfer, utang, vault, balance-sync
+# 37 Database Integration Suites (TiDB Cloud): isolasi, saldo, transfer, utang, vault, spaces, push, balance-sync
 npm run test:db
 
 # Pengecekan Type Safety TypeScript
@@ -250,7 +254,7 @@ KasDesk/
 │   └── db/               # Skema Drizzle ORM (TiDB MySQL 8)
 ├── drizzle/              # Migrasi SQL (0000_init s/d 0007_push_subscriptions)
 ├── public/               # Aset statis PWA (Icons, Manifest, Service Worker)
-└── scripts/              # 21 Unit Test Suites (353 Checks) & Database Integration Runners
+└── scripts/              # 24 Unit Test Suites (413 Checks) & 37 Database Integration Suites
 ```
 
 ---
