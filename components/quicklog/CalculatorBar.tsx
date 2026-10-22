@@ -65,7 +65,10 @@ export function CalculatorBar({
       {amountText && (
         <button
           type="button"
-          onClick={onClear}
+          onClick={() => {
+            hapticTap()
+            onClear()
+          }}
           className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-1 text-[11px] text-text-secondary hover:text-danger active:scale-95"
         >
           Hapus

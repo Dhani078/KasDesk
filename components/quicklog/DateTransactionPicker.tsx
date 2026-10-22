@@ -1,6 +1,7 @@
 'use client'
 
 import { Calendar, Sparkles } from 'lucide-react'
+import { hapticTap } from '@/lib/haptics'
 
 export function getLocalDateString(d: Date = new Date()): string {
   const year = d.getFullYear()
@@ -55,7 +56,11 @@ export function DateTransactionPicker({
         <div className="grid grid-cols-2 gap-1.5 sm:flex sm:shrink-0">
           <button
             type="button"
-            onClick={() => setDateText(todayStr)}
+            onClick={() => {
+              hapticTap()
+              setDateText(todayStr)
+            }}
+            aria-label="Set tanggal transaksi hari ini"
             className={`flex items-center justify-center rounded-xl px-3 py-2 text-xs font-medium transition active:scale-95 ${
               dateText === todayStr
                 ? 'bg-accent/20 text-accent ring-1 ring-accent/40 font-semibold'
@@ -66,7 +71,11 @@ export function DateTransactionPicker({
           </button>
           <button
             type="button"
-            onClick={() => setDateText(yesterdayStr)}
+            onClick={() => {
+              hapticTap()
+              setDateText(yesterdayStr)
+            }}
+            aria-label="Set tanggal transaksi kemarin"
             className={`flex items-center justify-center rounded-xl px-3 py-2 text-xs font-medium transition active:scale-95 ${
               dateText === yesterdayStr
                 ? 'bg-accent/20 text-accent ring-1 ring-accent/40 font-semibold'
