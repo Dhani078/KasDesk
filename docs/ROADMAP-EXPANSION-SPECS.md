@@ -282,3 +282,4 @@ Sebelum setiap fitur dinyatakan siap produksi:
 - **Planning**: `DueBillsCard.tsx` (1-tap bill recording + link), `AiBudgetModal.tsx` (batch apply AI recommendations + opener).
 - **Hardware Integration**: `SharedReceiptBridge.tsx` (Web Share Target dispatch receipt), `ScanReceiptButton.tsx` (camera/gallery + OCR triggers).
 - **Security & Screen Lock**: `AppLock.tsx` (keypad digits + backspace + biometrics prompt + forgot session wipe), `AppLockSettings.tsx` (setup + change PIN + disable + biometrics toggle).
+- **Tax & AI Coach**: `TaxEstimatorModal.tsx` (opener + close + norma NPPN selector + PTKP status selector + send to coach).
