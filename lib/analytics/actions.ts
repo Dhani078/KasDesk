@@ -99,8 +99,8 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
       upcomingDebts: sql<number>`coalesce(sum(greatest(${debts.amount} - ${debts.paidAmount}, 0)), 0)`,
     }).from(debts).where(and(eq(debts.userId, userId), eq(debts.isPaid, 0))),
     db.select({
-      monthlyIncome: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then ${transactions.amount} else 0 end), 0)`,
-      monthlyExpense: sql<number>`coalesce(sum(case when ${transactions.type} = 'expense' then ${transactions.amount} else 0 end), 0)`,
+      monthlyIncome: sql<number>`coalesce(sum(case when ${transactions.type} = 'income' then coalesce(nullif(${transactions.baseAmount}, 0), ${transactions.amount}) else 0 end), 0)`,
+      monthlyExpense: sql<number>`coalesce(sum(case when ${transactions.type} = 'expense' then coalesce(nullif(${transactions.baseAmount}, 0), ${transactions.amount}) else 0 end), 0)`,
     }).from(transactions).where(and(eq(transactions.userId, userId), gte(transactions.occurredAt, monthWindow.start), lt(transactions.occurredAt, monthWindow.end))),
     db.select({ occurredAt: transactions.occurredAt })
       .from(transactions)
@@ -146,7 +146,7 @@ export async function getSpendingFlowSummary() {
   const rows = await db
     .select({
       day: sql<string>`date(${transactions.occurredAt})`,
-      total: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      total: sql<number>`coalesce(sum(coalesce(nullif(${transactions.baseAmount}, 0), ${transactions.amount})), 0)`,
     })
     .from(transactions)
     .where(and(eq(transactions.userId, userId), eq(transactions.type, 'expense'), gte(transactions.occurredAt, start)))
@@ -173,12 +173,12 @@ export async function getTopCategorySummary(limit = 7) {
   const rows = await db
     .select({
       category: sql<string>`coalesce(${transactions.categoryTag}, 'LAINNYA')`,
-      amount: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+      amount: sql<number>`coalesce(sum(coalesce(nullif(${transactions.baseAmount}, 0), ${transactions.amount})), 0)`,
     })
     .from(transactions)
     .where(and(eq(transactions.userId, userId), eq(transactions.type, 'expense'), gte(transactions.occurredAt, monthWindow.start), lt(transactions.occurredAt, monthWindow.end)))
     .groupBy(transactions.categoryTag)
-    .orderBy(desc(sql`sum(${transactions.amount})`))
+    .orderBy(desc(sql`sum(coalesce(nullif(${transactions.baseAmount}, 0), ${transactions.amount}))`))
     .limit(limit)
 
   const total = rows.reduce((sum, row) => sum + n(row.amount), 0) || 1
@@ -211,7 +211,7 @@ export async function getMonthComparison(): Promise<MonthComparisonResult> {
     db
       .select({
         category: sql<string>`coalesce(${transactions.categoryTag}, 'LAINNYA')`,
-        amount: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+        amount: sql<number>`coalesce(sum(coalesce(nullif(${transactions.baseAmount}, 0), ${transactions.amount})), 0)`,
       })
       .from(transactions)
       .where(
@@ -227,7 +227,7 @@ export async function getMonthComparison(): Promise<MonthComparisonResult> {
     db
       .select({
         category: sql<string>`coalesce(${transactions.categoryTag}, 'LAINNYA')`,
-        amount: sql<number>`coalesce(sum(${transactions.amount}), 0)`,
+        amount: sql<number>`coalesce(sum(coalesce(nullif(${transactions.baseAmount}, 0), ${transactions.amount})), 0)`,
       })
       .from(transactions)
       .where(

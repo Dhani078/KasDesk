@@ -44,7 +44,7 @@ export async function getDashboard() {
       .from(debts)
       .where(and(eq(debts.userId, userId), eq(debts.isPaid, 0))),
     db
-      .select({ type: transactions.type, amount: transactions.amount })
+      .select({ type: transactions.type, amount: transactions.amount, baseAmount: transactions.baseAmount })
       .from(transactions)
       .where(
         and(
@@ -57,8 +57,9 @@ export async function getDashboard() {
   let monthlyIncome = 0
   let monthlyExpense = 0
   for (const r of monthRows) {
-    if (r.type === 'income') monthlyIncome += r.amount
-    else if (r.type === 'expense') monthlyExpense += r.amount
+    const val = Number(r.baseAmount || r.amount)
+    if (r.type === 'income') monthlyIncome += val
+    else if (r.type === 'expense') monthlyExpense += val
   }
 
   const totalBalance = walletRows.reduce((s, w) => s + Number(w.balance ?? 0), 0)
@@ -94,7 +95,7 @@ export async function getSpendingFlow() {
   start.setDate(start.getDate() - 6)
 
   const rows = await db
-    .select({ amount: transactions.amount, occurredAt: transactions.occurredAt })
+    .select({ amount: transactions.amount, baseAmount: transactions.baseAmount, occurredAt: transactions.occurredAt })
     .from(transactions)
     .where(
       and(
@@ -113,7 +114,8 @@ export async function getSpendingFlow() {
   }
   for (const r of rows) {
     const k = new Date(r.occurredAt).toDateString()
-    if (buckets.has(k)) buckets.set(k, buckets.get(k)! + Number(r.amount ?? 0))
+    const val = Number(r.baseAmount || r.amount || 0)
+    if (buckets.has(k)) buckets.set(k, buckets.get(k)! + val)
   }
 
   return [...buckets.entries()].map(([day, total]) => ({
@@ -131,7 +133,7 @@ export async function getTopCategories(limit = 5) {
   const monthStart = getMonthWindow(now).start
 
   const rows = await db
-    .select({ categoryTag: transactions.categoryTag, amount: transactions.amount })
+    .select({ categoryTag: transactions.categoryTag, amount: transactions.amount, baseAmount: transactions.baseAmount })
     .from(transactions)
     .where(
       and(
@@ -144,7 +146,8 @@ export async function getTopCategories(limit = 5) {
   const sums = new Map<string, number>()
   for (const r of rows) {
     const k = r.categoryTag ?? 'LAINNYA'
-    sums.set(k, (sums.get(k) ?? 0) + Number(r.amount ?? 0))
+    const val = Number(r.baseAmount || r.amount || 0)
+    sums.set(k, (sums.get(k) ?? 0) + val)
   }
 
   const total = [...sums.values()].reduce((a, b) => a + b, 0) || 1
