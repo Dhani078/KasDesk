@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Download, Share2, CheckCircle2, MonitorSmartphone } from 'lucide-react'
+import { hapticTap, hapticSuccess } from '@/lib/haptics'
 
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -47,10 +48,14 @@ export function PwaInstall() {
   }, [])
 
   async function install() {
+    hapticTap()
     if (!prompt) return
     await prompt.prompt()
     const choice = await prompt.userChoice
-    if (choice.outcome === 'accepted') setInstalled(true)
+    if (choice.outcome === 'accepted') {
+      hapticSuccess()
+      setInstalled(true)
+    }
     setPrompt(null)
     ;(window as unknown as { __deferredPwaPrompt?: null }).__deferredPwaPrompt = null
   }

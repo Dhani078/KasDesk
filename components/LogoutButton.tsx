@@ -5,6 +5,7 @@ import { LogOut, Loader2 } from 'lucide-react'
 
 import { logoutAction } from '@/lib/auth/actions'
 import { clearOfflineData } from '@/lib/offline/queue'
+import { hapticWarning } from '@/lib/haptics'
 
 /**
  * Sign-out button.
@@ -29,6 +30,7 @@ export function LogoutButton() {
   const [busy, setBusy] = useState(false)
 
   async function onLogout() {
+    hapticWarning()
     setBusy(true)
 
     // Best-effort: purge cached pages BEFORE the session ends, while we still
