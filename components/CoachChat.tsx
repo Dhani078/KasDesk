@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 import { Sparkles, Send, Trash2, Bot, User, Check, Copy, ArrowRight, RefreshCw, Cpu } from 'lucide-react'
 import { AI_MODELS, type AiModel } from '@/lib/types'
 import { TransactionActionCard } from '@/components/coach/TransactionActionCard'
+import { hapticTap, hapticSuccess, hapticDelete } from '@/lib/haptics'
 
 type Message = {
   id: string
@@ -139,12 +140,14 @@ export function CoachChat({ initialContext, wallets = [] }: Props) {
 
   function handleCopy(id: string, text: string) {
     navigator.clipboard?.writeText(text).then(() => {
+      hapticSuccess()
       setCopiedId(id)
       setTimeout(() => setCopiedId(null), 2000)
     }).catch(() => {})
   }
 
   function handleClear() {
+    hapticDelete()
     setMessages([
       {
         id: 'welcome-reset',
@@ -160,6 +163,7 @@ export function CoachChat({ initialContext, wallets = [] }: Props) {
     const query = (textToSend ?? input).trim()
     if (!query || isPending) return
 
+    hapticTap()
     const userMsg: Message = {
       id: getMsgId('u'),
       role: 'user',
@@ -256,7 +260,10 @@ export function CoachChat({ initialContext, wallets = [] }: Props) {
                 <button
                   key={m}
                   type="button"
-                  onClick={() => setSelectedModel(m)}
+                  onClick={() => {
+                    hapticTap()
+                    setSelectedModel(m)
+                  }}
                   className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                     active
                       ? 'bg-accent-solid text-white shadow-sm'
@@ -393,7 +400,10 @@ export function CoachChat({ initialContext, wallets = [] }: Props) {
             key={prompt}
             type="button"
             disabled={isPending}
-            onClick={() => handleSend(prompt)}
+            onClick={() => {
+              hapticTap()
+              handleSend(prompt)
+            }}
             className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border-outer bg-canvas/70 px-3 py-1 text-xs text-text-secondary transition hover:border-accent/40 hover:text-text-primary hover:bg-canvas active:scale-95 disabled:opacity-50"
           >
             {prompt}
