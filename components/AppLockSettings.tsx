@@ -12,6 +12,7 @@ import {
   registerBiometrics,
   setBiometricsEnabled,
 } from '@/lib/app-lock'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export function AppLockSettings() {
   const [enabled, setEnabled] = useState(false)
@@ -62,6 +63,7 @@ export function AppLockSettings() {
   }, [modalMode])
 
   const handleSetupClick = () => {
+    hapticTap()
     setInputPin('')
     setTempPin('')
     setErrorMsg('')
@@ -70,6 +72,7 @@ export function AppLockSettings() {
   }
 
   const handleChangePinClick = () => {
+    hapticTap()
     setInputPin('')
     setTempPin('')
     setErrorMsg('')
@@ -78,6 +81,7 @@ export function AppLockSettings() {
   }
 
   const handleDisableClick = () => {
+    hapticTap()
     setInputPin('')
     setErrorMsg('')
     setStep('enter-current')
@@ -86,6 +90,7 @@ export function AppLockSettings() {
 
   const handleKeyTap = async (num: string) => {
     if (inputPin.length >= 6) return
+    hapticTap()
     setErrorMsg('')
     const next = inputPin + num
     setInputPin(next)
@@ -94,16 +99,19 @@ export function AppLockSettings() {
       if (modalMode === 'disable') {
         const ok = await verifyEnteredPin(next)
         if (ok) {
+          hapticSuccess()
           removeAppLock()
           setEnabled(false)
           setBioActive(false)
           resetModal()
         } else {
+          hapticWarning()
           setErrorMsg('PIN salah.')
           setTimeout(() => setInputPin(''), 400)
         }
       } else if (modalMode === 'setup') {
         if (step === 'enter-new') {
+          hapticTap()
           setTempPin(next)
           setInputPin('')
           setStep('confirm-new')
@@ -117,10 +125,12 @@ export function AppLockSettings() {
                 const regOk = await registerBiometrics()
                 setBioActive(regOk)
               }
+              hapticSuccess()
               setSuccessMsg('PIN berhasil dipasang!')
               setTimeout(resetModal, 900)
             })
           } else {
+            hapticWarning()
             setErrorMsg('PIN konfirmasi tidak cocok. Coba lagi.')
             setTimeout(() => {
               setInputPin('')
@@ -133,13 +143,16 @@ export function AppLockSettings() {
         if (step === 'enter-current') {
           const ok = await verifyEnteredPin(next)
           if (ok) {
+            hapticTap()
             setInputPin('')
             setStep('enter-new')
           } else {
+            hapticWarning()
             setErrorMsg('PIN lama salah.')
             setTimeout(() => setInputPin(''), 400)
           }
         } else if (step === 'enter-new') {
+          hapticTap()
           setTempPin(next)
           setInputPin('')
           setStep('confirm-new')
@@ -147,10 +160,12 @@ export function AppLockSettings() {
           if (next === tempPin) {
             startTransition(async () => {
               await saveNewPin(next)
+              hapticSuccess()
               setSuccessMsg('PIN berhasil diperbarui!')
               setTimeout(resetModal, 900)
             })
           } else {
+            hapticWarning()
             setErrorMsg('PIN konfirmasi tidak cocok.')
             setTimeout(() => {
               setInputPin('')
@@ -165,12 +180,14 @@ export function AppLockSettings() {
 
   const handleToggleBiometrics = async () => {
     if (!enabled) return
+    hapticTap()
     if (bioActive) {
       setBiometricsEnabled(false)
       setBioActive(false)
     } else {
       const ok = await registerBiometrics()
       setBioActive(ok)
+      if (ok) hapticSuccess()
     }
   }
 
@@ -280,8 +297,12 @@ export function AppLockSettings() {
               </h3>
               <button
                 type="button"
-                onClick={resetModal}
-                className="text-text-secondary hover:text-text-primary"
+                aria-label="Tutup dialog PIN"
+                onClick={() => {
+                  hapticTap()
+                  resetModal()
+                }}
+                className="text-text-secondary hover:text-text-primary p-1 rounded-lg"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -345,8 +366,12 @@ export function AppLockSettings() {
               </button>
               <button
                 type="button"
-                onClick={() => setInputPin((p) => p.slice(0, -1))}
-                className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl text-xs text-text-secondary hover:text-text-primary active:scale-95"
+                aria-label="Hapus digit terakhir"
+                onClick={() => {
+                  hapticTap()
+                  setInputPin((p) => p.slice(0, -1))
+                }}
+                className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl text-xs text-text-secondary hover:text-text-primary active:scale-95 cursor-pointer"
               >
                 Hapus
               </button>
