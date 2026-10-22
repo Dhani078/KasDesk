@@ -67,7 +67,15 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">Catat Utang / Piutang</h2>
-          <button type="button" onClick={onClose} aria-label="Tutup" className="text-text-secondary">
+          <button
+            type="button"
+            onClick={() => {
+              hapticTap()
+              onClose()
+            }}
+            aria-label="Tutup"
+            className="text-text-secondary hover:text-text-primary p-1 rounded-lg"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -79,6 +87,7 @@ export function NewDebtSheet({ onClose }: { onClose: () => void }) {
               id="d-dir"
               name="direction"
               defaultValue="utang"
+              onChange={() => hapticTap()}
               className="w-full rounded-xl border border-border bg-canvas px-3 py-3 text-sm text-text-primary outline-none focus:border-accent"
             >
               <option value="utang">Utang saya (saya berhutang)</option>

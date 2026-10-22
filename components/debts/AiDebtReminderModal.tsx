@@ -106,7 +106,11 @@ export function AiDebtReminderModal({
               </div>
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                aria-label="Tutup modal"
+                onClick={() => {
+                  hapticTap()
+                  setIsOpen(false)
+                }}
                 className="rounded-lg p-1.5 text-text-secondary hover:bg-white/[0.05]"
               >
                 <X className="h-4 w-4" />
@@ -119,7 +123,11 @@ export function AiDebtReminderModal({
                 <label className="block text-text-secondary mb-1">Pilih Orang yang Berutang:</label>
                 <select
                   value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Pilih orang yang berutang"
+                  onChange={(e) => {
+                    hapticTap()
+                    setSelectedId(e.target.value)
+                  }}
                   className="w-full rounded-xl border border-border-outer bg-canvas px-3 py-2 text-text-primary text-sm focus:border-accent focus:outline-none"
                 >
                   {receivables.map((r) => {
@@ -195,6 +203,7 @@ export function AiDebtReminderModal({
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 type="button"
+                aria-label="Salin teks pengingat"
                 onClick={handleCopy}
                 className="flex items-center justify-center gap-1.5 rounded-xl border border-border-outer bg-surface py-2.5 text-xs font-semibold text-text-primary transition hover:border-accent/40 active:scale-95 cursor-pointer"
               >
@@ -204,6 +213,7 @@ export function AiDebtReminderModal({
 
               <button
                 type="button"
+                aria-label="Buka WhatsApp untuk kirim pengingat"
                 onClick={handleOpenWhatsApp}
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-accent-solid py-2.5 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95 cursor-pointer"
               >
