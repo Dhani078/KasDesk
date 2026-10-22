@@ -1,5 +1,22 @@
 # Changelog
 
+## Full AppLock, PIN Security & Debt Sheet Tactile Haptic & Accessibility Polish — 2026-10-22
+
+- Standardized native tactile haptic engine (`lib/haptics.ts`) across full-screen lock screen (`components/AppLock.tsx`), replacing ad-hoc vibration with `hapticTap`, `hapticSuccess`, `hapticWarning`, and `hapticDelete`:
+  - `hapticTap()` on numeric keypad digits, delete key, and biometric trigger.
+  - `hapticSuccess()` on successful PIN unlock and biometric authentication.
+  - `hapticWarning()` on incorrect PIN or failed biometric verification.
+  - `hapticDelete()` on session wipe confirmation during forgot PIN recovery.
+- Added native haptic feedback and accessible labels across PIN security settings (`components/AppLockSettings.tsx`):
+  - `hapticTap()` on setup, change, and disable PIN openers, as well as biometrics toggle and backspace.
+  - `hapticSuccess()` on successful PIN registration and update; `hapticWarning()` on mismatch or incorrect PIN.
+  - Added explicit `aria-label` attributes for PIN dialog close button and backspace button.
+- Hardened debt modals (`components/debts/AiDebtReminderModal.tsx` and `components/debts/NewDebtSheet.tsx`):
+  - Added `hapticTap()` on debtor selection, direction toggle, and modal close buttons.
+  - Added accessible `aria-label`s on Salin Teks, Buka WhatsApp, and debtor dropdown.
+  - Added `Escape` key handling and dialog semantics to forgot PIN and debt modals.
+- Maintained 0 TypeScript errors (`tsc --noEmit`), 0 ESLint warnings (`eslint .`), and 100/100 Healthy AST score on `aislop`.
+
 ## Unified Integration Test Runner 38-Suite Expansion (Multi-Currency & Forex DB Invariants) — 2026-10-19
 
 - Built and added `scripts/test-exchange-rates-db.js` (17/17 checks) into the centralized database test runner (`scripts/test-db-all.js`), expanding automated database test coverage to **38 suites** (completing 100% database integration coverage across all 14 schema tables):
