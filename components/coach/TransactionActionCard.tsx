@@ -6,6 +6,7 @@ import { createTransaction } from '@/lib/actions'
 import { formatIDR } from '@/lib/format'
 import { CATEGORY_ENUM } from '@/lib/schemas'
 import { useRouter } from 'next/navigation'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 interface TransactionDraft {
   type: 'expense' | 'income'
@@ -35,6 +36,7 @@ export function TransactionActionCard({
 
   const handleExecute = () => {
     if (!selectedWalletId) {
+      hapticWarning()
       setErrorMessage('Pilih dompet terlebih dahulu')
       setStatus('error')
       return
@@ -56,11 +58,13 @@ export function TransactionActionCard({
       })
 
       if (!res.success) {
+        hapticWarning()
         setStatus('error')
         setErrorMessage(res.error?.message || 'Gagal menyimpan transaksi')
         return
       }
 
+      hapticSuccess()
       setStatus('success')
       router.refresh()
     })
@@ -113,7 +117,10 @@ export function TransactionActionCard({
           <label className="block text-[10px] text-text-secondary mb-1">Pilih Dompet:</label>
           <select
             value={selectedWalletId}
-            onChange={(e) => setSelectedWalletId(e.target.value)}
+            onChange={(e) => {
+              hapticTap()
+              setSelectedWalletId(e.target.value)
+            }}
             disabled={isPending}
             className="w-full rounded-xl border border-border-outer bg-surface px-2.5 py-1.5 text-xs text-text-primary focus:border-accent focus:outline-none"
           >
