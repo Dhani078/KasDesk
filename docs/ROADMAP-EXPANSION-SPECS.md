@@ -281,3 +281,4 @@ Sebelum setiap fitur dinyatakan siap produksi:
 - **Vaults & Micro-Savings**: `VaultsClient.tsx` (opener + delete), `VaultSheets.tsx` (deposit + withdraw + presets), `RoundUpSettingsModal.tsx` (toggle + step selector + save), `AiVaultPlannerModal.tsx` (feasibility simulation + create).
 - **Planning**: `DueBillsCard.tsx` (1-tap bill recording + link), `AiBudgetModal.tsx` (batch apply AI recommendations + opener).
 - **Hardware Integration**: `SharedReceiptBridge.tsx` (Web Share Target dispatch receipt), `ScanReceiptButton.tsx` (camera/gallery + OCR triggers).
+- **Security & Screen Lock**: `AppLock.tsx` (keypad digits + backspace + biometrics prompt + forgot session wipe), `AppLockSettings.tsx` (setup + change PIN + disable + biometrics toggle).
