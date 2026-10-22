@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Eye, EyeOff, Moon, Sun } from 'lucide-react'
+import { hapticTap } from '@/lib/haptics'
 
 export function SettingsAppearance() {
   const [privacyHidden, setPrivacyHidden] = useState(false)
@@ -35,6 +36,7 @@ export function SettingsAppearance() {
   }, [])
 
   function togglePrivacy() {
+    hapticTap()
     setPrivacyHidden((prev) => {
       const next = !prev
       document.documentElement.classList.toggle('privacy-mode', next)
@@ -45,6 +47,7 @@ export function SettingsAppearance() {
   }
 
   function toggleTheme() {
+    hapticTap()
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark'
       if (next === 'light') {

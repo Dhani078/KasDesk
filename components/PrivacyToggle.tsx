@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import { hapticTap } from '@/lib/haptics'
 
 export function PrivacyToggle() {
   const [hidden, setHidden] = useState(false)
@@ -23,6 +24,7 @@ export function PrivacyToggle() {
   }, [])
 
   function toggle() {
+    hapticTap()
     setHidden((prev) => {
       const n = !prev
       document.documentElement.classList.toggle('privacy-mode', n)
