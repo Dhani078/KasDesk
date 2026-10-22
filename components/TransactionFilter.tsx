@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useTransition, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Search, SlidersHorizontal, Tag as TagIcon, X, Loader2 } from 'lucide-react'
+import { hapticTap } from '@/lib/haptics'
 
 export function TransactionFilter({
   walletRows,
@@ -96,6 +97,7 @@ export function TransactionFilter({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    hapticTap()
     applyFilter({})
   }
 
@@ -129,6 +131,7 @@ export function TransactionFilter({
               key={opt.value}
               type="button"
               onClick={() => {
+                hapticTap()
                 setType(opt.value)
                 applyFilter({ type: opt.value })
               }}
@@ -165,9 +168,11 @@ export function TransactionFilter({
               <button
                 type="button"
                 onClick={() => {
+                  hapticTap()
                   setSearch('')
                   applyFilter({ search: '' })
                 }}
+                aria-label="Hapus pencarian"
                 className="!min-h-0 !min-w-0 p-1 text-text-secondary hover:text-text-primary cursor-pointer"
                 title="Hapus pencarian"
               >
@@ -249,6 +254,7 @@ export function TransactionFilter({
           {isFiltered && (
             <Link
               href="/transactions"
+              onClick={() => hapticTap()}
               className="secondary-button cursor-pointer"
             >
               <X className="h-4 w-4" aria-hidden /> Reset filter
@@ -272,10 +278,12 @@ export function TransactionFilter({
                 key={tag}
                 type="button"
                 onClick={() => {
+                  hapticTap()
                   const nextSearch = isActive ? '' : tag
                   setSearch(nextSearch)
                   applyFilter({ search: nextSearch })
                 }}
+                aria-label={`Filter label ${tag}`}
                 className={`!min-h-0 !min-w-0 rounded-full px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
                   isActive
                     ? 'bg-accent-solid text-white shadow-sm'
