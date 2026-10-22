@@ -1,5 +1,12 @@
 # Changelog
 
+## Multi-Currency Historical Base Amount Analytics Invariant — 2026-10-22
+
+- Enforced historical base amount invariant across financial queries and insight aggregates per `docs/ROADMAP-EXPANSION-SPECS.md` ("Semua analitik historis menghitung `baseAmount` dalam Rupiah tetap"):
+  - Updated `lib/queries/dashboard.ts`: `getDashboard()`, `getSpendingFlow()`, and `getTopCategories()` now query `baseAmount` alongside `amount` and aggregate `Number(r.baseAmount || r.amount || 0)` for accurate cross-currency calculations.
+  - Updated `lib/analytics/actions.ts`: `getDashboardSummary()`, `getSpendingFlowSummary()`, `getTopCategorySummary()`, and `getMonthComparison()` now employ `coalesce(nullif(transactions.baseAmount, 0), transactions.amount)` within SQL expressions, ensuring foreign-currency transactions (USD, EUR, SGD, BTC, XAU) are accurately represented in Rupiah while remaining 100% backward-compatible with legacy transactions.
+- Maintained 0 TypeScript errors (`tsc --noEmit`), 0 ESLint warnings (`eslint .`), 413 unit tests across 24 suites, and 100/100 Healthy AST score on `aislop`.
+
 ## Full AppLock, PIN Security & Debt Sheet Tactile Haptic & Accessibility Polish — 2026-10-22
 
 - Standardized native tactile haptic engine (`lib/haptics.ts`) across full-screen lock screen (`components/AppLock.tsx`), replacing ad-hoc vibration with `hapticTap`, `hapticSuccess`, `hapticWarning`, and `hapticDelete`:
