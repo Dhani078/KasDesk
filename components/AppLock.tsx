@@ -12,6 +12,7 @@ import {
 } from '@/lib/app-lock'
 import { logoutAction } from '@/lib/auth/actions'
 import { clearOfflineData } from '@/lib/offline/queue'
+import { hapticTap, hapticSuccess, hapticWarning, hapticDelete } from '@/lib/haptics'
 
 export function AppLock({ children }: { children: React.ReactNode }) {
   const [isLocked, setIsLocked] = useState(false)
@@ -59,25 +60,25 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     if (isLocked && isBiometricsEnabled()) {
       authenticateBiometrics().then((success) => {
         if (success) {
+          hapticSuccess()
           unlockApp()
         }
       })
     }
   }, [isLocked])
 
-  const triggerVibrate = (pattern: number | number[]) => {
-    if (typeof window !== 'undefined' && navigator.vibrate) {
-      try {
-        navigator.vibrate(pattern)
-      } catch {
-        // Ignore devices where vibrate is restricted
-      }
+  useEffect(() => {
+    if (!showForgotModal) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowForgotModal(false)
     }
-  }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showForgotModal])
 
   const handleKeyPress = async (num: string) => {
     if (pin.length >= 6) return
-    triggerVibrate(15)
+    hapticTap()
     setErrorMsg('')
     const next = pin + num
     setPin(next)
@@ -85,10 +86,10 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     if (next.length === 6) {
       const ok = await verifyEnteredPin(next)
       if (ok) {
-        triggerVibrate([20, 30])
+        hapticSuccess()
         unlockApp()
       } else {
-        triggerVibrate([50, 50, 50])
+        hapticWarning()
         setIsShaking(true)
         setErrorMsg('PIN salah. Coba lagi.')
         setTimeout(() => {
@@ -101,23 +102,26 @@ export function AppLock({ children }: { children: React.ReactNode }) {
 
   const handleDelete = () => {
     if (pin.length === 0) return
-    triggerVibrate(15)
+    hapticTap()
     setPin(pin.slice(0, -1))
     setErrorMsg('')
   }
 
   const handleBiometricClick = async () => {
-    triggerVibrate(20)
+    hapticTap()
     setErrorMsg('')
     const ok = await authenticateBiometrics()
     if (ok) {
+      hapticSuccess()
       unlockApp()
     } else {
+      hapticWarning()
       setErrorMsg('Autentikasi sidik jari/FaceID gagal.')
     }
   }
 
   const handleForgotPinLogout = () => {
+    hapticDelete()
     startLogout(async () => {
       removeAppLock()
       try {
@@ -229,8 +233,11 @@ export function AppLock({ children }: { children: React.ReactNode }) {
         <div className="mt-8 text-center">
           <button
             type="button"
-            onClick={() => setShowForgotModal(true)}
-            className="text-xs text-text-secondary hover:text-accent hover:underline"
+            onClick={() => {
+              hapticTap()
+              setShowForgotModal(true)
+            }}
+            className="text-xs text-text-secondary hover:text-accent hover:underline cursor-pointer"
           >
             Lupa PIN?
           </button>
@@ -239,9 +246,14 @@ export function AppLock({ children }: { children: React.ReactNode }) {
 
       {/* Forgot PIN Confirmation Modal */}
       {showForgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="forgot-pin-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm"
+        >
           <div className="surface-card w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-            <h2 className="text-base font-semibold text-text-primary">Lupa PIN Aplikasi?</h2>
+            <h2 id="forgot-pin-title" className="text-base font-semibold text-text-primary">Lupa PIN Aplikasi?</h2>
             <p className="mt-2 text-xs leading-5 text-text-secondary">
               Untuk melindungi privasi data Anda, reset PIN dilakukan dengan keluar dari sesi ini. Anda dapat masuk
               kembali dengan email dan password akun Anda.
@@ -249,7 +261,10 @@ export function AppLock({ children }: { children: React.ReactNode }) {
             <div className="mt-6 flex gap-3">
               <button
                 type="button"
-                onClick={() => setShowForgotModal(false)}
+                onClick={() => {
+                  hapticTap()
+                  setShowForgotModal(false)
+                }}
                 className="secondary-button flex-1"
                 disabled={isPendingLogout}
               >
