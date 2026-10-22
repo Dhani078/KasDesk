@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Calculator, X, Sparkles, ArrowRight } from 'lucide-react'
 import { calculateFreelancerTax, PTKP_RATES, type PtkpCode } from '@/lib/tax'
 import { formatIDR } from '@/lib/format'
+import { hapticTap, hapticSuccess } from '@/lib/haptics'
 
 export function TaxEstimatorModal({
   defaultGross,
@@ -36,6 +37,7 @@ export function TaxEstimatorModal({
   const result = calculateFreelancerTax(grossNum, norma, ptkp)
 
   function handleSendToCoach() {
+    hapticSuccess()
     const prompt = `Saya pekerja lepas dengan omzet bruto tahunan ${formatIDR(result.grossAnnual)}, norma NPPN ${result.normaPercent}%, status ${result.ptkpCode}. Estimasi PPh 21 saya ${formatIDR(result.annualTax)} (${formatIDR(result.monthlyReserve)}/bulan). Bagaimana strategi alokasi kas terbaik agar tidak boncos saat lapor SPT tahunan?`
     if (onConsultCoach) {
       onConsultCoach(prompt)
@@ -49,7 +51,10 @@ export function TaxEstimatorModal({
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          hapticTap()
+          setOpen(true)
+        }}
         className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-border-outer bg-surface/80 px-3.5 py-2 text-xs font-semibold text-text-primary shadow-sm transition hover:border-accent/40 hover:bg-white/[0.04] active:scale-95 cursor-pointer"
       >
         <Calculator className="h-4 w-4 text-accent" />
@@ -59,7 +64,10 @@ export function TaxEstimatorModal({
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md overflow-y-auto"
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            hapticTap()
+            setOpen(false)
+          }}
         >
           <div
             role="dialog"
@@ -81,7 +89,10 @@ export function TaxEstimatorModal({
               </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  hapticTap()
+                  setOpen(false)
+                }}
                 className="text-text-secondary hover:text-text-primary p-1 rounded-lg cursor-pointer"
                 aria-label="Tutup kalkulator"
               >
@@ -113,7 +124,10 @@ export function TaxEstimatorModal({
                   <select
                     id="tax-norma"
                     value={norma}
-                    onChange={(e) => setNorma(Number(e.target.value))}
+                    onChange={(e) => {
+                      hapticTap()
+                      setNorma(Number(e.target.value))
+                    }}
                     className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-xs text-text-primary outline-none focus:border-accent"
                   >
                     <option value={50}>50% — Jasa TI / Kreator / Profesi Bebas</option>
@@ -129,7 +143,10 @@ export function TaxEstimatorModal({
                   <select
                     id="tax-ptkp"
                     value={ptkp}
-                    onChange={(e) => setPtkp(e.target.value as PtkpCode)}
+                    onChange={(e) => {
+                      hapticTap()
+                      setPtkp(e.target.value as PtkpCode)
+                    }}
                     className="w-full rounded-xl border border-border bg-canvas px-3 py-2 text-xs text-text-primary outline-none focus:border-accent"
                   >
                     {Object.entries(PTKP_RATES).map(([code, p]) => (
