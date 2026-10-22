@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { BellRing, CalendarClock, Lightbulb, Sparkles, Target, Wallet } from 'lucide-react'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
+import { hapticTap } from '@/lib/haptics'
 
 type FocusInput = {
   walletCount: number
@@ -32,6 +33,7 @@ export function DailyFocus({ dash }: { dash: FocusInput }) {
   const Icon = focus.Icon
 
   function handleQuickLog() {
+    hapticTap()
     window.dispatchEvent(new CustomEvent('kasdesk:open-quicklog'))
   }
 
@@ -53,7 +55,7 @@ export function DailyFocus({ dash }: { dash: FocusInput }) {
                 {focus.label}
               </button>
             ) : (
-              <Link href={focus.href} className="primary-button min-h-10 px-3 py-2 text-xs">{focus.label}</Link>
+              <Link href={focus.href} onClick={() => hapticTap()} className="primary-button min-h-10 px-3 py-2 text-xs">{focus.label}</Link>
             )}
             <span className="status-pill">Aman Harian <PrivacyAmount value={dash.safeDailySpend} /></span>
             <span className="status-pill">{dash.healthLabel} {dash.healthScore}</span>

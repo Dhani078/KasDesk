@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronUp, CheckCircle2, Circle, Sparkles, Trophy } from 'lucide-react'
 import type { DashboardSummary } from '@/lib/analytics/actions'
+import { hapticTap } from '@/lib/haptics'
 
 export function FinancialHealthScoreCard({ dash }: { dash: DashboardSummary }) {
   const [expanded, setExpanded] = useState(false)
@@ -161,7 +162,12 @@ export function FinancialHealthScoreCard({ dash }: { dash: DashboardSummary }) {
       <div className="mt-4 border-t border-border-inner pt-3">
         <button
           type="button"
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => {
+            hapticTap()
+            setExpanded(!expanded)
+          }}
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Sembunyikan kriteria misi poin' : 'Lihat cara menambah poin skor keuangan'}
           className="flex w-full items-center justify-between text-xs font-medium text-accent hover:underline py-1"
         >
           <span className="flex items-center gap-1.5">
@@ -201,6 +207,7 @@ export function FinancialHealthScoreCard({ dash }: { dash: DashboardSummary }) {
             ))}
             <Link
               href="/coach"
+              onClick={() => hapticTap()}
               className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-accent-solid py-2 px-3 text-xs font-semibold text-white shadow-sm transition hover:brightness-110 active:scale-95"
             >
               <Sparkles className="h-3.5 w-3.5" />
