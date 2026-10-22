@@ -47,7 +47,7 @@ Dirancang *mobile-first* untuk mencatat transaksi dalam 2 ketukan, mengamankan d
 | 🏆 **Gamifikasi Health Score** | Tingkatkan level kesehatan finansialmu dari *Bronze*, *Silver*, *Gold*, hingga *Diamond Tier*. |
 | ⌨️ **Keyboard Shortcut Desktop** | `c` catat cepat, `/` cari transaksi, `p` mode privasi, `?` daftar shortcut. |
 | 📶 **100% Offline-First** | Transaksi diantrekan secara lokal via IndexedDB saat sinyal hilang dan otomatis sinkron saat online. |
-| 📳 **Tactile Haptic Vibration Engine (EPIC 8.3)** | Pengalaman sentuhan native mobile (`lib/haptics.ts`) pada transaksi, validasi form, navigasi, dompet, target tabungan, dan amplop digital. |
+| 📳 **Tactile Haptic Vibration Engine (EPIC 8.3)** | Pengalaman sentuhan native mobile (`lib/haptics.ts`) pada transaksi, validasi form, navigasi, dompet, target tabungan, amplop digital, PIN security, dan kalkulator pajak. |
 | 🔔 **Web Push & Web Share Target (EPIC 8.1 & 8.4)** | Notifikasi pengingat tagihan H-3, pengingat catat malam 20:00, peringatan batas budget 90% via VAPID RFC 8292, dan terima struk langsung dari galeri/WhatsApp. |
 | 🗺️ **Master PRD v2.0/v3.0** | Cetak biru lengkap 9 Epic arsitektur masa depan untuk Claude/Opus/Hermes di [`PRD.md`](./PRD.md). |
 | 📐 **Technical Blueprint** | Spesifikasi teknis & rancangan rekayasa mendalam di [`docs/ROADMAP-EXPANSION-SPECS.md`](./docs/ROADMAP-EXPANSION-SPECS.md). |
