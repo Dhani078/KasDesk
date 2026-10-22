@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { Receipt, Sparkles } from 'lucide-react'
+import { hapticTap } from '@/lib/haptics'
 
 export function ScanProgressModal({
   previewUrl,
@@ -66,7 +67,10 @@ export function ScanProgressModal({
         {/* Cancel Button */}
         <button
           type="button"
-          onClick={onCancel}
+          onClick={() => {
+            hapticTap()
+            onCancel()
+          }}
           className="w-full rounded-xl border border-border-outer bg-white/[0.04] py-2.5 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-white/[0.08] active:scale-95 transition"
         >
           Batalkan Pemindaian
