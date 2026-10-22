@@ -5,6 +5,7 @@ import { Scale, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from '
 import type { MonthComparisonResult } from '@/lib/analytics/comparison'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
 import { formatIDR } from '@/lib/format'
+import { hapticTap } from '@/lib/haptics'
 
 export function MonthComparisonCard({ data }: { data: MonthComparisonResult }) {
   const [expanded, setExpanded] = useState(false)
@@ -87,7 +88,12 @@ export function MonthComparisonCard({ data }: { data: MonthComparisonResult }) {
         <div className="border-t border-border-inner pt-3">
           <button
             type="button"
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => {
+              hapticTap()
+              setExpanded(!expanded)
+            }}
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Sembunyikan rincian per kategori' : 'Lihat perbandingan per kategori'}
             className="flex w-full items-center justify-between text-xs font-medium text-accent hover:underline py-1"
           >
             <span>{expanded ? 'Sembunyikan rincian per kategori' : 'Lihat perbandingan per kategori'}</span>

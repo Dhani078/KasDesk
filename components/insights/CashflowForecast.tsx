@@ -8,6 +8,7 @@ import {
 } from '@/lib/analytics/forecast'
 import { formatIDR } from '@/lib/format'
 import { PrivacyAmount } from '@/components/PrivacyAmount'
+import { hapticTap } from '@/lib/haptics'
 
 export function CashflowForecast({
   currentBalance,
@@ -81,7 +82,10 @@ export function CashflowForecast({
             <button
               key={d}
               type="button"
-              onClick={() => setDays(d)}
+              onClick={() => {
+                hapticTap()
+                setDays(d)
+              }}
               className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
                 days === d ? 'bg-accent-solid text-white shadow-sm' : 'text-text-secondary hover:text-text-primary'
               }`}
@@ -205,7 +209,12 @@ export function CashflowForecast({
       <div className="rounded-2xl border border-border-outer bg-white/[0.02] p-3 text-xs space-y-2">
         <button
           type="button"
-          onClick={() => setShockOpen(!shockOpen)}
+          onClick={() => {
+            hapticTap()
+            setShockOpen(!shockOpen)
+          }}
+          aria-expanded={shockOpen}
+          aria-label="Toggle simulasi pengeluaran ekstra"
           className="w-full flex items-center justify-between font-medium text-text-secondary hover:text-text-primary cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
@@ -225,7 +234,10 @@ export function CashflowForecast({
                 <button
                   key={amt}
                   type="button"
-                  onClick={() => setShockAmount(amt)}
+                  onClick={() => {
+                    hapticTap()
+                    setShockAmount(amt)
+                  }}
                   className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold border transition ${
                     shockAmount === amt
                       ? 'bg-accent-solid text-white border-accent'
