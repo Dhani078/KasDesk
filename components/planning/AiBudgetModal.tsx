@@ -111,7 +111,11 @@ export function AiBudgetModal({
               </div>
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                aria-label="Tutup modal rekomendasi budget"
+                onClick={() => {
+                  hapticTap()
+                  setIsOpen(false)
+                }}
                 className="rounded-lg p-1.5 text-text-secondary hover:bg-white/[0.05]"
               >
                 <X className="h-4 w-4" />
@@ -167,6 +171,7 @@ export function AiBudgetModal({
                       type="number"
                       step="25000"
                       min="50000"
+                      aria-label={`Batas budget untuk kategori ${item.category}`}
                       value={item.recommendedLimit}
                       onChange={(e) => handleUpdateAmount(item.category, parseInt(e.target.value, 10) || 0)}
                       disabled={isPending}
