@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Check, Copy, FileText, Printer, Share2, X, Sparkles } from 'lucide-react'
 import { formatIDR } from '@/lib/format'
+import { hapticTap, hapticSuccess } from '@/lib/haptics'
 
 export type MonthlyRecapData = {
   monthName: string
@@ -58,6 +59,7 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
   async function onCopy() {
     try {
       await navigator.clipboard.writeText(waText)
+      hapticSuccess()
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     } catch {
@@ -66,6 +68,7 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
   }
 
   async function onShare() {
+    hapticTap()
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
@@ -82,6 +85,7 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
   }
 
   function onPrint() {
+    hapticTap()
     window.print()
   }
 
@@ -89,7 +93,10 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          hapticTap()
+          setOpen(true)
+        }}
         className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-4 text-sm font-semibold text-accent transition hover:bg-accent/20 active:scale-95 shadow-sm"
       >
         <Share2 className="h-4 w-4" aria-hidden /> Bagikan Rekap / Export
@@ -120,7 +127,10 @@ _Dibuat otomatis dengan KasDesk — https://kas-desk.vercel.app_`
               </div>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  hapticTap()
+                  setOpen(false)
+                }}
                 className="rounded-xl p-2 text-text-secondary hover:bg-white/[0.06] hover:text-text-primary"
                 aria-label="Tutup"
               >
