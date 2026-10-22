@@ -8,6 +8,7 @@ import { CATEGORY_ENUM } from '@/lib/schemas'
 import { formatIDR } from '@/lib/format'
 import { evaluateMathExpression, hasMathOperator } from '@/lib/calculator'
 import { NoteWithTags } from '@/components/quicklog/NoteWithTags'
+import { hapticTap, hapticSuccess, hapticWarning } from '@/lib/haptics'
 
 export type TxnRow = {
   id: string
@@ -64,6 +65,7 @@ export function EditTransactionButton({
   const isTransfer = txn.type === 'transfer'
 
   function openModal() {
+    hapticTap()
     setError(null)
     setAmount(formatWithDots(String(txn.amount)))
     setTitle(txn.title)
@@ -77,6 +79,7 @@ export function EditTransactionButton({
   const mathLiveResult = hasMathOperator(amount) ? evaluateMathExpression(amount) : null
 
   function applyCalc() {
+    hapticTap()
     if (mathLiveResult !== null) {
       setAmount(formatWithDots(String(mathLiveResult)))
     }
@@ -101,15 +104,18 @@ export function EditTransactionButton({
       occurred_at: new Date(occurredAt).toISOString(),
     }
     if (!parsed.amount || parsed.amount <= 0) {
+      hapticWarning()
       setError('Jumlah harus lebih dari 0')
       return
     }
     start(async () => {
       const r = await updateTransaction(txn.id, parsed)
       if (!r.success) {
+        hapticWarning()
         setError(r.error.message)
         return
       }
+      hapticSuccess()
       setOpen(false)
     })
   }
@@ -246,6 +252,7 @@ export function EditTransactionButton({
                     <button
                       type="button"
                       onClick={() => {
+                        hapticTap()
                         const now = new Date()
                         const timePart = occurredAt ? occurredAt.slice(11) : now.toTimeString().slice(0, 5)
                         const yyyy = now.getFullYear()
@@ -253,6 +260,7 @@ export function EditTransactionButton({
                         const dd = String(now.getDate()).padStart(2, '0')
                         setOccurredAt(`${yyyy}-${mm}-${dd}T${timePart}`)
                       }}
+                      aria-label="Set tanggal hari ini"
                       className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
                     >
                       Hari ini
@@ -260,6 +268,7 @@ export function EditTransactionButton({
                     <button
                       type="button"
                       onClick={() => {
+                        hapticTap()
                         const yest = new Date()
                         yest.setDate(yest.getDate() - 1)
                         const timePart = occurredAt ? occurredAt.slice(11) : yest.toTimeString().slice(0, 5)
@@ -268,6 +277,7 @@ export function EditTransactionButton({
                         const dd = String(yest.getDate()).padStart(2, '0')
                         setOccurredAt(`${yyyy}-${mm}-${dd}T${timePart}`)
                       }}
+                      aria-label="Set tanggal kemarin"
                       className="rounded-lg border border-border-outer bg-white/[0.03] px-2 py-0.5 text-[11px] text-text-secondary hover:text-text-primary transition"
                     >
                       Kemarin
@@ -294,7 +304,11 @@ export function EditTransactionButton({
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    hapticTap()
+                    setOpen(false)
+                  }}
+                  aria-label="Batalkan pengeditan"
                   className="flex-1 rounded-xl px-4 py-3 text-sm text-text-secondary ring-1 ring-border-outer"
                 >
                   Batal
